@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelos de Servicio Cloud | IaaS, PaaS, SaaS</title>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            bg: '#0a0f1c',
+                            panel: '#111827',
+                            aws: '#ff9900',
+                            azure: '#0078d4',
+                            gcp: '#ea4335',
+                            accent: '#3b82f6',
+                            highlight: '#60a5fa',
+                            user: '#10b981', // green for user managed
+                            provider: '#3b82f6' // blue for provider managed
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0f1c;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .hero-bg {
+            background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 60%),
+                radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+        }
+
+        .grid-bg {
+            background-image: linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            background-position: center top;
+            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .layer-transition {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+
+<body class="antialiased min-h-screen">
+    <div class="fixed inset-0 grid-bg pointer-events-none z-0"></div>
+    <div id="root" class="relative z-10"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Icons ---
+        const IconCloud = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" /></svg>;
+        const IconServer = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2" /><rect x="2" y="14" width="20" height="8" rx="2" ry="2" /><line x1="6" y1="6" x2="6.01" y2="6" /><line x1="6" y1="18" x2="6.01" y2="18" /></svg>;
+        const IconCode = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>;
+        const IconApp = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>;
+        const IconCheck = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>;
+        const IconX = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
+        const IconUser = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>;
+        const IconProvider = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2" /><rect x="2" y="14" width="20" height="8" rx="2" ry="2" /><line x1="6" y1="6" x2="6.01" y2="6" /><line x1="6" y1="18" x2="6.01" y2="18" /></svg>;
+        const IconChevronRight = () => <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
+        const IconChevronLeft = () => <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>;
+
+        // Brand Icons (Simplified SVGs for Netflix, Google, Zoom)
+        const IconNetflix = () => <svg viewBox="0 0 24 24" fill="#E50914" className="w-8 h-8"><path d="M6 2v20h3.5l5.5-12.5v12.5h3V2h-3.5L9 14.5V2H6z" /></svg>;
+        const IconGCP = () => <svg viewBox="0 0 24 24" fill="#4285F4" className="w-8 h-8"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" /></svg>;
+        const IconZoom = () => <svg viewBox="0 0 24 24" fill="#2D8CFF" className="w-8 h-8"><path d="M4.5 7.5A2.5 2.5 0 0 0 2 10v4a2.5 2.5 0 0 0 2.5 2.5h11A2.5 2.5 0 0 0 18 14v-4a2.5 2.5 0 0 0-2.5-2.5h-11zm14.5.75v7.5l3 2.5V6.75l-3 2.5z" /></svg>;
+
+        // --- Data Models ---
+        const modelsData = {
+            "iaas": {
+                id: "iaas",
+                name: "IaaS",
+                fullName: "Infrastructure as a Service",
+                icon: <IconServer />,
+                shortDef: "Infraestructura virtualizada bajo demanda",
+                controlLevel: "Alto",
+                management: "Alta (Requiere SysAdmins)",
+                flexibility: "Máxima",
+                description: "El proveedor entrega recursos de hardware virtualizados (servidores, red, almacenamiento) a través de internet. Como usuario, alquilas el centro de datos virtual y tienes control absoluto sobre el sistema operativo, middleware y las aplicaciones que instalas.",
+                whenToUse: "Ideal para empresas que necesitan control total de su entorno, que están migrando Data Centers físicos a la nube (Lift & Shift), o que requieren arquitecturas altamente personalizadas.",
+                advantages: ["Control total sobre la configuración", "No hay inversión inicial en hardware físico (CAPEX)", "Escalabilidad rápida bajo demanda"],
+                disadvantages: ["Requiere personal técnico especializado (SysOps/DevOps)", "Mayor carga operativa en parcheo y seguridad del SO"],
+                useCases: ["Migración de Data Centers", "Disaster Recovery", "Nube Híbrida", "Big Data Analytics"],
+                layers: {
+                    user: ["Applications", "Data", "Runtime", "Middleware", "O/S"],
+                    provider: ["Virtualization", "Servers", "Storage", "Networking"]
+                },
+                caseStudy: {
+                    company: "Netflix",
+                    icon: <IconNetflix />,
+                    title: "Streaming a escala global",
+                    cloudUsed: "AWS (Amazon Web Services)",
+                    description: "Netflix migró toda su infraestructura a la nube usando IaaS. Utilizan miles de instancias (servidores virtuales) para procesar y entregar video a nivel mundial. El IaaS les permite escalar automáticamente miles de servidores en minutos durante picos de audiencia y apagarlos cuando no se necesitan, manteniendo el control total de sus algoritmos."
+                }
+            },
+            "paas": {
+                id: "paas",
+                name: "PaaS",
+                fullName: "Platform as a Service",
+                icon: <IconCode />,
+                shortDef: "Plataforma lista para desarrollar",
+                controlLevel: "Medio",
+                management: "Media (Enfoque en código)",
+                flexibility: "Alta para desarrollo",
+                description: "El proveedor entrega un entorno completo para desarrollar, probar y desplegar software. Elimina la necesidad de administrar la infraestructura subyacente (servidores, red, SO). Los desarrolladores solo suben su código o contenedores.",
+                whenToUse: "Ideal para equipos de desarrollo ágil que desean enfocarse exclusivamente en crear aplicaciones sin preocuparse por los parches del sistema operativo, el balanceo de carga o la gestión del servidor.",
+                advantages: ["Acelera dramáticamente el Time to Market", "Reduce la carga operativa de infraestructura", "Escalabilidad y CI/CD integrados"],
+                disadvantages: ["Menor control sobre la infraestructura subyacente", "Posible dependencia del proveedor (Vendor Lock-in)"],
+                useCases: ["Desarrollo web y móvil", "APIs y Microservicios", "DevOps e Integración Continua"],
+                layers: {
+                    user: ["Applications", "Data"],
+                    provider: ["Runtime", "Middleware", "O/S", "Virtualization", "Servers", "Storage", "Networking"]
+                },
+                caseStudy: {
+                    company: "Google Cloud / Kubernetes",
+                    icon: <IconGCP />,
+                    title: "Despliegue ágil de contenedores",
+                    cloudUsed: "Google Kubernetes Engine (GCP)",
+                    description: "Plataformas modernas utilizan PaaS orquestado. Los desarrolladores empaquetan su código y el proveedor (PaaS) se encarga de desplegarlos, balancear el tráfico, aplicar parches de seguridad al SO subyacente y escalar los recursos automáticamente, reduciendo la complejidad operativa de IT."
+                }
+            },
+            "saas": {
+                id: "saas",
+                name: "SaaS",
+                fullName: "Software as a Service",
+                icon: <IconApp />,
+                shortDef: "Software listo para usar",
+                controlLevel: "Bajo",
+                management: "Mínima (Cero mantenimiento)",
+                flexibility: "Baja (Limitada al software)",
+                description: "El proveedor aloja, administra y mantiene toda la infraestructura y la aplicación. Los usuarios simplemente se conectan y usan el software a través de internet (generalmente en un navegador web) bajo un modelo de suscripción.",
+                whenToUse: "Ideal cuando se necesita una aplicación estándar lista para usar inmediatamente (como correo, CRM, ERP o videoconferencia) sin invertir en desarrollo interno ni infraestructura.",
+                advantages: ["Cero mantenimiento técnico ni actualizaciones", "Acceso inmediato, global y multiplataforma", "Costos predecibles"],
+                disadvantages: ["Personalización limitada a las opciones del software", "Control mínimo sobre el backend y seguridad profunda"],
+                useCases: ["Herramientas de colaboración", "CRM (Gestión de clientes)", "ERP empresarial", "Productividad"],
+                layers: {
+                    user: ["Data (Config & Users)"],
+                    provider: ["Applications", "Runtime", "Middleware", "O/S", "Virtualization", "Servers", "Storage", "Networking"]
+                },
+                caseStudy: {
+                    company: "Zoom",
+                    icon: <IconZoom />,
+                    title: "Colaboración global inmediata",
+                    cloudUsed: "Infraestructura SaaS",
+                    description: "Zoom es el ejemplo perfecto de SaaS. Las empresas no instalan servidores de video ni programan aplicaciones. Simplemente compran licencias, configuran accesos (Data/Users) y usan el software. Zoom se encarga de la escalabilidad masiva, la infraestructura de red y las actualizaciones de la aplicación."
+                }
+            }
+        };
+
+        const layersList = [
+            "Applications",
+            "Data",
+            "Runtime",
+            "Middleware",
+            "O/S",
+            "Virtualization",
+            "Servers",
+            "Storage",
+            "Networking"
+        ];
+
+        // --- Components ---
+
+        const Hero = () => (
+            <div className="text-center py-20 mb-4 relative">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-900/30 border border-blue-500/30 text-blue-400 text-sm font-semibold mb-6 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+                    <IconCloud /> Arquitectura Cloud
+                </div>
+                <h1 className="text-5xl md:text-6xl font-bold text-white tracking-tight mb-6">
+                    Modelos de Servicio <span className="gradient-text">Cloud</span>
+                </h1>
+                <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
+                    Comprende cómo funcionan <strong>IaaS, PaaS y SaaS</strong>, qué nivel de control ofrecen y cómo elegir la estrategia adecuada para la infraestructura digital moderna.
+                </p>
+            </div>
+        );
+
+        const ModelCard = ({ model, isActive, onClick }) => (
+            <button
+                onClick={onClick}
+                className={`w-full text-left p-5 lg:p-6 rounded-3xl transition-all duration-300 border ${isActive
+                    ? 'bg-blue-900/20 border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.15)] scale-[1.02]'
+                    : 'bg-panel/50 border-slate-800 hover:border-slate-600 hover:bg-slate-800/50'
+                    }`}
+            >
+                <div className="flex items-center justify-between mb-3">
+                    <div>
+                        <h3 className={`text-2xl font-bold ${isActive ? 'text-white' : 'text-slate-300'}`}>
+                            {model.name}
+                        </h3>
+                        <p className="text-blue-400 font-medium text-xs mt-1">{model.fullName}</p>
+                    </div>
+                    <div className={`p-2.5 rounded-2xl ${isActive ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-800 text-slate-500'}`}>
+                        {model.icon}
+                    </div>
+                </div>
+                <p className="text-slate-400 text-sm mb-4">{model.shortDef}</p>
+                <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs">
+                        <span className="text-slate-500">Control</span>
+                        <span className="text-slate-300 font-semibold">{model.controlLevel}</span>
+                    </div>
+                    <div className="w-full bg-slate-800 rounded-full h-1.5">
+                        <div className={`h-1.5 rounded-full ${isActive ? 'bg-blue-500' : 'bg-slate-600'}`}
+                            style={{ width: model.name === 'IaaS' ? '90%' : model.name === 'PaaS' ? '50%' : '15%' }}></div>
+                    </div>
+                </div>
+            </button>
+        );
+
+        const StackVisualization = ({ activeModelId }) => {
+            const currentModel = modelsData[activeModelId];
+
+            return (
+                <div className="glass-panel p-8 rounded-3xl h-full flex flex-col justify-center">
+                    <h4 className="text-center font-bold text-white mb-2">Modelo de Responsabilidad Compartida</h4>
+                    <p className="text-center text-slate-400 text-sm mb-8">¿Quién administra qué en <span className="text-blue-400 font-bold">{currentModel.name}</span>?</p>
+
+                    <div className="flex justify-center gap-6 mb-8 text-sm font-medium">
+                        <div className="flex items-center gap-2 text-brand-user"><IconUser /> Administra el Usuario</div>
+                        <div className="flex items-center gap-2 text-brand-provider"><IconProvider /> Administra el Proveedor</div>
+                    </div>
+
+                    <div className="max-w-xs mx-auto w-full space-y-1.5">
+                        {layersList.map((layer, index) => {
+                            // Special handling for SaaS Data layer to match terminology
+                            const displayLayer = (activeModelId === 'saas' && layer === 'Data') ? 'Data (Config & Users)' : layer;
+
+                            const isUserManaged = currentModel.layers.user.includes(displayLayer) || currentModel.layers.user.includes(layer);
+
+                            return (
+                                <div
+                                    key={layer}
+                                    className={`layer-transition relative py-2.5 px-4 rounded-lg font-semibold text-sm text-center border overflow-hidden
+                                        ${isUserManaged
+                                            ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400'
+                                            : 'bg-blue-600/10 border-blue-500/50 text-blue-400'
+                                        }`}
+                                >
+                                    {/* Shimmer effect for active transitions */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"></div>
+                                    <span className="relative z-10">{displayLayer}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        const ImageModal = ({ imageUrl, title, onClose }) => {
+            if (!imageUrl) return null;
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+                    <div className="relative max-w-5xl w-full glass-panel p-2 rounded-2xl" onClick={e => e.stopPropagation()}>
+                        <button onClick={onClose} className="absolute -top-4 -right-4 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors shadow-lg z-10">
+                            <IconX />
+                        </button>
+                        <div className="overflow-hidden rounded-xl bg-slate-900 border border-slate-700/50 flex items-center justify-center min-h-[300px]">
+                            <img src={imageUrl} alt={title} className="w-full h-auto max-h-[80vh] object-contain" />
+                        </div>
+                        <div className="p-4 text-center">
+                            <h3 className="text-xl font-bold text-white">Arquitectura {title}</h3>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const DetailPanel = ({ model, onShowImage, onNext, onPrev }) => {
+            return (
+                <div className="relative mt-8 group">
+                    <button 
+                        onClick={onPrev} 
+                        className="absolute -left-4 md:-left-12 top-1/2 -translate-y-1/2 text-slate-600 hover:text-blue-500 hover:scale-110 transition-all z-20 hidden md:flex items-center justify-center p-2"
+                        title="Modelo anterior"
+                    >
+                        <IconChevronLeft />
+                    </button>
+                    
+                    <button 
+                        onClick={onNext} 
+                        className="absolute -right-4 md:-right-12 top-1/2 -translate-y-1/2 text-slate-600 hover:text-red-500 hover:scale-110 transition-all z-20 hidden md:flex items-center justify-center p-2"
+                        title="Siguiente modelo"
+                    >
+                        <IconChevronRight />
+                    </button>
+
+                    <div className="grid lg:grid-cols-2 gap-8 animate-fade-in">
+                        {/* Left: Text Details */}
+                    <div className="glass-panel p-8 md:p-10 rounded-3xl flex flex-col">
+                        <div className="inline-block px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-6 tracking-wide uppercase self-start">
+                            Especificación del Modelo
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                            <h2 className="text-3xl font-bold text-white">¿Qué es {model.name}?</h2>
+                            <button 
+                                onClick={() => onShowImage(`imagenes/${model.id}.png`, model.name)}
+                                className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors shadow-lg shadow-blue-500/20"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                Ver Arquitectura
+                            </button>
+                        </div>
+                        <p className="text-slate-300 mb-8 leading-relaxed text-lg">
+                            {model.description}
+                        </p>
+
+                        <div className="bg-blue-900/10 border border-blue-800/30 rounded-2xl p-6 mb-8">
+                            <h4 className="text-blue-400 font-semibold mb-2">Cuándo utilizarlo</h4>
+                            <p className="text-slate-300 text-sm leading-relaxed">{model.whenToUse}</p>
+                        </div>
+
+                        <div className="grid sm:grid-cols-2 gap-6 mb-8 flex-grow">
+                            <div>
+                                <h4 className="text-white font-semibold mb-4 flex items-center gap-2"><IconCheck /> Ventajas</h4>
+                                <ul className="space-y-3">
+                                    {model.advantages.map((adv, idx) => (
+                                        <li key={idx} className="text-sm text-slate-400 flex items-start gap-2">
+                                            <span className="text-emerald-500 mt-0.5">•</span> {adv}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 className="text-white font-semibold mb-4 flex items-center gap-2"><IconX /> Desventajas</h4>
+                                <ul className="space-y-3">
+                                    {model.disadvantages.map((dis, idx) => (
+                                        <li key={idx} className="text-sm text-slate-400 flex items-start gap-2">
+                                            <span className="text-red-500 mt-0.5">•</span> {dis}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div className="border-t border-slate-800 pt-6 mt-auto">
+                            <h4 className="text-white font-semibold mb-4">Casos de Uso Comunes</h4>
+                            <div className="flex flex-wrap gap-2">
+                                {model.useCases.map((useCase, idx) => (
+                                    <span key={idx} className="bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium">
+                                        {useCase}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right: Interactive Visual Stack */}
+                    <StackVisualization activeModelId={model.id} />
+                </div>
+            </div>
+            );
+        };
+
+        const ComparisonTable = () => (
+            <div className="mt-24">
+                <h3 className="text-3xl font-bold text-center text-white mb-12">Comparativa Ejecutiva</h3>
+                <div className="overflow-x-auto glass-panel rounded-3xl p-1">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-800/80 text-slate-300 text-xs uppercase tracking-widest border-b border-slate-700">
+                                <th className="p-5 font-semibold">Métrica</th>
+                                <th className="p-5 font-semibold text-center text-white">IaaS</th>
+                                <th className="p-5 font-semibold text-center text-white">PaaS</th>
+                                <th className="p-5 font-semibold text-center text-white">SaaS</th>
+                            </tr>
+                        </thead>
+                        <tbody className="text-sm">
+                            <tr className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                                <td className="p-5 font-medium text-slate-300">Nivel de Control</td>
+                                <td className="p-5 text-center text-emerald-400 font-semibold">Máximo</td>
+                                <td className="p-5 text-center text-yellow-400 font-semibold">Medio</td>
+                                <td className="p-5 text-center text-red-400 font-semibold">Mínimo</td>
+                            </tr>
+                            <tr className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                                <td className="p-5 font-medium text-slate-300">Gestión Requerida</td>
+                                <td className="p-5 text-center text-red-400">Alta (Sistemas)</td>
+                                <td className="p-5 text-center text-yellow-400">Media (Código)</td>
+                                <td className="p-5 text-center text-emerald-400">Ninguna</td>
+                            </tr>
+                            <tr className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                                <td className="p-5 font-medium text-slate-300">Flexibilidad Técnica</td>
+                                <td className="p-5 text-center text-emerald-400">Total</td>
+                                <td className="p-5 text-center text-emerald-400">Alta</td>
+                                <td className="p-5 text-center text-red-400">Limitada</td>
+                            </tr>
+                            <tr className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                                <td className="p-5 font-medium text-slate-300">Time to Market</td>
+                                <td className="p-5 text-center text-red-400">Lento (Meses)</td>
+                                <td className="p-5 text-center text-yellow-400">Rápido (Semanas)</td>
+                                <td className="p-5 text-center text-emerald-400">Inmediato (Días)</td>
+                            </tr>
+                            <tr className="hover:bg-slate-800/30 transition-colors">
+                                <td className="p-5 font-medium text-slate-300">Complejidad Técnica</td>
+                                <td className="p-5 text-center text-red-400">Alta</td>
+                                <td className="p-5 text-center text-yellow-400">Media</td>
+                                <td className="p-5 text-center text-emerald-400">Baja</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
+
+        const CaseStudies = ({ models }) => (
+            <div className="mt-24">
+                <h3 className="text-3xl font-bold text-center text-white mb-4">Casos de Éxito Reales</h3>
+                <p className="text-center text-slate-400 mb-12 max-w-2xl mx-auto">Cómo las empresas líderes aplican estos modelos para transformar su arquitectura e impulsar sus negocios globales.</p>
+
+                <div className="grid md:grid-cols-3 gap-8">
+                    {Object.values(models).map((model) => (
+                        <div key={`case-${model.id}`} className="glass-panel p-8 rounded-3xl flex flex-col relative overflow-hidden group">
+                            {/* Decorative background glow */}
+                            <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all"></div>
+
+                            <div className="flex items-center gap-4 mb-6 relative z-10">
+                                <div className="p-3 bg-slate-900 rounded-2xl shadow-inner border border-slate-800">
+                                    {model.caseStudy.icon}
+                                </div>
+                                <div>
+                                    <div className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-1">Caso {model.name}</div>
+                                    <h4 className="text-xl font-bold text-white">{model.caseStudy.company}</h4>
+                                </div>
+                            </div>
+
+                            <div className="inline-block px-3 py-1 bg-slate-800/50 border border-slate-700 text-slate-300 text-xs rounded-lg mb-4 self-start">
+                                Infraestructura: {model.caseStudy.cloudUsed}
+                            </div>
+
+                            <h5 className="font-semibold text-white mb-3">{model.caseStudy.title}</h5>
+                            <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow">
+                                {model.caseStudy.description}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+
+        const Conclusion = () => (
+            <div className="mt-24 mb-12 glass-panel p-10 md:p-14 rounded-[2.5rem] border-t-4 border-t-blue-500 text-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent"></div>
+                <div className="relative z-10">
+                    <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">¿Cuál modelo cloud necesita tu empresa?</h2>
+                    <p className="text-lg text-slate-300 max-w-3xl mx-auto mb-10 leading-relaxed">
+                        La arquitectura de nube moderna no se trata de elegir un solo modelo, sino de aplicar el adecuado para cada carga de trabajo. La regla de oro de la arquitectura empresarial es:
+                    </p>
+
+                    <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                        <div className="bg-slate-900/80 p-6 rounded-2xl border border-slate-800">
+                            <div className="text-blue-400 font-bold text-xl mb-2">IaaS</div>
+                            <p className="text-sm text-slate-400">Úsalo cuando necesites <strong>máximo control</strong> sobre la arquitectura técnica y el sistema operativo.</p>
+                        </div>
+                        <div className="bg-slate-900/80 p-6 rounded-2xl border border-slate-800">
+                            <div className="text-blue-400 font-bold text-xl mb-2">PaaS</div>
+                            <p className="text-sm text-slate-400">Úsalo cuando busques <strong>agilidad de desarrollo</strong> sin preocuparte por la infraestructura.</p>
+                        </div>
+                        <div className="bg-slate-900/80 p-6 rounded-2xl border border-slate-800">
+                            <div className="text-blue-400 font-bold text-xl mb-2">SaaS</div>
+                            <p className="text-sm text-slate-400">Úsalo cuando valores la <strong>simplicidad y productividad</strong> inmediata por encima de la personalización.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- Main App ---
+        const App = () => {
+            const [activeModel, setActiveModel] = useState('iaas');
+            const [modalData, setModalData] = useState({ isOpen: false, url: '', title: '' });
+            const modelKeys = ['iaas', 'paas', 'saas'];
+
+            const handleShowImage = (url, title) => {
+                setModalData({ isOpen: true, url, title });
+            };
+
+            const handleCloseModal = () => {
+                setModalData({ ...modalData, isOpen: false });
+            };
+
+            const handleNext = () => {
+                const currentIndex = modelKeys.indexOf(activeModel);
+                const nextIndex = (currentIndex + 1) % modelKeys.length;
+                setActiveModel(modelKeys[nextIndex]);
+            };
+
+            const handlePrev = () => {
+                const currentIndex = modelKeys.indexOf(activeModel);
+                const prevIndex = (currentIndex - 1 + modelKeys.length) % modelKeys.length;
+                setActiveModel(modelKeys[prevIndex]);
+            };
+
+            return (
+                <div className="max-w-7xl mx-auto px-4 py-8 hero-bg">
+                    <Hero />
+
+                    <div className="mt-8">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {Object.values(modelsData).map((model) => (
+                                <ModelCard
+                                    key={model.id}
+                                    model={model}
+                                    isActive={activeModel === model.id}
+                                    onClick={() => setActiveModel(model.id)}
+                                />
+                            ))}
+                        </div>
+
+                        <DetailPanel 
+                            model={modelsData[activeModel]} 
+                            onShowImage={handleShowImage} 
+                            onNext={handleNext}
+                            onPrev={handlePrev}
+                        />
+                    </div>
+
+                    <CaseStudies models={modelsData} />
+                    <ComparisonTable />
+                    <Conclusion />
+
+                    <footer className="mt-12 text-center text-slate-500 text-sm pb-8 border-t border-slate-800 pt-8">
+                        <p>Diseño de Arquitectura Cloud | Modelos de Servicio: IaaS, PaaS, SaaS</p>
+                    </footer>
+
+                    {modalData.isOpen && (
+                        <ImageModal 
+                            imageUrl={modalData.url} 
+                            title={modalData.title} 
+                            onClose={handleCloseModal} 
+                        />
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
