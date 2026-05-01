@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Niveles Tier en Data Centers</title>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#020617',
+                        panel: '#0f172a',
+                        accent: '#0ea5e9',
+                        highlight: '#38bdf8'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(14, 165, 233, 0.15);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .hero-bg {
+            background: radial-gradient(circle at 50% 0%, rgba(14, 165, 233, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(56, 189, 248, 0.05) 0%, transparent 40%);
+        }
+
+        .grid-bg {
+            background-image: linear-gradient(rgba(14, 165, 233, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(14, 165, 233, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center top;
+            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body class="antialiased min-h-screen">
+    <div class="fixed inset-0 grid-bg pointer-events-none z-0"></div>
+    <div id="root" class="relative z-10"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- SVGs ---
+        const IconServer = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2" /><rect x="2" y="14" width="20" height="8" rx="2" ry="2" /><line x1="6" y1="6" x2="6.01" y2="6" /><line x1="6" y1="18" x2="6.01" y2="18" /></svg>;
+        const IconShield = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>;
+        const IconZap = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>;
+        const IconClock = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
+        const IconInfo = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>;
+        const IconAlertTriangle = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>;
+        const IconThermometer = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" /></svg>;
+        const IconChevronRight = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>;
+        const IconActivity = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>;
+
+        // --- Data ---
+        const tiersData = {
+            "tier-1": {
+                id: "tier-1",
+                name: "Tier I",
+                subtitle: "Capacidad Básica",
+                availability: "99.671%",
+                downtime: "28.8 horas / año",
+                redundancy: "N (Sin Redundancia)",
+                maintenance: "Requiere apagado total",
+                powerCooling: "Ruta única",
+                faultTolerance: "Sin tolerancia",
+                cost: "$",
+                risk: "Alto (Interrupción garantizada en mantenimiento)",
+                idealFor: "Pequeñas empresas, laboratorios",
+                image: "./imagenes/tier1.png",
+                description: "La infraestructura más simple. Cuenta con una sola ruta de energía y refrigeración, sin redundancia (N). Cualquier mantenimiento o fallo en un equipo (como una UPS o generador) requiere el apagado total del Data Center, lo que implica un riesgo alto de interrupción operativa.",
+                useCases: ["Pequeñas empresas", "Oficinas locales", "Cargas de trabajo no críticas", "Entornos de pruebas o laboratorios"],
+                energy: "Suministro eléctrico básico con una sola UPS y generador de respaldo sin redundancia.",
+                cooling: "Sistemas de expansión directa simples, sin equipos de respaldo."
+            },
+            "tier-2": {
+                id: "tier-2",
+                name: "Tier II",
+                subtitle: "Componentes Redundantes",
+                availability: "99.741%",
+                downtime: "22.0 horas / año",
+                redundancy: "N+1",
+                maintenance: "Requiere apagado parcial",
+                powerCooling: "Ruta principal única, equipos redundantes",
+                faultTolerance: "Baja (Solo en equipos específicos)",
+                cost: "$$",
+                risk: "Medio (Ruta principal es punto único de fallo)",
+                idealFor: "Pymes, servicios internos",
+                image: "./imagenes/tier2.png",
+                description: "Añade equipos de respaldo (N+1) a la capacidad básica. Aunque tiene UPS y generadores extra, la ruta principal de distribución sigue siendo única. Es más resiliente que Tier I, pero la caída de la línea principal o un mantenimiento profundo afectará el servicio.",
+                useCases: ["Empresas medianas", "ERPs y sistemas internos", "Cargas corporativas que no operan 24/7", "Servicios con tolerancia moderada a caídas"],
+                energy: "UPS y generadores redundantes (N+1), pero compartiendo el mismo panel de distribución principal.",
+                cooling: "Equipos de refrigeración extra (CRAC N+1) para respaldar averías en equipos individuales."
+            },
+            "tier-3": {
+                id: "tier-3",
+                name: "Tier III",
+                subtitle: "Mantenimiento Concurrente",
+                availability: "99.982%",
+                downtime: "1.6 horas / año",
+                redundancy: "N+1",
+                maintenance: "Mantenimiento sin detener operación",
+                powerCooling: "Múltiples rutas (1 activa, 1 pasiva)",
+                faultTolerance: "Moderada a Alta",
+                cost: "$$$",
+                risk: "Bajo (Permite mantenimiento planificado sin cortes)",
+                idealFor: "Banca, SaaS, E-commerce, Hospitales",
+                image: "./imagenes/tier3.png",
+                description: "El estándar empresarial. Introducción de múltiples rutas de energía y refrigeración. Permite el 'mantenimiento concurrente': cualquier componente puede ser apagado para mantenimiento sin afectar el funcionamiento del TI, gracias a las rutas alternativas de respaldo.",
+                useCases: ["Banca y finanzas", "E-commerce y plataformas transaccionales", "Proveedores de SaaS / Nube privada", "Hospitales y operaciones 24/7"],
+                energy: "Múltiples rutas de distribución, UPS concurrentes, tableros duplicados que permiten aislamiento para mantenimiento.",
+                cooling: "Sistemas de agua helada redundantes con rutas alternas que soportan operaciones mientras se da servicio a una línea."
+            },
+            "tier-4": {
+                id: "tier-4",
+                name: "Tier IV",
+                subtitle: "Tolerancia a Fallos",
+                availability: "99.995%",
+                downtime: "26.3 minutos / año",
+                redundancy: "2N+1",
+                maintenance: "Sin impacto, tolera múltiples fallas",
+                powerCooling: "Múltiples rutas activas y aisladas",
+                faultTolerance: "Total (Soporta al menos un fallo grave)",
+                cost: "$$$$",
+                risk: "Mínimo (Aislamiento físico y lógico de fallos)",
+                idealFor: "Defensa, Gobierno, Hyperscalers",
+                image: "./imagenes/tier4.png",
+                description: "Diseñado para resistir eventos catastróficos simples sin interrupción. Cuenta con sistemas completamente duplicados (2N+1) físicamente aislados. Si ocurre un incendio o fallo masivo en una ruta, la otra asume el 100% de la carga automáticamente sin parpadeos.",
+                useCases: ["Banca internacional / Core bancario", "Telecomunicaciones de misión crítica", "Sector Defensa y Gobierno", "Hyperscalers (AWS, Azure, GCP core)"],
+                energy: "Líneas de acometida eléctrica independientes, sistemas 2N totalmente segregados en cuartos antifuego separados.",
+                cooling: "Almacenamiento térmico continuo, múltiples tuberías de refrigeración activas simultáneamente en rutas diferentes."
+            }
+        };
+
+        // --- Components ---
+
+        const Hero = () => (
+            <div className="text-center py-16 mb-8 relative">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700/50 text-accent text-sm font-medium mb-6">
+                    <IconActivity /> Arquitectura de Infraestructura
+                </div>
+                <h1 className="text-5xl md:text-6xl font-bold text-white tracking-tight mb-6">
+                    Niveles Tier en <span className="gradient-text">Data Centers</span>
+                </h1>
+                <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
+                    Comprende cómo se clasifican los centros de datos según su disponibilidad, redundancia y tolerancia a fallos para asegurar la continuidad operativa del negocio.
+                </p>
+            </div>
+        );
+
+        const TierCard = ({ tier, isActive, onClick }) => {
+            return (
+                <button
+                    onClick={onClick}
+                    className={`w-full text-left p-6 rounded-2xl transition-all duration-300 ${isActive
+                        ? 'glass-panel ring-2 ring-accent scale-[1.02]'
+                        : 'bg-panel/50 border border-slate-800 hover:border-slate-600 hover:bg-slate-800/50'
+                        }`}
+                >
+                    <div className="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 className={`text-2xl font-bold ${isActive ? 'text-white' : 'text-slate-300'}`}>
+                                {tier.name}
+                            </h3>
+                            <p className="text-accent font-medium text-sm mt-1">{tier.subtitle}</p>
+                        </div>
+                        <div className={`p-2 rounded-lg ${isActive ? 'bg-accent/20 text-accent' : 'bg-slate-800 text-slate-500'}`}>
+                            <IconServer />
+                        </div>
+                    </div>
+
+                    <div className="space-y-3 mt-6">
+                        <div className="flex items-center gap-3 text-sm text-slate-300">
+                            <IconActivity /> <span>Disp: <strong className="text-white">{tier.availability}</strong></span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-slate-300">
+                            <IconShield /> <span>Redundancia: <strong className="text-white">{tier.redundancy}</strong></span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-slate-300">
+                            <IconClock /> <span>Downtime: <strong className="text-white">{tier.downtime}</strong></span>
+                        </div>
+                    </div>
+                </button>
+            );
+        };
+
+        const DetailPanel = ({ tier }) => {
+            if (!tier) return null;
+
+            return (
+                <div className="glass-panel rounded-3xl overflow-hidden mt-8 animate-fade-in">
+                    <div className="grid md:grid-cols-2 gap-0">
+                        {/* Image Section */}
+                        <div className="relative bg-black/40 min-h-[400px]">
+                            <img
+                                src={tier.image}
+                                alt={`Ilustración técnica de ${tier.name}`}
+                                className="absolute inset-0 w-full h-full object-cover opacity-80 mix-blend-screen"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-panel via-transparent to-transparent"></div>
+
+                            <div className="absolute bottom-6 left-6 right-6">
+                                <div className="bg-black/60 backdrop-blur-md border border-slate-700 p-4 rounded-xl">
+                                    <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
+                                        <IconServer /> Topología Física
+                                    </h4>
+                                    <p className="text-sm text-slate-300">
+                                        {tier.powerCooling}. {tier.maintenance}.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Content Section */}
+                        <div className="p-8 lg:p-12">
+                            <div className="inline-block px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-semibold mb-6 tracking-wide uppercase">
+                                Especificación Técnica
+                            </div>
+                            <h2 className="text-3xl font-bold text-white mb-4">{tier.name}: {tier.subtitle}</h2>
+                            <p className="text-slate-300 mb-8 leading-relaxed">
+                                {tier.description}
+                            </p>
+
+                            <div className="grid grid-cols-2 gap-6 mb-8">
+                                <div>
+                                    <h4 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Energía (Power)</h4>
+                                    <div className="flex gap-2 items-start text-sm text-slate-200">
+                                        <IconZap className="text-yellow-500 shrink-0 w-5 h-5" />
+                                        <p>{tier.energy}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Refrigeración</h4>
+                                    <div className="flex gap-2 items-start text-sm text-slate-200">
+                                        <IconThermometer className="text-blue-400 shrink-0 w-5 h-5" />
+                                        <p>{tier.cooling}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="border-t border-slate-800 pt-6">
+                                <h4 className="text-white font-semibold mb-4">Casos de Uso Comunes</h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {tier.useCases.map((useCase, idx) => (
+                                        <span key={idx} className="bg-slate-800/80 border border-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-sm">
+                                            {useCase}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const EvolutionLine = ({ activeTier, setActiveTier }) => {
+            const tiersList = [
+                { id: 'tier-1', name: 'Tier I' },
+                { id: 'tier-2', name: 'Tier II' },
+                { id: 'tier-3', name: 'Tier III' },
+                { id: 'tier-4', name: 'Tier IV' }
+            ];
+
+            return (
+                <div className="py-12 relative">
+                    <h3 className="text-center text-slate-400 font-medium mb-8 uppercase tracking-widest text-sm">Evolución de Infraestructura</h3>
+                    <div className="flex items-center justify-between relative max-w-4xl mx-auto">
+                        {/* Line */}
+                        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-slate-800 via-accent to-slate-800 -z-10"></div>
+
+                        {tiersList.map((tier, idx) => {
+                            const isActive = activeTier === tier.id;
+                            return (
+                                <button
+                                    key={tier.id}
+                                    onClick={() => setActiveTier(tier.id)}
+                                    className="flex flex-col items-center gap-3 group cursor-pointer"
+                                >
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white transition-all duration-300 ${isActive
+                                            ? 'bg-accent border-2 border-highlight shadow-[0_0_20px_rgba(56,189,248,0.5)] scale-110'
+                                            : 'bg-panel border-2 border-slate-700 group-hover:border-accent shadow-none'
+                                        }`}>
+                                        {idx + 1}
+                                    </div>
+                                    <span className={`text-sm font-medium transition-colors ${isActive ? 'text-accent' : 'text-slate-400 group-hover:text-slate-200'}`}>
+                                        {tier.name}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <div className="flex justify-between max-w-4xl mx-auto mt-4 text-xs text-slate-500 font-medium px-4">
+                        <span>Menor Costo / Mayor Riesgo</span>
+                        <span>Mayor Complejidad / Menor Riesgo</span>
+                    </div>
+                </div>
+            );
+        };
+
+        const ComparisonTable = () => (
+            <div className="mt-20">
+                <h3 className="text-2xl font-bold text-white mb-8 flex items-center gap-3">
+                    <IconServer /> Matriz Comparativa
+                </h3>
+                <div className="overflow-x-auto glass-panel rounded-2xl">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-800/50 text-slate-300 text-sm uppercase tracking-wider">
+                                <th className="p-4 border-b border-slate-700">Tier</th>
+                                <th className="p-4 border-b border-slate-700">Disponibilidad</th>
+                                <th className="p-4 border-b border-slate-700">Redundancia</th>
+                                <th className="p-4 border-b border-slate-700">Mantenimiento</th>
+                                <th className="p-4 border-b border-slate-700">Tolerancia Fallos</th>
+                                <th className="p-4 border-b border-slate-700">Costo / Inversión</th>
+                            </tr>
+                        </thead>
+                        <tbody className="text-sm">
+                            {Object.values(tiersData).map((tier, idx) => (
+                                <tr key={tier.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                                    <td className="p-4 font-semibold text-white">{tier.name}</td>
+                                    <td className="p-4 text-accent">{tier.availability}</td>
+                                    <td className="p-4 text-slate-300">{tier.redundancy}</td>
+                                    <td className="p-4 text-slate-300">{tier.maintenance}</td>
+                                    <td className="p-4 text-slate-300">{tier.faultTolerance}</td>
+                                    <td className="p-4 text-green-400 font-mono">{tier.cost}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
+
+        const StrategicSection = () => (
+            <div className="mt-20 glass-panel p-8 md:p-12 rounded-3xl border-t-4 border-t-blue-500 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-10">
+                    <IconAlertTriangle className="w-48 h-48" />
+                </div>
+                <div className="relative z-10 max-w-3xl">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold mb-6 uppercase tracking-wider">
+                        Perspectiva Ejecutiva
+                    </div>
+                    <h2 className="text-3xl font-bold text-white mb-6">¿Siempre conviene ir a Tier IV?</h2>
+
+                    <div className="space-y-4 text-slate-300 leading-relaxed">
+                        <p>
+                            Desde una perspectiva de <strong>Arquitectura Empresarial</strong>, buscar el nivel más alto de Tier no siempre es la decisión financiera o técnica correcta. Un Data Center Tier IV puede costar más del doble de construir y operar que uno Tier III debido a la duplicación total de infraestructura física.
+                        </p>
+                        <p>
+                            La decisión debe basarse estrictamente en un <strong>Análisis de Impacto al Negocio (BIA)</strong>:
+                        </p>
+                        <ul className="list-disc pl-6 space-y-2 mt-4 mb-6 text-slate-200">
+                            <li>¿Cuánto dinero pierde la empresa por cada minuto de inactividad?</li>
+                            <li>¿Existe riesgo para vidas humanas (ej. hospitales)?</li>
+                            <li>¿El modelo de negocio requiere 100% de operatividad en todo momento (ej. trading de alta frecuencia)?</li>
+                        </ul>
+                        <p>
+                            Para el 90% de las grandes corporaciones, <strong>Tier III representa el punto de equilibrio óptimo</strong> entre costo e inversión, ofreciendo alta disponibilidad y mantenimiento concurrente sin la penalización financiera masiva de la tolerancia a fallos extrema del Tier IV. La infraestructura debe alinearse al impacto económico del negocio, no a la búsqueda técnica de la perfección.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- Main App ---
+        const App = () => {
+            const [activeTier, setActiveTier] = useState('tier-3'); // Tier III by default as it's the standard
+
+            return (
+                <div className="max-w-7xl mx-auto px-4 py-12 md:py-20 hero-bg">
+                    <Hero />
+                    <EvolutionLine activeTier={activeTier} setActiveTier={setActiveTier} />
+
+                    <div className="mt-16">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {Object.values(tiersData).map((tier) => (
+                                <TierCard
+                                    key={tier.id}
+                                    tier={tier}
+                                    isActive={activeTier === tier.id}
+                                    onClick={() => setActiveTier(tier.id)}
+                                />
+                            ))}
+                        </div>
+
+                        <DetailPanel tier={tiersData[activeTier]} />
+                    </div>
+
+                    <ComparisonTable />
+                    <StrategicSection />
+
+                    <footer className="mt-20 text-center text-slate-500 text-sm pb-8">
+                        <p>Diseño de Arquitectura de Infraestructura | Basado en referencias de Uptime Institute y estándares Hyperscaler</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
