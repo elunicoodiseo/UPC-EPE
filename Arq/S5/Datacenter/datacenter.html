@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datacenter - Mapa Interactivo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+
+        :root {
+            --bg-color: #0b0f19;
+            --text-color: #e2e8f0;
+            --accent-color: #00f2fe;
+            --accent-glow: rgba(0, 242, 254, 0.6);
+            --modal-bg: rgba(15, 23, 42, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+            background-image: radial-gradient(circle at top right, #1a233a, #0b0f19);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.5rem;
+            background: -webkit-linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        p.subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        /* Contenedor principal del mapa */
+        .map-container {
+            position: relative;
+            max-width: 1200px;
+            width: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+        }
+
+        .map-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Puntos interactivos (Hotspots) */
+        .hotspot {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px var(--accent-glow);
+            transition: all 0.3s ease;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        .hotspot::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid var(--accent-color);
+            animation: pulse 2s infinite cubic-bezier(0.66, 0, 0, 1);
+        }
+
+        .hotspot:hover {
+            transform: translate(-50%, -50%) scale(1.2);
+            background-color: #ffffff;
+        }
+
+        .hotspot-label {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .hotspot:hover .hotspot-label {
+            opacity: 1;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(2.5);
+                opacity: 0;
+            }
+        }
+
+        /* Modal Glassmorphism */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s ease;
+            z-index: 100;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--modal-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: translateY(30px);
+            transition: all 0.4s ease;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 2rem;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.3s;
+        }
+
+        .close-btn:hover {
+            color: #ffffff;
+        }
+
+        .modal-title {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #ffffff;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 0.5rem;
+        }
+
+        .modal-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-section h3 {
+            color: var(--accent-color);
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .modal-section p {
+            line-height: 1.6;
+            color: #cbd5e1;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .gallery-item {
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            background: #000;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.05);
+        }
+
+        .gallery-caption {
+            padding: 8px;
+            font-size: 0.8rem;
+            text-align: center;
+            background: rgba(15, 23, 42, 0.9);
+            color: #94a3b8;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        /* Instrucciones para el usuario (Solo visible en código para ajustar) */
+        .instruction-box {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-color);
+            max-width: 800px;
+        }
+
+        /* Footer Styles */
+        #footer {
+            margin-top: auto;
+            width: 100%;
+            border-top: 1px solid var(--glass-border);
+            padding: 2rem 0;
+            text-align: center;
+            background: rgba(11, 15, 25, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .footer-copy {
+            color: #ffffff;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="map-container">
+        <!-- Imagen del Mapa -->
+        <img src="mapa_datacenter.png" alt="Plano del Datacenter" class="map-image" id="datacenterMap">
+
+        <!-- Contenedor donde se inyectarán los hotspots -->
+        <div id="hotspots-container"
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
+    </div>
+
+    <!-- Modal Glassmorphism -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <button class="close-btn" id="closeBtn">&times;</button>
+            <h2 class="modal-title" id="modalTitle">Componente</h2>
+
+            <div class="modal-section">
+                <h3>Definición</h3>
+                <p id="modalDef">Definición aquí...</p>
+            </div>
+
+            <div class="modal-section">
+                <h3>Uso y Función Principal</h3>
+                <p id="modalUse">Uso aquí...</p>
+            </div>
+
+            <div class="modal-section">
+                <h3>Equipos Reales (Marcas Reconocidas)</h3>
+                <div class="gallery" id="modalGallery">
+                    <!-- Imágenes inyectadas por JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Datos de los componentes del Datacenter (Marcas reconocidas y fuentes confiables)
+        const componentsData = [
+            {
+                id: "servidores",
+                name: "Servidores (Racks de Cómputo)",
+                // ¡IMPORTANTE! Ajusta 'top' y 'left' para alinear el punto con tu imagen (escribe solo el número, ej. 300)
+                position: { top: 325, left: 475 },
+                definition: "Equipos informáticos de alto rendimiento diseñados para procesar datos, alojar aplicaciones web, bases de datos y servicios en la nube de forma ininterrumpida.",
+                use: "Son el 'cerebro' del datacenter. Se utilizan para ejecutar máquinas virtuales, almacenar datos críticos y responder a las peticiones de los usuarios. En entornos empresariales, destacan marcas como Dell, Hewlett Packard Enterprise (HPE) y Lenovo.",
+                images: [
+                    { src: "imagenes/server.png", caption: "Servidores Empresariales en Rack" }
+                ]
+            },
+            {
+                id: "switches",
+                name: "Sala de Telecomunicaciones",
+                position: { top: 210, left: 285 },
+                definition: "Dispositivos de red de alta velocidad que conectan todos los servidores y equipos de almacenamiento entre sí, formando la topología interna (LAN) del centro de datos.",
+                use: "Permiten el enrutamiento eficiente de los paquetes de datos con bajísima latencia. Marcas líderes como Cisco (serie Nexus), Juniper Networks o Arista dominan este segmento para evitar cuellos de botella en el tráfico de red (East-West traffic).",
+                images: [
+                    { src: "imagenes/switch.png", caption: "Switch de Red de Alta Densidad" }
+                ]
+            },
+            {
+                id: "ups",
+                name: "Sistema UPS (Alimentación Ininterrumpida)",
+                position: { top: 394, left: 1018 },
+                definition: "Sistemas de baterías a gran escala que proporcionan energía eléctrica limpia y de respaldo instantáneo en caso de un corte del suministro de la red pública.",
+                use: "Evitan que los servidores se apaguen de golpe. Mantienen el datacenter encendido durante los minutos críticos necesarios para que los generadores diésel arranquen y tomen la carga. Fabricantes reconocidos incluyen APC (Schneider Electric) y Eaton.",
+                images: [
+                    { src: "imagenes/ups.png", caption: "Sistema UPS Industrial de Gran Escala" }
+                ]
+            },
+            {
+                id: "cooling",
+                name: "Sistemas de Refrigeración (CRAC/CRAH)",
+                position: { top: 120, left: 713 },
+                definition: "Sistemas de precisión de Aire Acondicionado para Salas de Ordenadores (CRAC), diseñados para mantener la temperatura y humedad estrictamente controladas.",
+                use: "Los equipos informáticos generan un calor extremo. Estos sistemas utilizan configuraciones de pasillo frío/caliente, suelos técnicos o refrigeración líquida directa para evitar el sobrecalentamiento y la falla de hardware. Marcas como Vertiv (Liebert) o Stulz son líderes del mercado.",
+                images: [
+                    { src: "imagenes/cooling.png", caption: "Contención de Pasillo Frío (CRAC)" }
+                ]
+            },
+            {
+                id: "generador",
+                name: "Generador Eléctrico",
+                position: { top: 550, left: 1123 },
+                definition: "Motor diésel de grado industrial acoplado a un alternador que proporciona energía de respaldo masiva a toda la instalación.",
+                use: "En caso de un apagón prolongado de la red pública, este generador arranca automáticamente (en segundos) para asumir la carga total del Datacenter mientras el combustible dure. Proveedores destacados son Caterpillar, Cummins y Kohler.",
+                images: [
+                    { src: "imagenes/generador.png", caption: "Generador Diésel de Respaldo" }
+                ]
+            },
+            {
+                id: "tableros",
+                name: "Tableros Eléctricos (PDU/ATS)",
+                position: { top: 660, left: 780 },
+                definition: "Paneles de distribución de energía (PDU) y tableros de transferencia automática (ATS) que controlan el flujo eléctrico hacia todos los equipos.",
+                use: "Son los encargados de distribuir la energía limpia desde los UPS hacia cada uno de los racks. Marcas reconocidas en infraestructura eléctrica son Eaton, Siemens y Schneider Electric.",
+                images: [
+                    { src: "imagenes/panel.png", caption: "Tablero de Distribución Eléctrica Principal" }
+                ]
+            },
+            {
+                id: "noc",
+                name: "Sala de Monitoreo (NOC)",
+                position: { top: 570, left: 750 },
+                definition: "Network Operations Center (NOC). Es la sala donde los ingenieros supervisan el estado de toda la infraestructura 24/7.",
+                use: "Se utilizan pantallas gigantes e interfaces de software tipo DCIM (Data Center Infrastructure Management) para vigilar la temperatura, red, energía y seguridad. Ejemplos de software: SolarWinds, PRTG, o Datadog.",
+                images: [
+                    { src: "imagenes/noc.png", caption: "Sala de Monitoreo de Operaciones (NOC)" }
+                ]
+            },
+            {
+                id: "seguridad",
+                name: "Control de Acceso y Seguridad",
+                position: { top: 415, left: 105 },
+                definition: "Sistemas de seguridad física de múltiples capas, que incluyen cámaras CCTV, lectores biométricos y torniquetes antitraumáticos.",
+                use: "Garantizan que únicamente el personal autorizado ingrese a zonas críticas, previniendo sabotaje o robo de datos (mantraps, escáner de retina/huellas). Marcas: HID Global, Bosch Security.",
+                images: [
+                    { src: "imagenes/security.png", caption: "Acceso Seguro mediante Biometría" }
+                ]
+            },
+            {
+                id: "incendios",
+                name: "Sistema Contra Incendios",
+                position: { top: 640, left: 310 },
+                definition: "Sistemas de detección temprana (VESDA) y extinción de incendios a base de gases limpios.",
+                use: "Diseñados para apagar fuegos rápidamente reduciendo el oxígeno o el calor, pero sin usar agua (que destruiría los servidores) y sin dejar residuos (como gas FM-200 o Novec 1230).",
+                images: [
+                    { src: "imagenes/fire.png", caption: "Sistema de Extinción por Gas Limpio" }
+                ]
+            },
+            {
+                id: "dcim",
+                name: "Sistema de Gestión de Infraestructura (DCIM / BMS)",
+                position: { top: 633, left: 580 },
+                definition: "Data Center Infrastructure Management (DCIM) o Building Management System (BMS). Plataforma de software que centraliza la monitorización de todos los equipos del centro de datos.",
+                use: "Permite visualizar en tiempo real mapas de calor, consumo eléctrico, estado de las baterías UPS, fallas de red y seguridad. Automatiza las alarmas para que los ingenieros actúen antes de una caída.",
+                images: [
+                    { src: "imagenes/dcim.png", caption: "Dashboard DCIM de Monitorización" }
+                ]
+            },
+            {
+                id: "torres",
+                name: "Torres de Enfriamiento (Disipación de Calor)",
+                position: { top: 125, left: 965 },
+                definition: "Sistemas industriales situados generalmente en el exterior (techo del edificio) que utilizan agua y aire para extraer el calor recogido del interior del centro de datos.",
+                use: "El calor masivo generado por los servidores es transportado mediante tuberías (chillers) hacia estas torres, donde el agua caliente se enfría por evaporación y el calor se expulsa a la atmósfera.",
+                images: [
+                    { src: "imagenes/torres.png", caption: "Torres de Enfriamiento en Techo" }
+                ]
+            }
+        ];
+
+        const container = document.getElementById('hotspots-container');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const closeBtn = document.getElementById('closeBtn');
+
+        // Elementos del modal a actualizar
+        const modalTitle = document.getElementById('modalTitle');
+        const modalDef = document.getElementById('modalDef');
+        const modalUse = document.getElementById('modalUse');
+        const modalGallery = document.getElementById('modalGallery');
+
+        // Generar los puntos interactivos
+        componentsData.forEach(comp => {
+            const hotspot = document.createElement('div');
+            hotspot.className = 'hotspot';
+            hotspot.style.top = typeof comp.position.top === 'number' ? comp.position.top + 'px' : comp.position.top;
+            hotspot.style.left = typeof comp.position.left === 'number' ? comp.position.left + 'px' : comp.position.left;
+
+            const label = document.createElement('span');
+            label.className = 'hotspot-label';
+            label.textContent = comp.name;
+            hotspot.appendChild(label);
+
+            // Evento Click
+            hotspot.addEventListener('click', () => openModal(comp));
+
+            container.appendChild(hotspot);
+        });
+
+        function openModal(data) {
+            // Rellenar datos
+            modalTitle.textContent = data.name;
+            modalDef.textContent = data.definition;
+            modalUse.textContent = data.use;
+
+            // Generar galería
+            modalGallery.innerHTML = '';
+            data.images.forEach(img => {
+                const item = document.createElement('div');
+                item.className = 'gallery-item';
+                item.innerHTML = `
+                    <img src="${img.src}" alt="${img.caption}" onerror="this.src='https://via.placeholder.com/400x300/1a233a/00f2fe?text=Imagen+No+Disponible'">
+                    <div class="gallery-caption">${img.caption}</div>
+                `;
+                modalGallery.appendChild(item);
+            });
+
+            // Mostrar modal
+            modalOverlay.classList.add('active');
+        }
+
+        // Cerrar modal
+        closeBtn.addEventListener('click', () => {
+            modalOverlay.classList.remove('active');
+        });
+
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                modalOverlay.classList.remove('active');
+            }
+        });
+
+        // Tecla Escape para cerrar
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
+                modalOverlay.classList.remove('active');
+            }
+        });
+
+    </script>
+
+    <!-- ===== FOOTER ===== -->
+    <footer id="footer">
+        <div class="footer-inner">
+            <p class="footer-copy">© 2026 — Experiencia Técnica Interactiva. Fines educativos - Luis Torrejón Arias.</p>
+        </div>
+    </footer>
+</body>
+
+</html>
