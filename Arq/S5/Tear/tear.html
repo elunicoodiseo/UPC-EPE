@@ -190,19 +190,6 @@
 
         // --- Components ---
 
-        const Hero = () => (
-            <div className="text-center py-16 mb-8 relative">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700/50 text-accent text-sm font-medium mb-6">
-                    <IconActivity /> Arquitectura de Infraestructura
-                </div>
-                <h1 className="text-5xl md:text-6xl font-bold text-white tracking-tight mb-6">
-                    Niveles Tier en <span className="gradient-text">Data Centers</span>
-                </h1>
-                <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
-                    Comprende cómo se clasifican los centros de datos según su disponibilidad, redundancia y tolerancia a fallos para asegurar la continuidad operativa del negocio.
-                </p>
-            </div>
-        );
 
         const TierCard = ({ tier, isActive, onClick }) => {
             return (
@@ -319,8 +306,18 @@
             ];
 
             return (
-                <div className="py-12 relative">
-                    <h3 className="text-center text-slate-400 font-medium mb-8 uppercase tracking-widest text-sm">Evolución de Infraestructura</h3>
+                <div className="pb-12 pt-8 relative">
+                    <div className="text-center mb-16">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700/50 text-accent text-sm font-medium mb-6">
+                            <IconActivity /> Arquitectura de Infraestructura
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-4">
+                            Niveles Tier en <span className="gradient-text">Data Centers</span>
+                        </h1>
+                        <p className="text-slate-400 max-w-2xl mx-auto text-lg">
+                            Evolución de disponibilidad, redundancia y tolerancia a fallos
+                        </p>
+                    </div>
                     <div className="flex items-center justify-between relative max-w-4xl mx-auto">
                         {/* Line */}
                         <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-slate-800 via-accent to-slate-800 -z-10"></div>
@@ -421,11 +418,10 @@
 
         // --- Main App ---
         const App = () => {
-            const [activeTier, setActiveTier] = useState('tier-3'); // Tier III by default as it's the standard
+            const [activeTier, setActiveTier] = useState('tier-1'); // Tier I by default
 
             return (
                 <div className="max-w-7xl mx-auto px-4 py-12 md:py-20 hero-bg">
-                    <Hero />
                     <EvolutionLine activeTier={activeTier} setActiveTier={setActiveTier} />
 
                     <div className="mt-16">
