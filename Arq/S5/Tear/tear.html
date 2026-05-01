@@ -44,8 +44,8 @@
 
         .glass-panel {
             background: rgba(15, 23, 42, 0.7);
-            backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(16px);
             border: 1px solid rgba(14, 165, 233, 0.15);
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
@@ -60,14 +60,16 @@
                 linear-gradient(90deg, rgba(14, 165, 233, 0.05) 1px, transparent 1px);
             background-size: 40px 40px;
             background-position: center top;
-            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
             -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
         }
 
         .gradient-text {
             background: linear-gradient(to right, #38bdf8, #818cf8);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
+            color: transparent;
         }
 
         .animate-fade-in {
@@ -332,8 +334,8 @@
                                     className="flex flex-col items-center gap-3 group cursor-pointer"
                                 >
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white transition-all duration-300 ${isActive
-                                            ? 'bg-accent border-2 border-highlight shadow-[0_0_20px_rgba(56,189,248,0.5)] scale-110'
-                                            : 'bg-panel border-2 border-slate-700 group-hover:border-accent shadow-none'
+                                        ? 'bg-accent border-2 border-highlight shadow-[0_0_20px_rgba(56,189,248,0.5)] scale-110'
+                                        : 'bg-panel border-2 border-slate-700 group-hover:border-accent shadow-none'
                                         }`}>
                                         {idx + 1}
                                     </div>
