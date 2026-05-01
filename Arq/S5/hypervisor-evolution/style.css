@@ -529,7 +529,7 @@ button {
 
 /* TIMELINE */
 #timeline {
-  padding: 5rem 2rem 4rem;
+  padding: 10rem 2rem 18rem;
   background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%)
 }
 
@@ -1142,6 +1142,50 @@ button {
 #modal-close:hover {
   background: rgba(255, 255, 255, .15);
   color: #fff
+}
+
+/* MODAL NAV BUTTONS */
+.modal-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  color: #006eff;
+  border: none;
+  cursor: pointer;
+  z-index: 1000;
+  opacity: 0.7;
+  transition: opacity 0.3s, transform 0.3s, color 0.3s;
+  padding: 10px;
+  display: none;
+}
+
+.modal-nav-btn:hover {
+  opacity: 1;
+  color: #ff3366;
+  transform: translateY(-50%) scale(1.15);
+}
+
+#modal-nav-prev {
+  left: max(15px, calc(50% - 460px));
+}
+
+#modal-nav-next {
+  right: max(15px, calc(50% - 460px));
+}
+
+@media (max-width: 950px) {
+  #modal-nav-prev {
+    left: 5px;
+  }
+
+  #modal-nav-next {
+    right: 5px;
+  }
+
+  .modal-nav-btn svg {
+    width: 36px;
+  }
 }
 
 #modal-content {

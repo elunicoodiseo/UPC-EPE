@@ -287,8 +287,11 @@ function initParticles(){
 }
 
 // ===== MODAL =====
+let currentTimelineKey = null;
+
 function openModal(id){
   const d=TIMELINE_DATA[id];if(!d)return;
+  currentTimelineKey = id;
   const facts=d.facts.map(f=>`<div class="modal-fact"><div class="fact-label">${f.l}</div><div class="fact-val">${f.v}</div></div>`).join('');
   const tags=d.tags.map(t=>`<span class="modal-tag">${t}</span>`).join('');
   const gallery=(d.gallery||[]).map((g,i)=>`
@@ -308,8 +311,38 @@ function openModal(id){
     <div class="modal-body">${d.body}</div>
     <div class="modal-facts">${facts}</div>
     <div class="modal-tags">${tags}</div>`;
+  
+  const prevBtn = document.getElementById('modal-nav-prev');
+  const nextBtn = document.getElementById('modal-nav-next');
+  if(prevBtn) prevBtn.style.display = 'block';
+  if(nextBtn) nextBtn.style.display = 'block';
+
   document.getElementById('modal-overlay').classList.add('open');
   document.body.style.overflow='hidden';
+}
+
+function prevModal(event) {
+  if(event) event.stopPropagation();
+  if(!currentTimelineKey) return;
+  const keys = Object.keys(TIMELINE_DATA);
+  const idx = keys.indexOf(currentTimelineKey);
+  if (idx > 0) {
+    openModal(keys[idx - 1]);
+  } else if (idx === 0) {
+    openModal(keys[keys.length - 1]);
+  }
+}
+
+function nextModal(event) {
+  if(event) event.stopPropagation();
+  if(!currentTimelineKey) return;
+  const keys = Object.keys(TIMELINE_DATA);
+  const idx = keys.indexOf(currentTimelineKey);
+  if (idx >= 0 && idx < keys.length - 1) {
+    openModal(keys[idx + 1]);
+  } else if (idx === keys.length - 1) {
+    openModal(keys[0]);
+  }
 }
 function setModalImg(url,cap){
   const img=document.getElementById('modal-main-img');
@@ -410,6 +443,11 @@ function openCompModal(idx){
     </div>
     <div class="modal-tags">${badges}</div>`;
     
+  const prevBtn = document.getElementById('modal-nav-prev');
+  const nextBtn = document.getElementById('modal-nav-next');
+  if(prevBtn) prevBtn.style.display = 'none';
+  if(nextBtn) nextBtn.style.display = 'none';
+
   document.getElementById('modal-overlay').classList.add('open');
   document.body.style.overflow='hidden';
 }
@@ -444,16 +482,28 @@ function initScrollAnimations(){
 function initNavHighlight(){
   const sections=document.querySelectorAll('section[id]');
   const links=document.querySelectorAll('.nav-links a');
-  const obs=new IntersectionObserver(entries=>{
-    entries.forEach(e=>{
-      if(e.isIntersecting){
-        links.forEach(l=>{
-          l.style.color=l.getAttribute('href')==='#'+e.target.id?'var(--cyan)':'';
-        });
-      }
+  
+  const updateNav = () => {
+    let current = '';
+    // Si estamos al principio de la página, forzar la primera sección
+    if (window.scrollY < 50 && sections.length > 0) {
+      current = sections[0].getAttribute('id');
+    } else {
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        if (window.scrollY >= sectionTop - 250) {
+          current = section.getAttribute('id');
+        }
+      });
+    }
+
+    links.forEach(l => {
+      l.style.color = l.getAttribute('href') === '#' + current ? 'var(--cyan)' : '';
     });
-  },{threshold:.4});
-  sections.forEach(s=>obs.observe(s));
+  };
+
+  window.addEventListener('scroll', updateNav);
+  updateNav(); // Configurar al cargar
 }
 
 // ===== INIT =====
