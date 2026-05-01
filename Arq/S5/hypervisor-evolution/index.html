@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>La Evolución del Hypervisor | Historia Interactiva de Tecnología</title>
+  <meta name="description"
+    content="Explora la historia completa del hypervisor — desde los mainframes de IBM hasta las microVMs modernas en la nube. Una experiencia documental técnica interactiva y premium." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Manrope:wght@300;400;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- ===== NAV ===== -->
+  <nav id="main-nav">
+    <div class="nav-logo">
+      <span class="logo-icon">⬡</span>
+      <span>HyperVisor<em>.historia</em></span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#timeline">Línea de Tiempo</a></li>
+      <li><a href="#architecture">Arquitectura</a></li>
+      <li><a href="#comparator">Comparar</a></li>
+      <li><a href="#impact">Impacto</a></li>
+    </ul>
+  </nav>
+
+  <!-- ===== HERO ===== -->
+  <section id="hero">
+    <div class="hero-bg">
+      <div class="hero-orb orb-1"></div>
+      <div class="hero-orb orb-2"></div>
+      <div class="hero-orb orb-3"></div>
+      <canvas id="particle-canvas"></canvas>
+      <div class="grid-overlay"></div>
+    </div>
+
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Documental Técnico Interactivo
+      </div>
+      <h1 class="hero-title">
+        <span class="title-line-1">LA EVOLUCIÓN DEL</span>
+        <span class="title-line-2 gradient-text">HYPERVISOR</span>
+      </h1>
+    </div>
+  </section>
+
+  <!-- ===== TIMELINE ===== -->
+  <section id="timeline">
+    <div class="section-header">
+      <div class="section-label">01 — Línea de Tiempo Histórica</div>
+      <h2>Seis Décadas de <span class="gradient-text">Virtualización</span></h2>
+      <p>Haz clic en cualquier era para explorar la historia completa</p>
+    </div>
+
+    <div class="timeline-wrapper">
+      <div class="timeline-track">
+        <div class="timeline-line"></div>
+
+        <!-- Nodos de la línea de tiempo -->
+        <div class="tl-node" data-id="1960" style="left:3%">
+          <div class="tl-year-label">1960s</div>
+          <button class="tl-dot" onclick="openModal('1960')">
+            <img class="tl-thumb" src="images/era_1960.png" alt="Mainframes">
+            <span class="tl-pulse"></span>
+          </button>
+          <div class="tl-label">Mainframes</div>
+        </div>
+
+        <div class="tl-node" data-id="1972" style="left:14%">
+          <div class="tl-year-label">1972</div>
+          <button class="tl-dot" onclick="openModal('1972')">
+            <img class="tl-thumb" src="images/era_1972.png" alt="VM/370">
+            <span class="tl-pulse"></span>
+          </button>
+          <div class="tl-label">VM/370</div>
+        </div>
+
+        <div class="tl-node" data-id="1990" style="left:26%">
+          <div class="tl-year-label">1990s</div>
+          <button class="tl-dot" onclick="openModal('1990')">
+            <img class="tl-thumb" src="images/era_1990.png" alt="x86">
+            <span class="tl-pulse"></span>
+          </button>
+          <div class="tl-label">Problema x86</div>
+        </div>
+
+        <div class="tl-node" data-id="1998" style="left:38%">
+          <div class="tl-year-label featured-year">1998</div>
+          <button class="tl-dot featured" onclick="openModal('1998')">
+            <img class="tl-thumb" src="images/era_1998.png" alt="VMware">
+            <span class="tl-pulse"></span>
+          </button>
+          <div class="tl-label">VMware</div>
+        </div>
+
+        <div class="tl-node" data-id="2003" style="left:50%">
+          <div class="tl-year-label">2003–08</div>
+          <button class="tl-dot" onclick="openModal('2003')">
+            <img class="tl-thumb" src="images/era_2003.png" alt="Enterprise">
+            <span class="tl-pulse"></span>
+          </button>
+          <div class="tl-label">Empresarial</div>
+        </div>
+
+        <div class="tl-node" data-id="2005" style="left:62%">
+          <div class="tl-year-label">2005–06</div>
+          <button class="tl-dot" onclick="openModal('2005')">
+            <img class="tl-thumb" src="images/era_2005.png" alt="VT-x">
+            <span class="tl-pulse"></span>
+          </button>
+          <div class="tl-label">HW-Asistido</div>
+        </div>
+
+        <div class="tl-node" data-id="2008" style="left:74%">
+          <div class="tl-year-label featured-year">2008–15</div>
+          <button class="tl-dot featured" onclick="openModal('2008')">
+            <img class="tl-thumb" src="images/era_2008.png" alt="Cloud">
+            <span class="tl-pulse"></span>
+          </button>
+          <div class="tl-label">Era Cloud</div>
+        </div>
+
+        <div class="tl-node" data-id="2015" style="left:85%">
+          <div class="tl-year-label">2015–20</div>
+          <button class="tl-dot" onclick="openModal('2015')">
+            <img class="tl-thumb" src="images/era_2015.png" alt="Contenedores">
+            <span class="tl-pulse"></span>
+          </button>
+          <div class="tl-label">Contenedores</div>
+        </div>
+
+        <div class="tl-node" data-id="2020" style="left:96%">
+          <div class="tl-year-label featured-year">2020+</div>
+          <button class="tl-dot featured" onclick="openModal('2020')">
+            <img class="tl-thumb" src="images/era_2020.png" alt="MicroVMs">
+            <span class="tl-pulse"></span>
+          </button>
+          <div class="tl-label">MicroVMs</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-hint">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      Haz clic en cualquier nodo para explorar su historia completa
+    </div>
+  </section>
+
+  <!-- ===== ARCHITECTURE ===== -->
+  <section id="architecture">
+    <div class="section-header">
+      <div class="section-label">02 — Evolución de la Arquitectura</div>
+      <h2>Cómo Funcionan los <span class="gradient-text">Hypervisores</span></h2>
+      <p>Explora el entorno interno y la gestión de recursos en tiempo real</p>
+    </div>
+
+    <div id="react-arch-root" style="margin-top: 2rem;"></div>
+  </section>
+
+  <!-- ===== COMPARATOR ===== -->
+  <section id="comparator">
+    <div class="section-header">
+      <div class="section-label">03 — Comparador de Tecnologías</div>
+      <h2>Comparación <span class="gradient-text">Cara a Cara</span></h2>
+      <p>Compara las principales tecnologías de hypervisor</p>
+    </div>
+
+    <div class="comparator-grid" id="comparator-grid">
+      <!-- completado por JS -->
+    </div>
+  </section>
+
+  <!-- ===== IMPACT ===== -->
+  <section id="impact">
+    <div class="section-header">
+      <div class="section-label">04 — Impacto Moderno</div>
+      <h2>El Hypervisor <span class="gradient-text">lo Cambió Todo</span></h2>
+      <p>Cómo la virtualización habilitó el internet moderno</p>
+    </div>
+
+    <div class="impact-grid" id="impact-grid">
+      <!-- completado por JS -->
+    </div>
+
+    <div class="impact-quote">
+      <blockquote>
+        "Sin el hypervisor, no hay nube. Sin la nube, no hay internet moderno."
+      </blockquote>
+      <cite>— La Historia de la Infraestructura</cite>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer id="footer">
+    <div class="footer-inner">
+      <div class="footer-refs">
+        <strong>Referencias Históricas:</strong>
+        IBM CP-40 (1967) · IBM VM/370 (1972) · VMware Inc. (1998) · Proyecto Xen (2003) ·
+        Intel VT-x (2005) · AMD-V (2006) · KVM (2007) · AWS EC2 (2006) · Docker (2013) ·
+        AWS Nitro (2017) · Firecracker (2018)
+      </div>
+      <p class="footer-copy">© 2026 — Experiencia Técnica Interactiva. Fines educativos - Luis Torrejón Arias.</p>
+    </div>
+  </footer>
+
+  <!-- ===== MODAL ===== -->
+  <div id="modal-overlay" onclick="closeModal()">
+    <div id="modal-box" onclick="event.stopPropagation()">
+      <button id="modal-close" onclick="closeModal()">✕</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+
+  <!-- Scripts para la integración de React (Hypervisor Architect Pro) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      corePlugins: { preflight: false }, // Evita que Tailwind rompa los estilos nativos de la web
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              950: '#020617',
+              900: '#0f172a',
+              800: '#1e293b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Importaciones UMD de React y Lucide para funcionamiento local (file://) sin errores de CORS -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Parche para que Lucide-React UMD encuentre la dependencia 'react' en el navegador -->
+  <script>window.react = window.React;</script>
+  <script src="https://unpkg.com/lucide-react@0.477.0/dist/umd/lucide-react.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = window.React;
+    const { createRoot } = window.ReactDOM;
+
+    // Fallback de iconos por si la versión UMD cambia nombres o elimina alguno (evita React Error 130)
+    const FallbackIcon = ({ size = 24, className }) => <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /></svg>;
+    const getIcon = (name) => window.LucideReact?.[name] || FallbackIcon;
+
+    const Cpu = getIcon('Cpu');
+    const Server = getIcon('Server');
+    const Settings = getIcon('Settings');
+    const Monitor = getIcon('Monitor');
+    const Zap = getIcon('Zap');
+    const Database = getIcon('Database');
+    const Activity = getIcon('Activity');
+    const Plus = getIcon('Plus');
+    const Trash2 = getIcon('Trash2');
+    const Info = getIcon('Info');
+    const ChevronRight = getIcon('ChevronRight');
+    const Wifi = getIcon('Wifi');
+    const HardDrive = window.LucideReact?.HardDrive || window.LucideReact?.Server || FallbackIcon;
+    const Terminal = getIcon('Terminal');
+    // En versiones modernas de Lucide, BarChart3 puede llamarse ChartBar o ChartColumn
+    const BarChart3 = window.LucideReact?.BarChart3 || window.LucideReact?.ChartBar || window.LucideReact?.ChartColumn || FallbackIcon;
+    const X = getIcon('X');
+    const BookOpen = getIcon('BookOpen');
+
+    const App = () => {
+      const [type, setType] = useState(1); // 1: Bare Metal, 2: Hosted
+      const [vms, setVms] = useState([
+        { id: 1, name: 'Web Server', cpu: 20, ram: 1024, disk: 20, status: 'running', color: 'text-blue-400' },
+        { id: 2, name: 'DB Cluster', cpu: 35, ram: 4096, disk: 100, status: 'running', color: 'text-emerald-400' }
+      ]);
+      const [activeInstruction, setActiveInstruction] = useState(null);
+      const [logs, setLogs] = useState(["[SISTEMA] Hipervisor inicializado...", "[SISTEMA] Esperando peticiones de Guest OS..."]);
+      const [selectedInfo, setSelectedInfo] = useState(null);
+      const logEndRef = useRef(null);
+
+      const infoDetails = {
+        vm: { title: "Máquina Virtual (Guest OS)", desc: "Es un entorno de computación que emula un sistema físico completo. Cada VM corre su propio núcleo (kernel) y aplicaciones de forma aislada.", technical: "El Guest OS cree que tiene acceso directo al hardware, pero en realidad sus instrucciones privilegiadas son interceptadas por el Hipervisor.", icon: <Monitor className="text-blue-400" /> },
+        vmm: { title: "Virtual Machine Monitor (VMM)", desc: "El corazón del hipervisor. Es la capa de software que crea, gestiona y arbitra el acceso a los recursos físicos para las máquinas virtuales.", technical: "Opera en 'Ring -1', un nivel de privilegio superior al kernel normal para poder interceptar llamadas al sistema (Syscalls).", icon: <Settings className="text-indigo-400" /> },
+        interrupt: { title: "Interrupt Handler", desc: "Gestiona las señales enviadas por el hardware o el software cuando necesitan atención inmediata.", technical: "En virtualización, el manejador debe decidir si una interrupción pertenece a una VM específica o si es una interrupción física.", icon: <Zap className="text-yellow-400" /> },
+        memory: { title: "Memory Shadowing", desc: "Técnica para gestionar la memoria RAM de las máquinas virtuales.", technical: "Mantiene 'Shadow Page Tables' que traducen las direcciones de memoria virtuales de la VM a direcciones físicas reales del hardware de forma segura.", icon: <Database className="text-emerald-400" /> },
+        hardware: { title: "Hardware Físico (Bare Metal)", desc: "Los componentes electrónicos reales: Procesadores (CPU), Memoria (RAM) y Almacenamiento (SSD/HDD).", technical: "Gracias a tecnologías como Intel VT-x o AMD-V, el hardware actual tiene circuitos específicos para ayudar al hipervisor a ser más rápido.", icon: <Cpu className="text-red-400" /> },
+        vswitch: { title: "Switch Virtual (vSwitch)", desc: "Permite que las VMs se comuniquen entre sí y con el mundo exterior (Internet).", technical: "Funciona en la capa 2 del modelo OSI. El hipervisor crea tarjetas de red virtuales (vNIC) y las conecta a este switch lógico.", icon: <Wifi className="text-blue-500" /> },
+        host_os: { title: "Host Operating System", desc: "Solo presente en Hipervisores de Tipo 2. Es el sistema operativo base (Windows, macOS, Linux).", technical: "El hipervisor compite por recursos con otras aplicaciones del sistema operativo anfitrión, lo que introduce una capa de latencia extra.", icon: <HardDrive className="text-slate-400" /> }
+      };
+
+      const TOTAL_CPU_CORES = 8; const TOTAL_RAM_GB = 16; const TOTAL_DISK_GB = 500;
+
+      const stats = React.useMemo(() => {
+        const runningVms = vms.filter(v => v.status === 'running');
+        const cpuLoad = runningVms.reduce((acc, vm) => acc + vm.cpu, 0);
+        const ramLoad = runningVms.reduce((acc, vm) => acc + vm.ram, 0) / (TOTAL_RAM_GB * 1024) * 100;
+        const diskLoad = vms.reduce((acc, vm) => acc + vm.disk, 0) / TOTAL_DISK_GB * 100;
+        return { cpuLoad, ramLoad, diskLoad };
+      }, [vms]);
+
+      const addLog = (msg) => { setLogs(prev => [...prev.slice(-14), `[${new Date().toLocaleTimeString()}] ${msg}`]); };
+
+      useEffect(() => {
+        const interval = setInterval(() => {
+          const runningVms = vms.filter(v => v.status === 'running');
+          if (runningVms.length > 0) {
+            const randomVm = runningVms[Math.floor(Math.random() * runningVms.length)];
+            const types = ['LECTURA DISCO', 'CÁLCULO CPU', 'PAQUETE RED', 'ACCESO RAM'];
+            const selectedType = types[Math.floor(Math.random() * types.length)];
+            setActiveInstruction({ from: randomVm.id, type: selectedType, timestamp: Date.now() });
+            if (Math.random() > 0.7) { addLog(`Interceptada interrupción de ${randomVm.name}: ${selectedType}`); }
+          }
+        }, 2500);
+        return () => clearInterval(interval);
+      }, [vms]);
+
+      const addVm = () => {
+        if (vms.length >= 4) return;
+        const newVm = { id: Date.now(), name: `VM-${vms.length + 1}`, cpu: 15, ram: 1024, disk: 40, status: 'running', color: 'text-purple-400' };
+        setVms([...vms, newVm]); addLog(`Nueva instancia: ${newVm.name}`);
+      };
+
+      const removeVm = (id) => {
+        const vm = vms.find(v => v.id === id);
+        setVms(vms.filter(vm => vm.id !== id)); addLog(`Recursos liberados de ${vm.name}`);
+      };
+
+      const toggleVmStatus = (id) => {
+        setVms(vms.map(vm => {
+          if (vm.id === id) {
+            const newStatus = vm.status === 'running' ? 'paused' : 'running';
+            addLog(`${vm.name} ahora está ${newStatus.toUpperCase()}`);
+            return { ...vm, status: newStatus };
+          }
+          return vm;
+        }));
+      };
+
+      return (
+        <div className="bg-slate-950 text-slate-100 p-4 md:p-6 font-sans selection:bg-blue-500/30 rounded-2xl shadow-2xl border border-slate-800">
+          <header className="max-w-7xl mx-auto mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent flex items-center gap-3">
+                <Server className="text-blue-400" size={28} />
+                HYPERVISOR ARCHITECT PRO
+              </h1>
+              <p className="text-slate-500 text-xs mt-1 flex items-center gap-1 italic">
+                <Info size={12} /> Haz clic en los componentes para ver su funcionamiento interno.
+              </p>
+            </div>
+            <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-xl shadow-inner">
+              <button onClick={() => setType(1)} className={`px-4 py-2 rounded-lg text-[10px] font-bold transition-all ${type === 1 ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500'}`}>TIPO 1 (BARE METAL)</button>
+              <button onClick={() => setType(2)} className={`px-4 py-2 rounded-lg text-[10px] font-bold transition-all ${type === 2 ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500'}`}>TIPO 2 (HOSTED)</button>
+            </div>
+          </header>
+
+          <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
+            {/* Panel de Control de VMs */}
+            <div className="lg:col-span-3 space-y-4">
+              <section className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5">
+                <div className="flex justify-between items-center mb-5">
+                  <h2 className="text-xs font-bold text-slate-300 uppercase tracking-widest">Entorno Virtual</h2>
+                  <button onClick={addVm} disabled={vms.length >= 4} className="bg-blue-600 hover:bg-blue-500 p-1.5 rounded-lg transition-colors disabled:opacity-30">
+                    <Plus size={18} />
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {vms.map(vm => (
+                    <div key={vm.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className={`text-sm font-bold ${vm.color}`}>{vm.name}</span>
+                        <div className="flex gap-2">
+                          <button onClick={() => toggleVmStatus(vm.id)} className="text-slate-400 hover:text-white"><Activity size={14} /></button>
+                          <button onClick={() => removeVm(vm.id)} className="text-slate-500 hover:text-red-400"><Trash2 size={14} /></button>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-blue-500" style={{ width: `${vm.cpu}%` }} /></div>
+                        <div className="h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-emerald-500" style={{ width: `${(vm.ram / 4096) * 100}%` }} /></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="bg-slate-950 border border-slate-800 rounded-2xl p-4 h-[330px] flex flex-col font-mono text-[10px]">
+                <div className="text-slate-600 mb-3 flex items-center gap-2"><Terminal size={14} /> SYSTEM_LOG</div>
+                <div className="flex-1 overflow-y-auto space-y-1 text-blue-300/60 custom-scrollbar" style={{ scrollbarWidth: 'thin' }}>
+                  {logs.map((log, i) => <div key={i} className="border-l border-slate-800 pl-2">{log}</div>)}
+                  <div ref={logEndRef} />
+                </div>
+              </section>
+            </div>
+
+            {/* Stack Visual Dinámico */}
+            <div className="lg:col-span-6 space-y-6">
+              <section className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 min-h-[600px] relative flex flex-col items-center justify-between overflow-hidden">
+                <div onClick={() => setSelectedInfo('vswitch')} className="absolute top-4 right-4 cursor-help group p-3 rounded-xl border border-transparent hover:border-blue-500/30 hover:bg-blue-500/5 transition-all">
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest group-hover:text-blue-400">vSwitch</span>
+                    <Wifi size={24} className="text-blue-500/50 group-hover:text-blue-400 transition-colors" />
+                  </div>
+                </div>
+
+                <div className="w-full flex justify-around items-start gap-4 z-10 pt-8">
+                  {vms.map(vm => (
+                    <div key={vm.id} onClick={() => setSelectedInfo('vm')} className={`flex flex-col items-center cursor-help group transition-all ${vm.status === 'paused' ? 'grayscale opacity-30' : 'scale-100 hover:scale-105'}`}>
+                      <div className={`w-28 h-24 rounded-2xl border-2 bg-slate-800 flex flex-col items-center justify-center relative overflow-hidden ${vm.status === 'running' ? 'border-blue-500 shadow-xl shadow-blue-500/10' : 'border-slate-700'}`}>
+                        <Monitor className={`${vm.color} group-hover:-translate-y-1 transition-transform mb-1`} size={32} />
+                        <span className="text-[10px] font-black uppercase text-slate-400">{vm.name}</span>
+                        {activeInstruction?.from === vm.id && (
+                          <div className="absolute inset-0 bg-blue-500/10 flex items-center justify-center">
+                            <Zap size={24} className="text-yellow-400 fill-yellow-400 shadow-2xl animate-pulse" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="h-16 w-0.5 bg-gradient-to-b from-blue-500 to-transparent relative opacity-50" />
+
+                <div onClick={() => setSelectedInfo('vmm')} className="w-full max-w-xl bg-slate-800/90 border-2 border-indigo-500/40 rounded-[2rem] p-6 relative z-10 cursor-help hover:border-indigo-400 hover:shadow-2xl hover:shadow-indigo-500/20 transition-all group">
+                  <div className="flex items-center justify-between mb-4 border-b border-indigo-500/10 pb-3">
+                    <div>
+                      <h3 className="font-black text-indigo-400 text-[10px] tracking-[0.2em] uppercase">VIRTUAL MACHINE MONITOR (VMM)</h3>
+                      <p className="text-[9px] text-slate-500 font-bold">Modo Supervisor / Privilegio de Ring -1</p>
+                    </div>
+                    <Settings className="text-indigo-500" size={20} style={{ animation: 'spin 10s linear infinite' }} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 h-24 relative">
+                    <div onClick={(e) => { e.stopPropagation(); setSelectedInfo('interrupt'); }} className="bg-slate-900 border border-indigo-500/20 hover:border-indigo-400 rounded-xl p-3 flex flex-col items-center justify-center transition-colors">
+                      <span className="text-[8px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Interrupts</span>
+                      <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden relative">
+                        <div className="absolute inset-0 bg-blue-400 w-1/4" style={{ animation: 'shimmer 2s infinite' }} />
+                      </div>
+                    </div>
+                    <div onClick={(e) => { e.stopPropagation(); setSelectedInfo('memory'); }} className="bg-slate-900 border border-indigo-500/20 hover:border-indigo-400 rounded-xl p-3 flex flex-col items-center justify-center transition-colors">
+                      <span className="text-[8px] font-bold text-slate-500 mb-2 uppercase tracking-widest">Shadow RAM</span>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4].map(i => <div key={i} className="w-2 h-2 bg-emerald-500/30 rounded-sm animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />)}
+                      </div>
+                    </div>
+                    {activeInstruction && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="bg-indigo-600 text-white text-[9px] font-black px-4 py-2 rounded-full shadow-2xl border border-indigo-400">
+                          PROCESANDO: {activeInstruction.type}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {type === 2 && (
+                  <div onClick={() => setSelectedInfo('host_os')} className="w-full max-w-xl mt-4 bg-slate-800 border border-slate-700/50 rounded-2xl p-4 flex items-center justify-between cursor-help hover:border-slate-500 transition-all">
+                    <div className="flex items-center gap-3">
+                      <Database className="text-slate-500" size={18} />
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Host OS Layer</span>
+                    </div>
+                    <div className="text-[9px] text-slate-600 font-mono">KERNEL_BRIDGE.SYS active</div>
+                  </div>
+                )}
+
+                <div onClick={() => setSelectedInfo('hardware')} className="w-full mt-12 bg-slate-950 border-t-2 border-slate-800 pt-8 flex flex-col gap-6 cursor-help group">
+                  <div className="grid grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center"><span className="text-[9px] font-black text-slate-500 uppercase flex items-center gap-1"><Cpu size={12} /> CPU</span> <span className="text-xs font-mono text-red-400">{Math.round(stats.cpuLoad)}%</span></div>
+                      <div className="h-1.5 bg-slate-900 rounded-full overflow-hidden flex gap-0.5">
+                        {Array.from({ length: 10 }).map((_, i) => (
+                          <div key={i} className={`h-full flex-1 transition-all duration-500 ${stats.cpuLoad > (i * 10) ? 'bg-red-500' : 'bg-slate-800'}`} />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center"><span className="text-[9px] font-black text-slate-500 uppercase flex items-center gap-1"><BarChart3 size={12} /> RAM</span> <span className="text-xs font-mono text-emerald-400">{Math.round(stats.ramLoad)}%</span></div>
+                      <div className="h-1.5 bg-slate-900 rounded-full overflow-hidden">
+                        <div className="h-full bg-emerald-500 transition-all duration-700" style={{ width: `${stats.ramLoad}%` }} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center"><span className="text-[9px] font-black text-slate-500 uppercase flex items-center gap-1"><HardDrive size={12} /> DISK</span> <span className="text-xs font-mono text-purple-400">{Math.round(stats.diskLoad)}%</span></div>
+                      <div className="h-1.5 bg-slate-900 rounded-full overflow-hidden">
+                        <div className="h-full bg-purple-500 transition-all duration-700" style={{ width: `${stats.diskLoad}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-center text-[9px] text-slate-600 font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                    Recursos Físicos del Servidor
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            {/* Panel Lateral de Estadísticas */}
+            <div className="lg:col-span-3 space-y-4">
+              <section className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5">
+                <h3 className="text-xs font-black text-slate-500 mb-4 uppercase tracking-[0.2em] border-b border-slate-800 pb-3 flex items-center gap-2">
+                  <BookOpen size={14} /> Inspector
+                </h3>
+                {selectedInfo ? (
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-slate-800 rounded-xl">{infoDetails[selectedInfo].icon}</div>
+                      <h4 className="text-sm font-bold text-white leading-tight">{infoDetails[selectedInfo].title}</h4>
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed mb-4">{infoDetails[selectedInfo].desc}</p>
+                    <div className="bg-blue-600/10 border border-blue-500/20 rounded-xl p-3">
+                      <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest block mb-1">Nota Técnica</span>
+                      <p className="text-[10px] text-blue-200/80 leading-snug font-medium italic">{infoDetails[selectedInfo].technical}</p>
+                    </div>
+                    <button onClick={() => setSelectedInfo(null)} className="mt-6 w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-[10px] font-bold uppercase rounded-lg transition-colors flex items-center justify-center gap-2">
+                      <X size={12} /> Cerrar Inspector
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="w-12 h-12 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 opacity-50">
+                      <Info className="text-slate-600" />
+                    </div>
+                    <p className="text-[11px] text-slate-500 italic px-4">
+                      Selecciona cualquier componente en el centro para ver su funcionamiento interno.
+                    </p>
+                  </div>
+                )}
+              </section>
+              <section className="bg-gradient-to-br from-indigo-900/20 to-blue-900/20 border border-indigo-500/20 rounded-2xl p-5">
+                <h3 className="text-xs font-bold text-indigo-400 mb-3 flex items-center gap-2"><Zap size={14} /> Trap & Emulate</h3>
+                <p className="text-[10px] text-slate-400 leading-relaxed">
+                  Las CPUs modernas tienen una instrucción llamada <strong>VMEXIT</strong> que fuerza al procesador a salir de la VM y entrar al hipervisor cuando ocurre una operación sensible.
+                </p>
+              </section>
+            </div>
+          </main>
+          <style dangerouslySetInnerHTML={{
+            __html: `
+            @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+          `}} />
+        </div>
+      );
+    };
+
+    const root = createRoot(document.getElementById('react-arch-root'));
+    root.render(<App />);
+  </script>
+</body>
+
+</html>
