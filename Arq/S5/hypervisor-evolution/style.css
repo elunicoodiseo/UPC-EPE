@@ -529,7 +529,7 @@ button {
 
 /* TIMELINE */
 #timeline {
-  padding: 10rem 2rem 18rem;
+  padding: 10rem 2rem 17rem;
   background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%)
 }
 
