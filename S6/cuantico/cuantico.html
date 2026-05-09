@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Arquitectura de una Computadora Cuántica en 3D</title>
+
+    <!-- Librerías -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+        :root {
+            --cyan: #00f3ff;
+            --purple: #b500ff;
+            --dark-bg: #050a1f;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark-bg);
+            color: white;
+            user-select: none;
+        }
+
+        /* Fondo de la aplicación */
+        #app-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            background: radial-gradient(circle at center, #0a1128 0%, #000000 100%);
+        }
+
+        #three-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: auto;
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(10, 15, 40, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-button {
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .glass-button:hover,
+        .glass-button.active {
+            background: rgba(0, 243, 255, 0.3);
+            border-color: var(--cyan);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        /* Pantalla de inicio */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            background: radial-gradient(circle at center, #1a0b2e 0%, #050510 100%);
+        }
+
+        .neon-text {
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.8), 0 0 20px rgba(0, 243, 255, 0.4);
+        }
+
+        /* Etiquetas 3D flotantes */
+        .floating-label {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+
+        .floating-label.visible {
+            opacity: 1;
+        }
+
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--cyan);
+            border-radius: 10px;
+        }
+
+        /* HUD Principal */
+        #hud-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 20;
+            display: none;
+            pointer-events: none;
+            /* Deja pasar clicks al canvas */
+        }
+
+        .pointer-events-auto {
+            pointer-events: auto;
+        }
+
+        /* Animación de pulso para el botón AR */
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(0, 243, 255, 0.7);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 15px rgba(0, 243, 255, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(0, 243, 255, 0);
+            }
+        }
+
+        .btn-ar-pulse {
+            animation: pulse-ring 2s infinite;
+        }
+
+        #simulation-overlay {
+            display: none;
+            background: linear-gradient(90deg, transparent, rgba(181, 0, 255, 0.2), transparent);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Fondo oscuro 3D -->
+    <div id="app-bg"></div>
+
+    <!-- Canvas de Three.js -->
+    <canvas id="three-canvas"></canvas>
+
+    <!-- Contenedor de etiquetas flotantes (CSS2D alternativo simple) -->
+    <div id="labels-container" class="absolute top-0 left-0 w-full h-full pointer-events-none z-10"></div>
+
+    <!-- Pantalla de Inicio -->
+    <div id="start-screen" class="px-6 text-center">
+        <div class="mb-8 relative">
+            <i class="fa-solid fa-microchip text-6xl text-cyan-400 mb-4 drop-shadow-[0_0_15px_rgba(0,243,255,0.8)]"></i>
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-4 neon-text tracking-tight">
+                Arquitectura de una <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">Computadora
+                    Cuántica</span> <br>
+                en 3D
+            </h1>
+            <p class="text-gray-300 max-w-2xl mx-auto text-lg leading-relaxed">
+                Explora cómo funciona una computadora cuántica observando sus principales componentes interactivos:
+                qubits, sistema de criogenia, unidad de control, circuitos cuánticos, medición y procesamiento clásico.
+            </p>
+        </div>
+        <button id="start-btn"
+            class="glass-panel px-8 py-4 rounded-full text-xl font-bold text-white btn-ar-pulse hover:bg-white/10 transition-all border-cyan-400 border-2">
+            <i class="fa-solid fa-cube mr-2"></i> Iniciar Exploración 3D
+        </button>
+    </div>
+
+    <!-- HUD de la Aplicación -->
+    <div id="hud-container" class="flex flex-col justify-between p-4 md:p-6">
+
+        <!-- Top Bar: Info del componente -->
+        <div class="w-full flex justify-between items-start gap-4 pointer-events-none">
+            <div id="info-panel"
+                class="glass-panel p-5 rounded-2xl w-full max-w-md pointer-events-auto transform transition-transform duration-300 opacity-0 -translate-y-4">
+                <div class="flex items-center gap-3 mb-2">
+                    <div id="info-icon"
+                        class="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 border border-cyan-500/50">
+                        <i class="fa-solid fa-microchip"></i>
+                    </div>
+                    <h2 id="info-title" class="text-xl font-bold text-cyan-500 neon-text">Selecciona un componente</h2>
+                </div>
+                <p id="info-desc" class="text-sm text-gray-300 leading-relaxed">
+                    Toca o haz clic en cualquier parte del modelo 3D para aprender sobre su función dentro del ordenador
+                    cuántico.
+                </p>
+            </div>
+
+            <!-- Paso de simulación (oculto por defecto) -->
+            <div id="simulation-step-panel"
+                class="glass-panel p-4 rounded-xl border-purple-500/50 border text-center hidden pointer-events-auto flex-col items-center shadow-lg transition-colors">
+                <span id="sim-mode-badge"
+                    class="text-xs font-bold text-purple-400 uppercase tracking-widest mb-1 block">Simulación
+                    Auto</span>
+                <h3 id="sim-step-title" class="text-lg font-bold text-white mt-1">Paso 1: Control</h3>
+                <p id="sim-step-desc" class="text-sm text-gray-300 mt-1 max-w-xs">La computadora clásica envía
+                    instrucciones.</p>
+
+                <!-- Controles de simulación manual -->
+                <div id="sim-manual-controls" class="flex gap-4 mt-4 w-full justify-center hidden">
+                    <button id="btn-prev-step"
+                        class="glass-button px-3 py-1 rounded text-sm flex items-center gap-1 hover:bg-white/10 transition-opacity"><i
+                            class="fa-solid fa-chevron-left"></i> Anterior</button>
+                    <button id="btn-next-step"
+                        class="glass-panel border-cyan-400 px-3 py-1 rounded text-sm font-bold flex items-center gap-1 hover:bg-cyan-900/50 transition-opacity">Siguiente
+                        <i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Indicador visual de simulación -->
+        <div id="simulation-overlay"
+            class="absolute top-1/2 left-0 w-full py-2 pointer-events-none z-0 transform -translate-y-1/2 flex justify-center">
+            <div class="text-purple-400 text-opacity-50 font-mono tracking-[1em] text-4xl font-bold blur-sm">PROCESSING
+            </div>
+        </div>
+
+        <!-- Bottom Bar: Controles -->
+        <div class="w-full pointer-events-auto flex flex-col items-center gap-4">
+            <!-- Botones de Vistas -->
+            <div
+                class="glass-panel p-2 rounded-full flex flex-wrap justify-center gap-2 max-w-full overflow-x-auto custom-scrollbar">
+                <button
+                    class="view-btn glass-button active px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2"
+                    data-target="full">
+                    <i class="fa-solid fa-globe"></i> Completo
+                </button>
+                <button
+                    class="view-btn glass-button px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2"
+                    data-target="cryostat">
+                    <i class="fa-solid fa-temperature-empty"></i> Criogenia
+                </button>
+                <button
+                    class="view-btn glass-button px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2"
+                    data-target="control">
+                    <i class="fa-solid fa-desktop"></i> Control
+                </button>
+                <button
+                    class="view-btn glass-button px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2"
+                    data-target="qubits">
+                    <i class="fa-solid fa-atom"></i> Qubits
+                </button>
+                <button
+                    class="view-btn glass-button px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2"
+                    data-target="gates">
+                    <i class="fa-solid fa-cubes"></i> Puertas
+                </button>
+            </div>
+
+            <!-- Botones de Acción Principal -->
+            <div class="flex gap-3 max-w-full overflow-x-auto custom-scrollbar px-2 py-1">
+                <button id="btn-labels"
+                    class="glass-button px-4 py-3 rounded-xl font-bold text-white flex items-center gap-2 bg-blue-900/40">
+                    <i class="fa-solid fa-tags"></i> <span class="hidden md:inline">Etiquetas</span>
+                </button>
+                <button id="btn-sim-auto"
+                    class="glass-panel px-4 py-3 rounded-xl font-bold text-white border-purple-500 flex items-center gap-2 bg-purple-900/40 hover:bg-purple-800/60 transition-all">
+                    <i class="fa-solid fa-play"></i> <span class="whitespace-nowrap">Sim. Auto</span>
+                </button>
+                <button id="btn-sim-manual"
+                    class="glass-panel px-4 py-3 rounded-xl font-bold text-white border-cyan-500 flex items-center gap-2 bg-cyan-900/40 hover:bg-cyan-800/60 transition-all">
+                    <i class="fa-solid fa-forward-step"></i> <span class="whitespace-nowrap">Sim. Manual</span>
+                </button>
+                <button id="btn-reset"
+                    class="glass-button px-4 py-3 rounded-xl font-bold text-white flex items-center gap-2 bg-red-900/20 border-red-500/30 hover:border-red-500 hover:bg-red-900/50">
+                    <i class="fa-solid fa-rotate-right"></i> <span class="hidden md:inline">Reiniciar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de la Aplicación -->
+    <script>
+        // --- 1. CONFIGURACIÓN INICIAL ---
+        const startBtn = document.getElementById('start-btn');
+        const startScreen = document.getElementById('start-screen');
+        const hudContainer = document.getElementById('hud-container');
+        const infoPanel = document.getElementById('info-panel');
+        const infoTitle = document.getElementById('info-title');
+        const infoDesc = document.getElementById('info-desc');
+        const infoIcon = document.getElementById('info-icon');
+        const labelsContainer = document.getElementById('labels-container');
+
+        let showLabels = true;
+        let simMode = 'none'; // 'auto', 'manual', 'none'
+        let currentStepIndex = 0;
+        let autoPlayTimeout;
+        let collapsedState = []; // Almacena el resultado final pre-calculado
+
+        // Base de datos de componentes para explicaciones
+        const componentData = {
+            'cryostat': {
+                title: 'Cámara Criogénica (Criostato)',
+                desc: 'Estructura vertical metálica que mantiene temperaturas extremadamente bajas (cercanas a 15 milikelvin, más frío que el espacio profundo). Es vital para que los materiales superconductores funcionen sin ruido térmico.',
+                icon: 'fa-temperature-empty',
+                color: 'text-blue-300'
+            },
+            'qubit': {
+                title: 'Qubit Superconductor',
+                desc: 'La unidad fundamental de información cuántica. A diferencia de los bits clásicos (0 o 1), los qubits pueden existir en una superposición de estados (0 y 1 simultáneamente) gracias a efectos cuánticos.',
+                icon: 'fa-atom',
+                color: 'text-cyan-400'
+            },
+            'gate_h': {
+                title: 'Puerta Hadamard (H)',
+                desc: 'Puerta cuántica fundamental. Pone a un qubit en un estado de superposición perfecta (50% probabilidad de medir 0, 50% de medir 1).',
+                icon: 'fa-cube',
+                color: 'text-purple-400'
+            },
+            'gate_x': {
+                title: 'Puerta Pauli-X (X)',
+                desc: 'Equivalente cuántico a la compuerta NOT clásica. Invierte el estado del qubit (de 0 a 1, o de 1 a 0).',
+                icon: 'fa-cube',
+                color: 'text-red-400'
+            },
+            'gate_cnot': {
+                title: 'Puerta CNOT',
+                desc: 'Compuerta condicional que opera sobre dos qubits. Genera entrelazamiento cuántico: el estado de un qubit queda intrínsecamente vinculado al otro.',
+                icon: 'fa-link',
+                color: 'text-yellow-400'
+            },
+            'gate_z': {
+                title: 'Puerta Pauli-Z (Z)',
+                desc: 'Cambia la fase del estado cuántico. No altera la probabilidad de medir 0 o 1, pero es crucial para algoritmos de interferencia cuántica.',
+                icon: 'fa-cube',
+                color: 'text-green-400'
+            },
+            'control': {
+                title: 'Sistema de Control Clásico',
+                desc: 'Computadoras y generadores de señales a temperatura ambiente. Envían pulsos electromagnéticos precisos hacia el refrigerador para manipular y leer los qubits.',
+                icon: 'fa-desktop',
+                color: 'text-gray-300'
+            },
+            'cable': {
+                title: 'Líneas de Control y Medición',
+                desc: 'Cables coaxiales y atenuadores que transportan pulsos de microondas. Filtran el ruido térmico mientras las señales descienden hacia las etapas más frías.',
+                icon: 'fa-wave-square',
+                color: 'text-orange-300'
+            },
+            'measurement': {
+                title: 'Resonadores de Lectura',
+                desc: 'Detectan el frágil estado cuántico de los qubits al final del cómputo, provocando el "colapso" de la función de onda y convirtiéndolo en un 0 o 1 clásico.',
+                icon: 'fa-eye',
+                color: 'text-teal-400'
+            }
+        };
+
+        // --- 2. CONFIGURACIÓN THREE.JS ---
+        const canvas = document.getElementById('three-canvas');
+        const scene = new THREE.Scene();
+        // Fondo transparente para ver la cámara AR
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 25);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxDistance = 50;
+        controls.minDistance = 5;
+        // Restringir giro por debajo del plano
+        controls.maxPolarAngle = Math.PI / 1.5;
+        controls.target.set(0, 0, 0);
+
+        // Iluminación
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        const blueLight = new THREE.PointLight(0x00f3ff, 1.5, 30);
+        blueLight.position.set(0, -5, 0);
+        scene.add(blueLight);
+
+        const purpleLight = new THREE.PointLight(0xb500ff, 1, 20);
+        purpleLight.position.set(0, 8, 0);
+        scene.add(purpleLight);
+
+        // Almacén de objetos interactivos
+        const interactableObjects = [];
+        const labelsData = []; // Para CSS2D simulado
+        const quantumSystem = { qubits: [], gates: [], cables: [], pulses: [], measurements: [] };
+
+        // Materiales compartidos
+        const goldMat = new THREE.MeshPhysicalMaterial({ color: 0xc5904e, metalness: 0.8, roughness: 0.3 });
+        const silverMat = new THREE.MeshPhysicalMaterial({ color: 0xaaaaaa, metalness: 0.9, roughness: 0.2 });
+        const wireMat = new THREE.MeshBasicMaterial({ color: 0x555555 });
+        const qubitMat = new THREE.MeshStandardMaterial({ color: 0x002244, emissive: 0x00f3ff, emissiveIntensity: 0.8 });
+
+        // --- 3. CONSTRUCCIÓN DEL MODELO 3D ---
+        const mainGroup = new THREE.Group();
+        scene.add(mainGroup);
+
+        function createLabel(text, position, id) {
+            const el = document.createElement('div');
+            el.className = 'floating-label visible';
+            el.innerText = text;
+            labelsContainer.appendChild(el);
+            labelsData.push({ element: el, pos: position, id: id });
+        }
+
+        function buildArchitecture() {
+            // 3.1 Sistema de Control Superior (Clásico)
+            const controlGeo = new THREE.BoxGeometry(6, 2, 4);
+            const controlMat = new THREE.MeshStandardMaterial({ color: 0x111122, metalness: 0.5, roughness: 0.8 });
+            const controlBox = new THREE.Mesh(controlGeo, controlMat);
+            controlBox.position.set(0, 10, 0);
+            controlBox.userData = { id: 'control' };
+            interactableObjects.push(controlBox);
+            mainGroup.add(controlBox);
+
+            // Panel LED simulado en el control
+            const panelGeo = new THREE.PlaneGeometry(5, 1);
+            const panelMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            const panel = new THREE.Mesh(panelGeo, panelMat);
+            panel.position.set(0, 10, 2.01);
+            quantumSystem.controlPanel = panel;
+            mainGroup.add(panel);
+            createLabel("Control Clásico", new THREE.Vector3(0, 11.5, 0), "control");
+
+            // 3.2 Platos del Criostato (Diferentes etapas de temperatura)
+            const plateRadiuses = [4, 3.5, 3, 2.5, 2];
+            const plateHeights = [8, 5, 2, -1, -4];
+            const temps = ["4 K", "800 mK", "100 mK", "15 mK"];
+
+            for (let i = 0; i < plateRadiuses.length; i++) {
+                const pGeo = new THREE.CylinderGeometry(plateRadiuses[i], plateRadiuses[i], 0.2, 32);
+                const pMesh = new THREE.Mesh(pGeo, goldMat);
+                pMesh.position.y = plateHeights[i];
+                pMesh.userData = { id: 'cryostat' };
+                interactableObjects.push(pMesh);
+                mainGroup.add(pMesh);
+
+                if (i < temps.length) {
+                    createLabel(temps[i], new THREE.Vector3(-plateRadiuses[i] - 0.5, plateHeights[i], 0), 'cryostat');
+                }
+
+                // Soportes verticales entre platos
+                if (i > 0) {
+                    for (let s = 0; s < 3; s++) {
+                        const angle = (s / 3) * Math.PI * 2;
+                        const supGeo = new THREE.CylinderGeometry(0.05, 0.05, plateHeights[i - 1] - plateHeights[i], 8);
+                        const supMesh = new THREE.Mesh(supGeo, silverMat);
+                        const radius = plateRadiuses[i] - 0.2;
+                        supMesh.position.set(Math.cos(angle) * radius, (plateHeights[i - 1] + plateHeights[i]) / 2, Math.sin(angle) * radius);
+                        mainGroup.add(supMesh);
+                    }
+                }
+            }
+
+            // 3.3 Cables / Líneas de microondas bajando
+            const cableCurves = [];
+            for (let c = 0; c < 6; c++) {
+                const x = (Math.random() - 0.5) * 2;
+                const z = (Math.random() - 0.5) * 2;
+                const path = new THREE.CatmullRomCurve3([
+                    new THREE.Vector3(x * 2, 9, z * 2),
+                    new THREE.Vector3(x * 1.5, 5, z * 1.5),
+                    new THREE.Vector3(x * 1.2, 0, z * 1.2),
+                    new THREE.Vector3(x * 0.8, -3.8, z * 0.8) // Llega al último plato
+                ]);
+                const tubeGeo = new THREE.TubeGeometry(path, 20, 0.03, 8, false);
+                const cableMesh = new THREE.Mesh(tubeGeo, silverMat);
+                cableMesh.userData = { id: 'cable' };
+                interactableObjects.push(cableMesh);
+                quantumSystem.cables.push(path); // Guardar ruta para animación
+                mainGroup.add(cableMesh);
+            }
+
+            // 3.4 Procesador Cuántico (Chip abajo)
+            const chipGeo = new THREE.BoxGeometry(2.5, 0.1, 2.5);
+            const chipMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1, metalness: 0.8 });
+            const chip = new THREE.Mesh(chipGeo, chipMat);
+            chip.position.y = -4.5;
+            chip.userData = { id: 'qubit' }; // Area general
+            interactableObjects.push(chip);
+            mainGroup.add(chip);
+            createLabel("Procesador Cuántico", new THREE.Vector3(0, -5.2, 0), "qubits");
+
+            // 3.5 Qubits en el chip
+            const qubitPositions = [
+                [-0.8, -0.8], [0.8, -0.8],
+                [0, 0],
+                [-0.8, 0.8], [0.8, 0.8]
+            ];
+
+            qubitPositions.forEach((pos, i) => {
+                const qGeo = new THREE.SphereGeometry(0.15, 16, 16);
+                const qMesh = new THREE.Mesh(qGeo, qubitMat.clone());
+                qMesh.position.set(pos[0], -4.4, pos[1]);
+                qMesh.userData = { id: 'qubit', index: i };
+                interactableObjects.push(qMesh);
+                quantumSystem.qubits.push(qMesh);
+                mainGroup.add(qMesh);
+
+                // Etiqueta numerada para identificar cada qubit
+                createLabel("q" + i, new THREE.Vector3(pos[0], -4.1, pos[1]), "qubits");
+
+                // Anillo de conexión (circuito)
+                const ringGeo = new THREE.RingGeometry(0.2, 0.22, 16);
+                const ringMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff, side: THREE.DoubleSide });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = Math.PI / 2;
+                ring.position.set(pos[0], -4.44, pos[1]);
+                mainGroup.add(ring);
+            });
+
+            // 3.6 Puertas Cuánticas (Bloques flotantes alrededor del chip)
+            const gateTypes = [
+                { type: 'H', id: 'gate_h', color: 0xb500ff, pos: [-1.8, -4.2, -1] },
+                { type: 'X', id: 'gate_x', color: 0xff0055, pos: [1.8, -4.2, -1] },
+                { type: 'CNOT', id: 'gate_cnot', color: 0xffaa00, pos: [0, -4.2, -1.8] },
+                { type: 'Z', id: 'gate_z', color: 0x00ffaa, pos: [-1.8, -4.2, 1] }
+            ];
+
+            gateTypes.forEach(g => {
+                const gGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+                const gMat = new THREE.MeshStandardMaterial({ color: g.color, emissive: g.color, emissiveIntensity: 0.3, transparent: true, opacity: 0.9 });
+                const gMesh = new THREE.Mesh(gGeo, gMat);
+                gMesh.position.set(g.pos[0], g.pos[1], g.pos[2]);
+                gMesh.userData = { id: g.id };
+                interactableObjects.push(gMesh);
+                quantumSystem.gates.push({ mesh: gMesh, data: g });
+                mainGroup.add(gMesh);
+                createLabel(g.type, new THREE.Vector3(g.pos[0], g.pos[1] + 0.4, g.pos[2]), "gates");
+            });
+
+            // 3.7 Líneas de medición
+            const resGeo = new THREE.CylinderGeometry(0.02, 0.02, 1);
+            const resMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.3 });
+            qubitPositions.forEach((pos, i) => {
+                const res = new THREE.Mesh(resGeo, resMat);
+                res.position.set(pos[0] + 0.2, -4.4, pos[1]);
+                res.rotation.z = Math.PI / 2;
+                quantumSystem.measurements.push(res);
+                mainGroup.add(res);
+            });
+        }
+
+        buildArchitecture();
+
+        // Partículas para pulsos de microondas
+        const particlesGeo = new THREE.BufferGeometry();
+        const particlesCount = 20;
+        const posArray = new Float32Array(particlesCount * 3);
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particlesMat = new THREE.PointsMaterial({
+            size: 0.15,
+            color: 0x00f3ff,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            opacity: 0
+        });
+        const particleSystem = new THREE.Points(particlesGeo, particlesMat);
+        mainGroup.add(particleSystem);
+
+        // --- 4. LÓGICA DE INTERACCIÓN (RAYCASTER) ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        function onPointerDown(event) {
+            // Prevenir clicks en UI
+            if (event.target.closest('#hud-container .pointer-events-auto') || simMode !== 'none') return;
+
+            // Convertir posición del mouse/toque a normalizada (-1 a +1)
+            let clientX = event.clientX;
+            let clientY = event.clientY;
+
+            if (event.touches) {
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            }
+
+            mouse.x = (clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(interactableObjects);
+
+            if (intersects.length > 0) {
+                const object = intersects[0].object;
+                const id = object.userData.id;
+                showComponentInfo(id);
+
+                // Efecto de feedback visual rápido
+                if (object.material && object.material.emissive) {
+                    const originalIntensity = object.material.emissiveIntensity;
+                    object.material.emissiveIntensity = 2;
+                    setTimeout(() => {
+                        if (object.material) object.material.emissiveIntensity = originalIntensity;
+                    }, 300);
+                }
+            } else {
+                hideComponentInfo();
+            }
+        }
+
+        window.addEventListener('pointerdown', onPointerDown);
+
+        function showComponentInfo(id) {
+            const data = componentData[id];
+            if (!data) return;
+
+            infoTitle.textContent = data.title;
+            infoDesc.textContent = data.desc;
+            infoIcon.className = `w-10 h-10 rounded-full flex items-center justify-center border ${data.color.replace('text', 'bg').replace('400', '500/20')} ${data.color.replace('text', 'border').replace('400', '500/50')} ${data.color}`;
+            infoIcon.innerHTML = `<i class="fa-solid ${data.icon} text-lg"></i>`;
+
+            infoPanel.classList.remove('opacity-0', '-translate-y-4');
+            infoPanel.classList.add('opacity-100', 'translate-y-0');
+        }
+
+        function hideComponentInfo() {
+            infoPanel.classList.remove('opacity-100', 'translate-y-0');
+            infoPanel.classList.add('opacity-0', '-translate-y-4');
+        }
+
+        // --- 5. ANIMACIONES DE CÁMARA (VISTAS) ---
+        function moveCamera(targetPos, targetLook, duration = 1500) {
+            new TWEEN.Tween(camera.position)
+                .to(targetPos, duration)
+                .easing(TWEEN.Easing.Cubic.InOut)
+                .start();
+
+            new TWEEN.Tween(controls.target)
+                .to(targetLook, duration)
+                .easing(TWEEN.Easing.Cubic.InOut)
+                .start();
+        }
+
+        const views = {
+            'full': { pos: { x: 0, y: 5, z: 25 }, look: { x: 0, y: 0, z: 0 } },
+            'cryostat': { pos: { x: 0, y: 2, z: 12 }, look: { x: 0, y: 2, z: 0 } },
+            'control': { pos: { x: 0, y: 12, z: 10 }, look: { x: 0, y: 10, z: 0 } },
+            'qubits': { pos: { x: 0, y: -2, z: 6 }, look: { x: 0, y: -4.5, z: 0 } },
+            'gates': { pos: { x: 4, y: -2, z: 4 }, look: { x: 0, y: -4.5, z: 0 } }
+        };
+
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (simMode === 'auto') return; // Bloquear cámara solo si es automático
+                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active', 'border-cyan-500'));
+                btn.classList.add('active');
+                const target = btn.getAttribute('data-target');
+                moveCamera(views[target].pos, views[target].look);
+
+                // Filtrar etiquetas según vista
+                const filter = target;
+                labelsData.forEach(l => {
+                    if (filter === 'full' || l.id === filter || (filter === 'gates' && l.id === 'qubits')) {
+                        l.element.style.display = 'block';
+                    } else {
+                        l.element.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        // Toggle Etiquetas
+        document.getElementById('btn-labels').addEventListener('click', () => {
+            showLabels = !showLabels;
+            labelsContainer.style.display = showLabels ? 'block' : 'none';
+            document.getElementById('btn-labels').classList.toggle('opacity-50');
+        });
+
+        // --- 6. SIMULACIÓN (AUTO & MANUAL) ---
+        const simPanel = document.getElementById('simulation-step-panel');
+        const simTitle = document.getElementById('sim-step-title');
+        const simDesc = document.getElementById('sim-step-desc');
+        const simOverlay = document.getElementById('simulation-overlay');
+        let particleProgress = 0;
+        let isAnimatingParticles = false;
+
+        function generateQuantumResult() {
+            collapsedState = quantumSystem.qubits.map(() => Math.random() > 0.5);
+        }
+
+        const simulationSteps = [
+            {
+                title: "Paso 1: Instrucciones Clásicas",
+                desc: "La computadora de control formula el algoritmo cuántico y lo traduce a secuencias de pulsos electromagnéticos.",
+                action: () => {
+                    moveCamera(views['control'].pos, views['control'].look, 1000);
+                    quantumSystem.controlPanel.material.color.setHex(0x00ffff);
+                    // Parpadeo del panel
+                    new TWEEN.Tween(quantumSystem.controlPanel.material)
+                        .to({ opacity: 0.2 }, 200).yoyo(true).repeat(5).start();
+                },
+                static: () => { quantumSystem.controlPanel.material.color.setHex(0x00ffff); }
+            },
+            {
+                title: "Paso 2: Pulsos de Microondas",
+                desc: "Los pulsos viajan por los cables coaxiales hacia el interior del criostato, enfriándose progresivamente.",
+                action: () => {
+                    moveCamera({ x: 0, y: 2, z: 15 }, { x: 0, y: 0, z: 0 }, 1500);
+                    particlesMat.opacity = 1;
+                    isAnimatingParticles = true;
+                    particleProgress = 0;
+                    // Animar partículas a lo largo de los cables
+                    new TWEEN.Tween({ p: 0 }).to({ p: 1 }, 2500)
+                        .easing(TWEEN.Easing.Quadratic.In)
+                        .onUpdate((obj) => { particleProgress = obj.p; })
+                        .onComplete(() => { isAnimatingParticles = false; particlesMat.opacity = 0; })
+                        .start();
+                },
+                static: () => { /* Las partículas terminan, sin estado visual permanente */ }
+            },
+            {
+                title: "Paso 3: Superposición",
+                desc: "Los pulsos impactan los qubits (ej. Puerta Hadamard). Los qubits entran en una superposición de estado 0 y 1 simultáneamente.",
+                action: () => {
+                    moveCamera(views['qubits'].pos, views['qubits'].look, 1000);
+                    quantumSystem.qubits.forEach(q => {
+                        // Latido de color (Superposición)
+                        const tween1 = new TWEEN.Tween(q.material.color).to({ r: 0.7, g: 0, b: 1 }, 300); // Purple
+                        const tween2 = new TWEEN.Tween(q.material.color).to({ r: 0, g: 0.9, b: 1 }, 300); // Cyan
+                        tween1.chain(tween2); tween2.chain(tween1);
+                        tween1.start();
+                    });
+                },
+                static: () => {
+                    quantumSystem.qubits.forEach(q => {
+                        const tween1 = new TWEEN.Tween(q.material.color).to({ r: 0.7, g: 0, b: 1 }, 300);
+                        const tween2 = new TWEEN.Tween(q.material.color).to({ r: 0, g: 0.9, b: 1 }, 300);
+                        tween1.chain(tween2); tween2.chain(tween1);
+                        tween1.start();
+                    });
+                }
+            },
+            {
+                title: "Paso 4: Puertas Cuánticas",
+                desc: "Operaciones como las puertas X o Z manipulan la fase y amplitud de probabilidad de cada qubit.",
+                action: () => {
+                    moveCamera(views['gates'].pos, views['gates'].look, 1000);
+                    quantumSystem.gates.forEach((g, i) => {
+                        setTimeout(() => {
+                            new TWEEN.Tween(g.mesh.position).to({ y: -3.8 }, 200).yoyo(true).repeat(3).start();
+                            g.mesh.material.emissiveIntensity = 1;
+                            setTimeout(() => { g.mesh.material.emissiveIntensity = 0.3; }, 1000);
+                        }, i * 300);
+                    });
+                },
+                static: () => {
+                    quantumSystem.gates.forEach(g => { g.mesh.position.y = -3.8; });
+                }
+            },
+            {
+                title: "Paso 5: Entrelazamiento",
+                desc: "Se aplican puertas de múltiples qubits (como CNOT). Los estados de los qubits se vuelven interdependientes.",
+                action: () => {
+                    moveCamera(views['qubits'].pos, views['qubits'].look, 1000);
+                    // Dibujar línea de entrelazamiento entre q2 (centro) y q0, q1
+                    const mat = new THREE.LineBasicMaterial({ color: 0xffaa00, linewidth: 2, transparent: true, opacity: 0.8 });
+                    const geo = new THREE.BufferGeometry().setFromPoints([
+                        quantumSystem.qubits[2].position, quantumSystem.qubits[0].position,
+                        quantumSystem.qubits[2].position, quantumSystem.qubits[1].position
+                    ]);
+                    const line = new THREE.Line(geo, mat);
+                    mainGroup.add(line);
+                    quantumSystem.entangleLine = line;
+
+                    new TWEEN.Tween(mat).to({ opacity: 0 }, 300).yoyo(true).repeat(5).start();
+                },
+                static: () => {
+                    const mat = new THREE.LineBasicMaterial({ color: 0xffaa00, linewidth: 2, transparent: true, opacity: 0.8 });
+                    const geo = new THREE.BufferGeometry().setFromPoints([
+                        quantumSystem.qubits[2].position, quantumSystem.qubits[0].position,
+                        quantumSystem.qubits[2].position, quantumSystem.qubits[1].position
+                    ]);
+                    const line = new THREE.Line(geo, mat);
+                    mainGroup.add(line);
+                    quantumSystem.entangleLine = line;
+                }
+            },
+            {
+                title: "Paso 6: Medición",
+                desc: "Los resonadores leen el sistema. La superposición cuántica colapsa a estados clásicos definidos (0 o 1).",
+                action: () => {
+                    moveCamera(views['qubits'].pos, views['qubits'].look, 500);
+                    quantumSystem.measurements.forEach(m => m.material.opacity = 1);
+
+                    simOverlay.style.display = 'flex';
+                    simOverlay.innerHTML = '<div class="text-white font-mono text-5xl font-bold tracking-[0.5em] neon-text">MIDIENDO...</div>';
+
+                    quantumSystem.measuringTimeout = setTimeout(() => {
+                        quantumSystem.qubits.forEach((q, idx) => {
+                            TWEEN.removeAll(); // Detener superposición
+                            // Extraer resultado fijo generado al inicio
+                            const isOne = collapsedState[idx];
+                            q.material.color.setHex(isOne ? 0xb500ff : 0x0055ff);
+                            q.material.emissive.setHex(isOne ? 0xb500ff : 0x0055ff);
+                            q.material.emissiveIntensity = 0.5;
+                        });
+                        if (quantumSystem.entangleLine) quantumSystem.entangleLine.material.opacity = 0;
+                    }, 1000);
+                },
+                static: () => {
+                    quantumSystem.measurements.forEach(m => m.material.opacity = 1);
+                    quantumSystem.qubits.forEach((q, idx) => {
+                        const isOne = collapsedState[idx];
+                        q.material.color.setHex(isOne ? 0xb500ff : 0x0055ff);
+                        q.material.emissive.setHex(isOne ? 0xb500ff : 0x0055ff);
+                        q.material.emissiveIntensity = 0.5;
+                    });
+                    if (quantumSystem.entangleLine) quantumSystem.entangleLine.material.opacity = 0;
+                }
+            },
+            {
+                title: "Paso 7: Resultado Clásico",
+                desc: "Las señales débiles se amplifican y viajan hacia arriba, donde la computadora clásica interpreta el resultado final.",
+                action: () => {
+                    moveCamera(views['full'].pos, views['full'].look, 1500);
+                    quantumSystem.measurements.forEach(m => m.material.opacity = 0.3);
+
+                    const result = collapsedState.map(x => x ? '1' : '0').join('');
+                    simOverlay.style.display = 'flex';
+                    simOverlay.innerHTML = `<div class="text-green-400 font-mono text-6xl font-bold tracking-[0.5em] neon-text">${result}</div>`;
+                    quantumSystem.controlPanel.material.color.setHex(0x00ff00);
+                },
+                static: () => {
+                    quantumSystem.measurements.forEach(m => m.material.opacity = 0.3);
+                    simOverlay.style.display = 'flex';
+                    const result = collapsedState.map(x => x ? '1' : '0').join('');
+                    simOverlay.innerHTML = `<div class="text-green-400 font-mono text-6xl font-bold tracking-[0.5em] neon-text">${result}</div>`;
+                    quantumSystem.controlPanel.material.color.setHex(0x00ff00);
+                }
+            }
+        ];
+
+        // Función para limpiar completamente la visual antes de un salto de estado
+        function resetVisuals() {
+            if (quantumSystem.measuringTimeout) clearTimeout(quantumSystem.measuringTimeout);
+            simOverlay.style.display = 'none';
+            simOverlay.innerHTML = '';
+
+            quantumSystem.controlPanel.material.color.setHex(0x00ff00);
+            quantumSystem.controlPanel.material.opacity = 1;
+
+            particlesMat.opacity = 0;
+            isAnimatingParticles = false;
+
+            if (quantumSystem.entangleLine) {
+                mainGroup.remove(quantumSystem.entangleLine);
+                quantumSystem.entangleLine = null;
+            }
+
+            quantumSystem.measurements.forEach(m => m.material.opacity = 0.3);
+
+            quantumSystem.qubits.forEach(q => {
+                q.material.color.setHex(0x002244);
+                q.material.emissive.setHex(0x00f3ff);
+                q.material.emissiveIntensity = 0.8;
+            });
+
+            quantumSystem.gates.forEach(g => {
+                g.mesh.position.y = g.data.pos[1];
+                g.mesh.material.emissiveIntensity = 0.3;
+            });
+        }
+
+        // Función de ejecución del paso (soporta saltos hacia adelante y hacia atrás)
+        function goToStep(targetIndex) {
+            if (targetIndex < 0 || targetIndex >= simulationSteps.length) return;
+
+            TWEEN.removeAll();
+            resetVisuals();
+
+            // Reconstruir estado estático de todos los pasos anteriores para dar continuidad
+            for (let i = 0; i < targetIndex; i++) {
+                if (simulationSteps[i].static) simulationSteps[i].static();
+            }
+
+            currentStepIndex = targetIndex;
+            const step = simulationSteps[targetIndex];
+            simTitle.innerText = step.title;
+            simDesc.innerText = step.desc;
+
+            step.action(); // Disparar la animación del paso actual
+
+            // Actualizar interfaz de botones si estamos en modo manual
+            if (simMode === 'manual') {
+                const btnPrev = document.getElementById('btn-prev-step');
+                const btnNext = document.getElementById('btn-next-step');
+                btnPrev.disabled = targetIndex === 0;
+                btnNext.disabled = targetIndex === simulationSteps.length - 1;
+                btnPrev.style.opacity = targetIndex === 0 ? 0.5 : 1;
+                btnNext.style.opacity = targetIndex === simulationSteps.length - 1 ? 0.5 : 1;
+            }
+        }
+
+        // Controladores de los Botones
+        document.getElementById('btn-sim-auto').addEventListener('click', () => {
+            if (simMode !== 'none') resetSimulation(false);
+            simMode = 'auto';
+            generateQuantumResult();
+
+            document.getElementById('sim-mode-badge').innerText = "Simulación Automática";
+            document.getElementById('sim-mode-badge').className = "text-xs font-bold text-purple-400 uppercase tracking-widest mb-1 block";
+            simPanel.classList.remove('hidden', 'border-cyan-500/50');
+            simPanel.classList.add('border-purple-500/50');
+
+            document.getElementById('btn-sim-auto').classList.add('border-purple-400');
+            document.getElementById('btn-sim-manual').classList.add('opacity-50');
+            document.getElementById('sim-manual-controls').classList.add('hidden');
+            document.getElementById('sim-manual-controls').classList.remove('flex');
+            hideComponentInfo();
+
+            playAuto();
+        });
+
+        document.getElementById('btn-sim-manual').addEventListener('click', () => {
+            if (simMode !== 'none') resetSimulation(false);
+            simMode = 'manual';
+            generateQuantumResult();
+
+            document.getElementById('sim-mode-badge').innerText = "Simulación Manual";
+            document.getElementById('sim-mode-badge').className = "text-xs font-bold text-cyan-400 uppercase tracking-widest mb-1 block";
+            simPanel.classList.remove('hidden', 'border-purple-500/50');
+            simPanel.classList.add('border-cyan-500/50');
+
+            document.getElementById('btn-sim-manual').classList.add('border-cyan-400');
+            document.getElementById('btn-sim-auto').classList.add('opacity-50');
+            document.getElementById('sim-manual-controls').classList.remove('hidden');
+            document.getElementById('sim-manual-controls').classList.add('flex');
+            hideComponentInfo();
+
+            goToStep(0);
+        });
+
+        document.getElementById('btn-prev-step').addEventListener('click', () => {
+            if (currentStepIndex > 0) goToStep(currentStepIndex - 1);
+        });
+
+        document.getElementById('btn-next-step').addEventListener('click', () => {
+            if (currentStepIndex < simulationSteps.length - 1) goToStep(currentStepIndex + 1);
+        });
+
+        async function playAuto() {
+            for (let i = 0; i < simulationSteps.length; i++) {
+                if (simMode !== 'auto') break;
+                goToStep(i);
+                // Esperar tiempo del paso (ultimo paso dura un poco más)
+                await new Promise(resolve => { autoPlayTimeout = setTimeout(resolve, i === simulationSteps.length - 1 ? 4000 : 3500); });
+            }
+            if (simMode === 'auto') {
+                setTimeout(() => { if (simMode === 'auto') resetSimulation(true); }, 2000);
+            }
+        }
+
+        function resetSimulation(moveToFull = true) {
+            simMode = 'none';
+            clearTimeout(autoPlayTimeout);
+            TWEEN.removeAll();
+            simPanel.classList.add('hidden');
+
+            // Restaurar botones visualmente
+            document.getElementById('btn-sim-auto').classList.remove('opacity-50', 'border-purple-400');
+            document.getElementById('btn-sim-manual').classList.remove('opacity-50', 'border-cyan-400');
+            document.getElementById('sim-manual-controls').classList.add('hidden');
+
+            resetVisuals();
+
+            if (moveToFull) {
+                moveCamera(views['full'].pos, views['full'].look, 1000);
+                document.querySelector('[data-target="full"]').click();
+            }
+        }
+
+        document.getElementById('btn-reset').addEventListener('click', () => resetSimulation(true));
+
+        // --- 7. LOOP DE RENDERIZADO ---
+
+        // Manejar etiquetas CSS2D (Sincronizar posición 3D a pantalla 2D)
+        function updateLabels() {
+            if (!showLabels) return;
+            const tempV = new THREE.Vector3();
+            labelsData.forEach(lbl => {
+                tempV.copy(lbl.pos);
+                tempV.project(camera);
+
+                // Si está detrás de la cámara, ocultar
+                if (tempV.z > 1) {
+                    lbl.element.style.display = 'none';
+                    return;
+                }
+
+                // Aplicar visibilidad si no fue ocultada por la vista
+                if (lbl.element.style.display !== 'none' || document.querySelector('.view-btn.active').getAttribute('data-target') === 'full') {
+                    lbl.element.style.display = 'block';
+                }
+
+                const x = (tempV.x * .5 + .5) * window.innerWidth;
+                const y = (tempV.y * -.5 + .5) * window.innerHeight;
+
+                lbl.element.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
+            });
+        }
+
+        // Animar Partículas (Pulsos)
+        function updateParticles() {
+            if (!isAnimatingParticles) return;
+            const positions = particleSystem.geometry.attributes.position.array;
+
+            for (let i = 0; i < particlesCount; i++) {
+                const cableIndex = i % quantumSystem.cables.length;
+                const curve = quantumSystem.cables[cableIndex];
+
+                // Añadir un desfase basado en el índice
+                let pointProgress = (particleProgress + (i * 0.05)) % 1.0;
+
+                const point = curve.getPoint(pointProgress);
+                positions[i * 3] = point.x + (Math.random() - 0.5) * 0.1;
+                positions[i * 3 + 1] = point.y;
+                positions[i * 3 + 2] = point.z + (Math.random() - 0.5) * 0.1;
+            }
+            particleSystem.geometry.attributes.position.needsUpdate = true;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            TWEEN.update();
+            controls.update();
+
+            // Rotación suave del criostato entero
+            if (simMode === 'none') {
+                mainGroup.rotation.y += 0.001;
+            }
+
+            updateLabels();
+            updateParticles();
+
+            renderer.render(scene, camera);
+        }
+
+        // --- 8. INICIAR EXPERIENCIA (Botón 3D) ---
+        startBtn.addEventListener('click', () => {
+            startBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Cargando entorno...';
+
+            // Ocultar pantalla de inicio, mostrar HUD
+            startScreen.style.opacity = 0;
+            setTimeout(() => {
+                startScreen.style.display = 'none';
+                hudContainer.style.display = 'flex';
+                // Animación de entrada de la UI
+                hudContainer.classList.add('animate-fade-in');
+            }, 500);
+
+            // Iniciar renderizado
+            animate();
+        });
+
+        // Resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+
+</html>
