@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Sim: SO Internals</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Import map para React y Lucide via esm.sh -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.263.1"
+      }
+    }
+    </script>
+
+    <!-- Babel standalone para compilar JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #020617;
+        }
+
+        /* slate-950 */
+        .translate-z-0 {
+            transform: translateZ(0);
+        }
+
+        .translate-z-10 {
+            transform: translateZ(10px);
+        }
+
+        .translate-z-\[30px\] {
+            transform: translateZ(30px);
+        }
+
+        /* Custom scrollbar */
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: #334155;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useRef } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import {
+            Play, Pause, ArrowRight, ArrowLeft, RotateCcw,
+            Cpu, MemoryStick, Activity, Layers, Zap, Clock, Monitor
+        } from 'lucide-react';
+
+        // --- DATA: Pasos de la simulación ---
+        const STEPS = [
+            {
+                id: 0,
+                title: "Apertura de un Programa",
+                activeComp: "Laptop",
+                concept: "Un programa pasivo se convierte en activo.",
+                desc: "Se abre una aplicación en la laptop (ej. un navegador). El Sistema Operativo (SO) lee las instrucciones del disco duro para prepararlas.",
+                boardState: { laptopActive: true, showProcA: false, procA_Pos: 'disk', pcbA: false }
+            },
+            {
+                id: 1,
+                title: "Creación del Proceso",
+                activeComp: "RAM (Memoria)",
+                concept: "Proceso: Programa en ejecución.",
+                desc: "El SO asigna memoria y crea el 'Proceso A'. Contiene: Código (instrucciones), Datos (variables), Stack (memoria temporal) y el Program Counter (PC).",
+                boardState: { laptopActive: true, showProcA: true, procA_Pos: 'ram', pcbA: false, procADetails: true }
+            },
+            {
+                id: 2,
+                title: "Generación del PCB",
+                activeComp: "Kernel / OS",
+                concept: "PCB (Process Control Block)",
+                desc: "El SO crea el PCB para el Proceso A. Aquí guarda su estado, registros, límites de memoria y prioridad. Es su 'tarjeta de identidad'.",
+                boardState: { laptopActive: true, showProcA: true, procA_Pos: 'ram', pcbA: true, procADetails: true }
+            },
+            {
+                id: 3,
+                title: "Estado: Listo",
+                activeComp: "Ready Queue",
+                concept: "Ciclo de vida: Nuevo → Listo",
+                desc: "El proceso pasa a la cola de 'Listos'. Ya tiene todo para ejecutarse y solo espera su turno para usar la CPU.",
+                boardState: { laptopActive: true, showProcA: true, procA_Pos: 'ready', pcbA: true, showLifecycle: true, lifeState: 'listo' }
+            },
+            {
+                id: 4,
+                title: "Planificación a Ejecución",
+                activeComp: "Planificador (Scheduler)",
+                concept: "Despacho (Dispatch)",
+                desc: "El Planificador del SO decide que es el turno del Proceso A. Lo envía a la CPU para ejecutarse.",
+                boardState: { laptopActive: true, showProcA: true, procA_Pos: 'cpu', pcbA: true, showLifecycle: true, lifeState: 'ejecucion', cpuGlow: true }
+            },
+            {
+                id: 5,
+                title: "Ejecución en CPU",
+                activeComp: "CPU / Program Counter",
+                concept: "Ciclo de vida: Ejecución",
+                desc: "La CPU lee las instrucciones usando el Program Counter. Los datos fluyen de la RAM a la CPU.",
+                boardState: { laptopActive: true, showProcA: true, procA_Pos: 'cpu', pcbA: true, cpuGlow: true, showDataFlow: true }
+            },
+            {
+                id: 6,
+                title: "Creación de Hilos",
+                activeComp: "Proceso A",
+                concept: "Multithreading",
+                desc: "La aplicación necesita hacer varias cosas a la vez (ej. descargar y mostrar UI). El Proceso A genera múltiples Hilos (Threads).",
+                boardState: { laptopActive: true, showProcA: true, procA_Pos: 'cpu', pcbA: true, showThreads: true, cpuGlow: true }
+            },
+            {
+                id: 7,
+                title: "Hilos: Compartido vs Privado",
+                activeComp: "Hilos (Threads)",
+                concept: "Eficiencia de Recursos",
+                desc: "Los hilos comparten Código y Datos del proceso. Pero cada hilo tiene su propio Stack, Registros y Program Counter. Son más ligeros de crear que un proceso nuevo.",
+                boardState: { laptopActive: true, showProcA: true, procA_Pos: 'cpu', pcbA: true, showThreadsDetail: true }
+            },
+            {
+                id: 8,
+                title: "Interrupción del Kernel",
+                activeComp: "Temporizador (Timer)",
+                concept: "Evitar Monopolio de CPU",
+                desc: "¡El tiempo del Proceso A se acabó! El temporizador del hardware envía una interrupción a la CPU para que el SO retome el control.",
+                boardState: { laptopActive: true, showProcA: true, procA_Pos: 'cpu', pcbA: true, showInterrupt: true, cpuGlow: false }
+            },
+            {
+                id: 9,
+                title: "Cambio de Contexto",
+                activeComp: "OS / PCB",
+                concept: "Context Switch",
+                desc: "El SO pausa el Proceso A. Guarda su estado exacto en el PCB A y lo mueve de vuelta a la cola de 'Listos'.",
+                boardState: { laptopActive: true, showProcA: true, procA_Pos: 'ready', pcbA: true, savingContext: true }
+            },
+            {
+                id: 10,
+                title: "Entra Nuevo Proceso",
+                activeComp: "CPU",
+                concept: "Cambio completado",
+                desc: "El Planificador carga un nuevo proceso (Proceso B) desde la cola de listos a la CPU usando su propio PCB. La CPU vuelve a trabajar.",
+                boardState: { laptopActive: true, showProcA: true, procA_Pos: 'ready', pcbA: true, showProcB: true, procB_Pos: 'cpu', pcbB: true, cpuGlow: true }
+            },
+            {
+                id: 11,
+                title: "Multitarea Real",
+                activeComp: "Sistema Completo",
+                concept: "Ilusión de Simultaneidad",
+                desc: "El SO cambia entre Procesos y Hilos miles de veces por segundo. Esto nos da la sensación de que todo en la laptop ocurre al mismo tiempo.",
+                boardState: { laptopActive: true, showProcA: true, procA_Pos: 'cpu', pcbA: true, showProcB: true, procB_Pos: 'ready', pcbB: true, multitaskLoop: true }
+            },
+            {
+                id: 12,
+                title: "Llamada a Exit()",
+                activeComp: "CPU / Kernel",
+                concept: "Ciclo de vida: Salida (Terminated)",
+                desc: "El Proceso A termina su tarea o el usuario cierra la aplicación. Emite una llamada al sistema 'exit()'. El proceso deja la CPU, detiene sus hilos y pasa al estado 'Salida', esperando ser limpiado.",
+                boardState: { laptopActive: true, showProcA: true, procA_Pos: 'ready', pcbA: true, showProcB: true, procB_Pos: 'cpu', pcbB: true, showLifecycle: true, lifeState: 'salida', cpuGlow: true }
+            },
+            {
+                id: 13,
+                title: "Liberación de Recursos",
+                activeComp: "RAM (Memoria)",
+                concept: "Reclamación de Memoria",
+                desc: "El Sistema Operativo actúa como recolector. Libera el espacio de direcciones de memoria (RAM) que ocupaban el Código, los Datos y los Stacks privados de todos los hilos del Proceso A.",
+                boardState: { laptopActive: true, showProcA: true, procA_Pos: 'terminated', pcbA: true, showProcB: true, procB_Pos: 'cpu', pcbB: true, showLifecycle: true, lifeState: 'salida', cpuGlow: true }
+            },
+            {
+                id: 14,
+                title: "Destrucción del PCB",
+                activeComp: "OS / Kernel",
+                concept: "Fin del Ciclo de Vida",
+                desc: "Finalmente, el SO elimina el Process Control Block (PCB) de la tabla de procesos. El Proceso A ha desaparecido por completo, devolviendo todos los recursos al sistema para otros programas.",
+                boardState: { laptopActive: true, showProcA: false, procA_Pos: 'terminated', pcbA: false, showProcB: true, procB_Pos: 'cpu', pcbB: true, cpuGlow: true }
+            }
+        ];
+
+        // --- COMPONENTES AUXILIARES ---
+
+        const DiagramaCicloVida = ({ estadoActivo }) => {
+            const estados = [
+                { id: 'nuevo', label: 'Nuevo', style: { left: '10%', top: '35%' } },
+                { id: 'listo', label: 'Listo', style: { left: '30%', top: '35%' } },
+                { id: 'ejecucion', label: 'Ejecución', style: { left: '70%', top: '35%' } },
+                { id: 'salida', label: 'Salida', style: { left: '90%', top: '35%' } },
+                { id: 'bloqueado', label: 'Bloqueado', style: { left: '50%', top: '75%' } },
+            ];
+
+            return (
+                <div className="bg-slate-800 p-3 rounded-xl border border-slate-700 mt-4 text-xs flex flex-col">
+                    <h3 className="text-slate-300 font-semibold mb-2 flex items-center gap-2">
+                        <Activity size={16} className="text-cyan-400" />
+                        Ciclo de Vida del Proceso
+                    </h3>
+                    <div className="relative w-full h-52 mt-2">
+                        {estados.map((est) => (
+                            <div key={est.id} style={{ ...est.style, transform: 'translate(-50%, -50%)' }} className={`absolute transition-all duration-300 ${estadoActivo === est.id
+                                ? 'bg-cyan-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.8)] scale-110 z-20' : 'bg-slate-700 text-slate-400 z-10'}
+                                rounded px-2 py-1 text-[10px] flex items-center justify-center font-medium border border-slate-600`}>
+                                {est.label}
+                            </div>
+                        ))}
+
+                        {/* SVG Arrows */}
+                        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
+                            <defs>
+                                <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+                                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
+                                </marker>
+                            </defs>
+                            {/* Nuevo to Listo */}
+                            <line x1="18%" y1="35%" x2="23%" y2="35%" stroke="#94a3b8" strokeWidth="1.5" markerEnd="url(#arrow)" />
+                            {/* Listo to Ejecución */}
+                            <line x1="38%" y1="28%" x2="62%" y2="28%" stroke="#94a3b8" strokeWidth="1.5" markerEnd="url(#arrow)" />
+                            {/* Ejecución to Listo */}
+                            <line x1="62%" y1="42%" x2="38%" y2="42%" stroke="#94a3b8" strokeWidth="1.5" markerEnd="url(#arrow)" />
+                            {/* Ejecución to Salida */}
+                            <line x1="77%" y1="35%" x2="82%" y2="35%" stroke="#94a3b8" strokeWidth="1.5" markerEnd="url(#arrow)" />
+                            {/* Ejecución to Bloqueado */}
+                            <line x1="66%" y1="42%" x2="54%" y2="68%" stroke="#94a3b8" strokeWidth="1.5" markerEnd="url(#arrow)" />
+                            {/* Bloqueado to Listo */}
+                            <line x1="46%" y1="68%" x2="34%" y2="42%" stroke="#94a3b8" strokeWidth="1.5" markerEnd="url(#arrow)" />
+                        </svg>
+
+                        {/* Arrow Labels */}
+                        <div className="absolute text-[8px] text-slate-400 whitespace-nowrap" style={{ left: '20.5%', top: '28%', transform: 'translate(-50%, -50%)' }}>Admitir</div>
+                        <div className="absolute text-[8px] text-slate-400 whitespace-nowrap" style={{ left: '50%', top: '22%', transform: 'translate(-50%, -50%)' }}>Pasar a ejecución</div>
+                        <div className="absolute text-[8px] text-slate-400 whitespace-nowrap text-center leading-tight" style={{ left: '50%', top: '48%', transform: 'translate(-50%, -50%)' }}>Fin de plazo<br />(time out)</div>
+                        <div className="absolute text-[8px] text-slate-400 whitespace-nowrap" style={{ left: '79.5%', top: '28%', transform: 'translate(-50%, -50%)' }}>Liberar</div>
+                        <div className="absolute text-[8px] text-slate-400 text-center leading-tight w-24" style={{ left: '66%', top: '60%', transform: 'translate(-50%, -50%)' }}>El proceso solicita<br />E/S o espera evento</div>
+                        <div className="absolute text-[8px] text-slate-400 text-center leading-tight w-20" style={{ left: '34%', top: '60%', transform: 'translate(-50%, -50%)' }}>E/S o evento<br />ocurre</div>
+
+                        {/* Status Descriptive Texts eliminados */}
+                    </div>
+                </div>
+            );
+        };
+
+        const ModelosHilos = () => (
+            <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 mt-4 text-xs">
+                <h3 className="text-slate-300 font-semibold mb-3 flex items-center gap-2">
+                    <Layers size={16} className="text-purple-400" />
+                    Modelos de Multithreading
+                </h3>
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className="flex flex-col gap-1 w-12">
+                            <div className="h-2 bg-green-400 rounded-full w-full" />
+                            <div className="h-2 bg-green-400 rounded-full w-full" />
+                            <div className="h-2 bg-green-400 rounded-full w-full" />
+                        </div>
+                        <span className="text-slate-400 text-[10px]">→</span>
+                        <div className="h-3 w-8 bg-purple-500 rounded-full" />
+                        <div className="text-slate-300"><strong>Many-to-One:</strong> Muchos hilos de usuario a un hilo de kernel.</div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="flex flex-col gap-1 w-12">
+                            <div className="h-2 bg-green-400 rounded-full w-full" />
+                            <div className="h-2 bg-green-400 rounded-full w-full" />
+                        </div>
+                        <span className="text-slate-400 text-[10px]">→</span>
+                        <div className="flex flex-col gap-1 w-8">
+                            <div className="h-2 bg-purple-500 rounded-full w-full" />
+                            <div className="h-2 bg-purple-500 rounded-full w-full" />
+                        </div>
+                        <div className="text-slate-300"><strong>One-to-One:</strong> Cada hilo tiene su propio hilo de kernel.</div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="flex flex-col gap-1 w-12">
+                            <div className="h-2 bg-green-400 rounded-full w-full" />
+                            <div className="h-2 bg-green-400 rounded-full w-full" />
+                            <div className="h-2 bg-green-400 rounded-full w-full" />
+                        </div>
+                        <span className="text-slate-400 text-[10px]">→</span>
+                        <div className="flex flex-col gap-1 w-8">
+                            <div className="h-2 bg-purple-500 rounded-full w-full" />
+                            <div className="h-2 bg-purple-500 rounded-full w-full" />
+                        </div>
+                        <div className="text-slate-300"><strong>Many-to-Many:</strong> Varios a varios (flexible).</div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- COMPONENTE PRINCIPAL APP ---
+        function App() {
+            const [currentStep, setCurrentStep] = useState(0);
+            const [isPlaying, setIsPlaying] = useState(false);
+
+            const stepData = STEPS[currentStep];
+            const { boardState } = stepData;
+
+            // Manejo de Multitarea loop (Paso 11)
+            const [multiLoop, setMultiLoop] = useState(false);
+            useEffect(() => {
+                let interval;
+                if (boardState.multitaskLoop) {
+                    interval = setInterval(() => {
+                        setMultiLoop(prev => !prev);
+                    }, 800);
+                }
+                return () => clearInterval(interval);
+            }, [boardState.multitaskLoop]);
+
+            // Manejo del modo Automático
+            useEffect(() => {
+                let timer;
+                if (isPlaying) {
+                    timer = setTimeout(() => {
+                        if (currentStep < STEPS.length - 1) {
+                            setCurrentStep(prev => prev + 1);
+                        } else {
+                            setIsPlaying(false);
+                        }
+                    }, 5000); // 5 segundos por paso
+                }
+                return () => clearTimeout(timer);
+            }, [isPlaying, currentStep]);
+
+            const handleNext = () => currentStep < STEPS.length - 1 && setCurrentStep(prev => prev + 1);
+            const handlePrev = () => currentStep > 0 && setCurrentStep(prev => prev - 1);
+            const handleReset = () => { setIsPlaying(false); setCurrentStep(0); };
+            const togglePlay = () => setIsPlaying(!isPlaying);
+
+            // --- Helpers de Posición para el Tablero Isométrico ---
+            const getPositionClass = (posType, isLooping = false, processType = 'A') => {
+                if (isLooping) {
+                    if (processType === 'A') posType = multiLoop ? 'cpu' : 'ready';
+                    if (processType === 'B') posType = multiLoop ? 'ready' : 'cpu';
+                }
+
+                switch (posType) {
+                    case 'disk': return 'left-[80%] top-[80%] translate-z-0 opacity-0 scale-50';
+                    case 'ram': return 'left-[65%] top-[15%] translate-z-10 opacity-100 scale-100';
+                    case 'ready': return 'left-[30%] top-[20%] translate-z-10 opacity-100 scale-100';
+                    case 'cpu': return 'left-[40%] top-[55%] translate-z-[30px] opacity-100 scale-110';
+                    case 'terminated': return 'left-[80%] top-[15%] translate-z-0 opacity-0 scale-0';
+                    default: return 'left-[50%] top-[50%] opacity-0';
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col md:flex-row overflow-hidden font-sans">
+                    {/* PANEL IZQUIERDO: SIMULACIÓN ISOMÉTRICA (Cámara-less AR) */}
+                    <div className="flex-1 relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-950 flex items-center justify-center p-4">
+                        <div className="absolute top-6 left-6 z-20">
+                            <h1 className="text-2xl font-bold text-white tracking-tight drop-shadow-lg">AR Sim: SO Internals</h1>
+                            <p className="text-cyan-400 text-sm font-medium">Procesos, Hilos y Multitarea</p>
+                        </div>
+
+                        <div className="relative w-full max-w-[800px] aspect-square" style={{ perspective: '1200px' }}>
+                            <div className="absolute inset-0 transition-transform duration-1000 ease-in-out" style={{ transform: 'rotateX(55deg) rotateZ(-40deg) scale(0.85)', transformStyle: 'preserve-3d' }}>
+
+                                {/* 1. Base / Placa Madre */}
+                                <div className="absolute inset-0 bg-slate-800 rounded-3xl border-b-[16px] border-r-[16px] border-slate-900 shadow-2xl">
+                                    <div className="absolute inset-4 border-2 border-slate-700 rounded-2xl opacity-50" />
+                                    <div className="absolute top-1/2 left-0 w-full h-px bg-slate-700" />
+                                    <div className="absolute left-1/2 top-0 w-px h-full bg-slate-700" />
+                                </div>
+
+                                {/* 2. CPU (Centro) */}
+                                <div className={`absolute left-[40%] top-[50%] w-48 h-48 bg-slate-900 rounded-2xl border-4 ${boardState.cpuGlow ? 'border-cyan-400 shadow-[0_0_30px_rgba(6,182,212,0.6)]' : 'border-slate-600'} transition-all duration-500 flex flex-col items-center justify-center`} style={{ transform: 'translateZ(20px)' }}>
+                                    <Cpu size={48} className={boardState.cpuGlow ? "text-cyan-400 mb-2" : "text-slate-500 mb-2"} />
+                                    <span className="font-bold text-xl tracking-widest text-slate-300">CPU</span>
+
+                                    <div className={`absolute -top-10 -right-10 text-red-500 transition-opacity duration-300 ${boardState.showInterrupt ? 'opacity-100 scale-150' : 'opacity-0 scale-50'}`}>
+                                        <Zap size={64} fill="currentColor" />
+                                    </div>
+                                </div>
+
+                                {/* 3. Memoria RAM (Arriba Derecha) */}
+                                <div className="absolute left-[65%] top-[10%] w-48 h-64 bg-slate-700/80 backdrop-blur rounded-xl border border-slate-600 p-2 shadow-lg" style={{ transform: 'translateZ(10px)' }}>
+                                    <div className="flex items-center gap-2 text-slate-300 mb-2 border-b border-slate-600 pb-2">
+                                        <MemoryStick size={20} /> <span className="font-semibold">RAM</span>
+                                    </div>
+                                    <div className="h-full w-full flex flex-col gap-2">
+                                        <div className="bg-slate-800 w-full h-1/4 rounded opacity-50"></div>
+                                        <div className="bg-slate-800 w-full h-1/4 rounded opacity-50"></div>
+                                    </div>
+                                </div>
+
+                                {/* 4. OS Kernel / Scheduler (Abajo Izquierda) */}
+                                <div className="absolute left-[5%] top-[60%] w-56 h-32 bg-slate-800 rounded-xl border border-purple-500 p-3 shadow-lg" style={{ transform: 'translateZ(15px)' }}>
+                                    <span className="text-purple-400 font-bold flex items-center gap-2 mb-2">
+                                        <Layers size={18} /> OS Kernel
+                                    </span>
+                                    <div className="bg-slate-900 rounded p-2 text-xs text-slate-300 border border-slate-700 mb-1">
+                                        Planificador CPU (Scheduler)
+                                    </div>
+                                    <div className="bg-slate-900 rounded p-2 text-xs flex justify-between items-center border border-slate-700">
+                                        <span className="text-red-400">Timer</span>
+                                        <Clock size={14} className={boardState.showInterrupt ? 'text-red-500 animate-spin' : 'text-slate-500'} />
+                                    </div>
+                                </div>
+
+                                {/* 5. Ready Queue (Arriba Izquierda) */}
+                                <div className="absolute left-[15%] top-[15%] w-64 h-24 bg-slate-800/80 rounded-xl border-2 border-dashed border-cyan-700 p-2 flex items-center" style={{ transform: 'translateZ(5px)' }}>
+                                    <span className="absolute -top-6 left-2 text-cyan-500 font-semibold text-sm">Cola Listos (Ready)</span>
+                                </div>
+
+                                {/* --- ELEMENTOS DINÁMICOS (Procesos, PCBs, Hilos) --- */}
+                                {/* PROCESO A */}
+                                <div className={`absolute w-36 bg-emerald-900/90 border-2 border-emerald-500 rounded-lg shadow-xl transition-all duration-700 ease-in-out p-2 z-30 ${getPositionClass(boardState.procA_Pos, boardState.multitaskLoop, 'A')}`}>
+                                    <div className="font-bold text-emerald-300 text-center border-b border-emerald-700 pb-1 mb-2">Proceso A</div>
+                                    <div className={`flex flex-col gap-1 transition-opacity duration-500 ${boardState.procADetails || boardState.showThreads ? 'opacity-100 h-auto' : 'opacity-0 h-0 overflow-hidden'}`}>
+                                        <div className={`bg-emerald-950 p-1 rounded text-[10px] text-center ${boardState.showThreadsDetail ? 'border border-blue-400' : ''}`}>
+                                            Código & Datos {boardState.showThreadsDetail && <span className="text-blue-300 block">(Compartido)</span>}
+                                        </div>
+                                        {!boardState.showThreads ? (
+                                            <div className="bg-emerald-800 p-1 rounded text-[10px] text-center mt-1">Stack & PC</div>
+                                        ) : (
+                                            <div className="flex gap-1 mt-1 justify-between">
+                                                {[1, 2, 3].map(i => (
+                                                    <div key={i} className={`flex-1 bg-teal-800 rounded p-1 text-[8px] text-center ${boardState.showThreadsDetail ? 'border border-pink-400' : ''}`}>
+                                                        T{i}<br />Stack<br />PC
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {boardState.showThreadsDetail && <div className="text-[9px] text-pink-300 text-center mt-1">Privado por hilo</div>}
+                                    </div>
+                                </div>
+
+                                {/* PCB A */}
+                                <div className={`absolute w-24 bg-slate-700 border border-slate-500 rounded shadow-md transition-all duration-500 p-1 text-[10px] text-slate-300 z-20 ${boardState.pcbA ? 'opacity-100 scale-100' : 'opacity-0 scale-50'} ${boardState.savingContext ? 'border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]' : ''} left-[5%] top-[85%]`} style={{ transform: 'translateZ(10px)' }}>
+                                    <div className="font-bold text-center border-b border-slate-600 mb-1 text-slate-100">PCB A</div>
+                                    <div>Estado: {boardState.procA_Pos}</div>
+                                    <div>Regs: 0x...</div>
+                                    <div>PC: {boardState.procA_Pos === 'cpu' ? 'Corriendo' : 'Guardado'}</div>
+                                </div>
+
+                                {/* PROCESO B */}
+                                <div className={`absolute w-36 bg-blue-900/90 border-2 border-blue-500 rounded-lg shadow-xl transition-all duration-700 ease-in-out p-2 z-30 ${getPositionClass(boardState.procB_Pos, boardState.multitaskLoop, 'B')} ${boardState.showProcB ? 'opacity-100' : 'opacity-0 hidden'}`}>
+                                    <div className="font-bold text-blue-300 text-center border-b border-blue-700 pb-1 mb-2">Proceso B</div>
+                                    <div className="bg-blue-950 p-1 rounded text-[10px] text-center">Código, Datos, Stack, PC</div>
+                                </div>
+
+                                {/* PCB B */}
+                                <div className={`absolute w-24 bg-slate-700 border border-slate-500 rounded shadow-md transition-all duration-500 p-1 text-[10px] text-slate-300 z-20 ${boardState.pcbB ? 'opacity-100 scale-100' : 'opacity-0 scale-50'} left-[30%] top-[85%]`} style={{ transform: 'translateZ(10px)' }}>
+                                    <div className="font-bold text-center border-b border-slate-600 mb-1 text-slate-100">PCB B</div>
+                                    <div>Estado: {boardState.procB_Pos}</div>
+                                    <div>Regs: 0x...</div>
+                                </div>
+
+                                {/* Flujo de datos animado (Paso 5) */}
+                                {boardState.showDataFlow && (
+                                    <div className="absolute left-[55%] top-[35%] w-16 h-1 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_10px_#22d3ee]" style={{ transform: 'rotate(-30deg) translateZ(15px)' }}></div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* PANEL DERECHO: CONTROLES Y EXPLICACIÓN */}
+                    <div className="w-full md:w-[400px] bg-slate-900 border-t md:border-t-0 md:border-l border-slate-800 flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.5)] z-30">
+                        <div className="p-6 border-b border-slate-800">
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-sm font-semibold text-slate-500">Paso {currentStep + 1} de {STEPS.length}</span>
+                                <div className="flex gap-2">
+                                    <button onClick={handlePrev} disabled={currentStep === 0} className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg disabled:opacity-50 transition-colors">
+                                        <ArrowLeft size={18} />
+                                    </button>
+                                    <button onClick={togglePlay} className={`p-2 rounded-lg flex items-center justify-center transition-colors ${isPlaying ? 'bg-amber-500/20 text-amber-500' : 'bg-cyan-500/20 text-cyan-400'}`}>
+                                        {isPlaying ? <Pause size={18} /> : <Play size={18} />}
+                                    </button>
+                                    <button onClick={handleNext} disabled={currentStep === STEPS.length - 1} className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg disabled:opacity-50 transition-colors">
+                                        <ArrowRight size={18} />
+                                    </button>
+                                    <button onClick={handleReset} className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors ml-2">
+                                        <RotateCcw size={18} />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                                <div className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 transition-all duration-300" style={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }} />
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-slate-700">
+                            <div className="flex justify-between items-start mb-2">
+                                <h2 className="text-2xl font-bold text-white leading-tight">{stepData.title}</h2>
+                            </div>
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-800 rounded-full text-xs font-medium text-cyan-400 mb-6 border border-slate-700">
+                                <Monitor size={14} /> Foco: {stepData.activeComp}
+                            </div>
+                            <div className="mb-6">
+                                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Concepto Clave</h3>
+                                <p className="text-lg text-slate-300 border-l-2 border-purple-500 pl-4 py-1 italic">
+                                    {stepData.concept}
+                                </p>
+                            </div>
+                            <div className="mb-6">
+                                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Explicación</h3>
+                                <p className="text-slate-400 leading-relaxed text-[15px]">
+                                    {stepData.desc}
+                                </p>
+                            </div>
+                            <div className="transition-all duration-500">
+                                {boardState.showLifecycle && <DiagramaCicloVida estadoActivo={boardState.lifeState} />}
+                                {(boardState.showThreads || boardState.showThreadsDetail) && <ModelosHilos />}
+                            </div>
+                        </div>
+                        <div className="p-4 border-t border-slate-800 text-center text-xs text-slate-500 bg-slate-900/50">
+                            Simulador Arquitectura OS • Modo: {isPlaying ? 'Automático' : 'Manual'}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>

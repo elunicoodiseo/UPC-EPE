@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Procesos y Multitarea</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            color: white;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+        }
+
+        /* Glassmorphism utilities */
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        /* 3D Scene Setup */
+        .scene-container {
+            perspective: 1200px;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform-style: preserve-3d;
+        }
+
+        .isometric-world {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            margin-top: 50px;
+            /* Añadido para centrar verticalmente el modelo ahora que tiene pantalla arriba */
+            transform: rotateX(60deg) rotateZ(-45deg) scale(0.85);
+            /* Escala ajustada */
+            transform-style: preserve-3d;
+            transition: transform 0.5s ease;
+        }
+
+        /* Laptop Base (Motherboard) */
+        .motherboard {
+            position: absolute;
+            width: 600px;
+            height: 450px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px solid #334155;
+            border-radius: 20px;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.1), inset 0 0 20px rgba(0, 0, 0, 0.8);
+            bottom: 50px;
+            left: 100px;
+            transform-style: preserve-3d;
+        }
+
+        /* Laptop Screen */
+        .laptop-screen {
+            position: absolute;
+            width: 600px;
+            height: 350px;
+            background: rgba(10, 15, 30, 0.95);
+            border: 4px solid #334155;
+            border-radius: 12px;
+            top: -250px;
+            /* Alineado exactamente con el borde superior (trasero) de la placa base */
+            left: 100px;
+            /* Mismo margen izquierdo de la placa base */
+            transform-origin: bottom center;
+            /* La bisagra es el borde inferior de la pantalla */
+            transform: rotateX(-105deg) translateZ(2px);
+            /* Actúa como una tapa abierta inclinada hacia atrás */
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8), 0 -10px 30px rgba(56, 189, 248, 0.15);
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            overflow: hidden;
+            pointer-events: none;
+            /* EVITA QUE LA PANTALLA INVISIBLE BLOQUEE EL HOVER DE LOS COMPONENTES */
+        }
+
+        .screen-content {
+            flex: 1;
+            background: #0f172a;
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Hardware Components */
+        .component {
+            position: absolute;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform: translateZ(10px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            text-align: center;
+            padding: 10px;
+            z-index: 10;
+            /* Base Z-index para asegurar clics */
+        }
+
+        .component:hover {
+            transform: translateZ(30px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
+            z-index: 20;
+            /* Eleva el componente al pasar el mouse */
+        }
+
+        .component.active {
+            transform: translateZ(25px);
+            animation: pulse-glow 2s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            0% {
+                box-shadow: 0 0 15px var(--comp-color);
+            }
+
+            100% {
+                box-shadow: 0 0 40px var(--comp-color), inset 0 0 20px var(--comp-color);
+            }
+        }
+
+        /* Specific Component Positions & Colors */
+        #comp-cpu {
+            top: 80px;
+            left: 150px;
+            width: 120px;
+            height: 120px;
+            background: rgba(249, 115, 22, 0.2);
+            --comp-color: #f97316;
+            border-color: #f97316;
+        }
+
+        #comp-ram {
+            top: 80px;
+            right: 50px;
+            width: 100px;
+            height: 160px;
+            background: rgba(168, 85, 247, 0.2);
+            --comp-color: #a855f7;
+            border-color: #a855f7;
+        }
+
+        #comp-ssd {
+            bottom: 50px;
+            right: 50px;
+            width: 120px;
+            height: 80px;
+            background: rgba(148, 163, 184, 0.2);
+            --comp-color: #94a3b8;
+            border-color: #94a3b8;
+        }
+
+        #comp-gpu {
+            top: 240px;
+            left: 150px;
+            width: 140px;
+            height: 100px;
+            background: rgba(239, 68, 68, 0.2);
+            --comp-color: #ef4444;
+            border-color: #ef4444;
+        }
+
+        #comp-os {
+            bottom: 50px;
+            left: 220px;
+            width: 160px;
+            height: 80px;
+            background: rgba(6, 182, 212, 0.2);
+            --comp-color: #06b6d4;
+            border-color: #06b6d4;
+            border-radius: 40px;
+        }
+
+        #comp-wifi {
+            bottom: 160px;
+            right: 200px;
+            width: 80px;
+            height: 80px;
+            background: rgba(56, 189, 248, 0.2);
+            --comp-color: #38bdf8;
+            border-color: #38bdf8;
+        }
+
+        #comp-battery {
+            bottom: -20px;
+            left: 150px;
+            width: 300px;
+            height: 40px;
+            background: rgba(234, 179, 8, 0.2);
+            --comp-color: #eab308;
+            border-color: #eab308;
+        }
+
+        /* CPU Cores */
+        .core-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-top: 10px;
+            width: 100%;
+            height: 60px;
+        }
+
+        .core {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #f97316;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Visualizing Processes & Threads */
+        .process-block {
+            position: absolute;
+            background: rgba(59, 130, 246, 0.8);
+            border: 1px solid #60a5fa;
+            border-radius: 4px;
+            color: white;
+            font-size: 0.6rem;
+            padding: 5px;
+            box-shadow: 0 0 10px #3b82f6;
+            transition: all 0.5s ease;
+            opacity: 0;
+            transform: translateZ(40px);
+            pointer-events: none;
+            /* Evita que los procesos bloqueen el clic hacia la RAM */
+        }
+
+        .thread-dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #22c55e;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* SVG Data Flow Lines */
+        #data-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            transform: translateZ(15px);
+        }
+
+        path.data-flow {
+            fill: none;
+            stroke-width: 3;
+            stroke-dasharray: 10;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        path.data-flow.active {
+            opacity: 0.8;
+            animation: dash-flow 1s linear infinite;
+        }
+
+        @keyframes dash-flow {
+            from {
+                stroke-dashoffset: 20;
+            }
+
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        /* Floating Info Card (Explore Mode) */
+        #floating-card {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 400px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 50;
+        }
+
+        #floating-card.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* Layout panels */
+        .sidebar {
+            width: 380px;
+            height: 100vh;
+            position: absolute;
+            right: 0;
+            top: 0;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            z-index: 20;
+        }
+
+        .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: calc(100% - 380px);
+            padding: 20px;
+            z-index: 20;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Screen animations */
+        .window {
+            position: absolute;
+            background: #1e293b;
+            border: 1px solid #475569;
+            border-radius: 4px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+
+        .window-header {
+            height: 12px;
+            background: #334155;
+            border-radius: 4px 4px 0 0;
+            display: flex;
+            align-items: center;
+            padding: 0 5px;
+            gap: 3px;
+        }
+
+        .window-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+
+        .window-dot:nth-child(2) {
+            background: #eab308;
+        }
+
+        .window-dot:nth-child(3) {
+            background: #22c55e;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div>
+            <h1 class="text-2xl font-bold flex items-center gap-2 text-cyan-400">
+                <i data-lucide="cpu"></i> SimLaptop AR
+            </h1>
+            <p class="text-sm text-slate-400">Entendiendo procesos, hilos y multitarea</p>
+        </div>
+        <div class="glass rounded-full p-1 flex">
+            <button id="btn-mode-sim"
+                class="px-4 py-2 rounded-full text-sm font-semibold transition bg-cyan-600 text-white shadow-lg">Simulación</button>
+            <button id="btn-mode-exp"
+                class="px-4 py-2 rounded-full text-sm font-semibold transition text-slate-300 hover:text-white">Exploración</button>
+        </div>
+    </div>
+
+    <!-- 3D Scene -->
+    <div class="scene-container" id="scene-wrapper">
+        <div class="isometric-world" id="laptop-world">
+
+            <!-- Screen -->
+            <div class="laptop-screen">
+                <div class="screen-content" id="screen-display">
+                    <!-- Fake Windows -->
+                    <div id="win-browser" class="window" style="top: 20px; left: 20px; width: 200px; height: 150px;">
+                        <div class="window-header">
+                            <div class="window-dot"></div>
+                            <div class="window-dot"></div>
+                            <div class="window-dot"></div>
+                        </div>
+                        <div class="p-2 text-xs text-slate-300 flex items-center justify-center h-full"><i
+                                data-lucide="globe" class="mb-1 text-blue-400"></i> Navegador</div>
+                    </div>
+                    <div id="win-music" class="window" style="top: 100px; left: 240px; width: 150px; height: 120px;">
+                        <div class="window-header">
+                            <div class="window-dot"></div>
+                            <div class="window-dot"></div>
+                            <div class="window-dot"></div>
+                        </div>
+                        <div class="p-2 text-xs text-slate-300 flex items-center justify-center h-full"><i
+                                data-lucide="music" class="mb-1 text-purple-400"></i> Música</div>
+                    </div>
+                    <div id="win-video" class="window" style="top: 50px; left: 350px; width: 220px; height: 180px;">
+                        <div class="window-header">
+                            <div class="window-dot"></div>
+                            <div class="window-dot"></div>
+                            <div class="window-dot"></div>
+                        </div>
+                        <div class="p-2 text-xs text-slate-300 flex items-center justify-center h-full"><i
+                                data-lucide="video" class="mb-1 text-red-400"></i> Videollamada</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Motherboard Base -->
+            <div class="motherboard">
+                <!-- Data Flow SVG overlay -->
+                <svg id="data-lines">
+                    <path id="path-ssd-ram" class="data-flow" stroke="#94a3b8" d="M 450 380 Q 450 200 450 160" />
+                    <path id="path-ram-cpu" class="data-flow" stroke="#a855f7" d="M 450 160 Q 300 140 270 140" />
+                    <path id="path-os-cpu" class="data-flow" stroke="#06b6d4" d="M 300 380 Q 210 280 210 200" />
+                    <path id="path-cpu-gpu" class="data-flow" stroke="#f97316" d="M 210 200 L 210 240" />
+                    <path id="path-cpu-wifi" class="data-flow" stroke="#38bdf8" d="M 270 140 Q 350 200 400 240" />
+                </svg>
+
+                <!-- Components -->
+                <div id="comp-cpu" class="component" onclick="handleComponentClick('cpu')">
+                    <i data-lucide="cpu" class="mb-1"></i> CPU
+                    <div class="core-grid">
+                        <div class="core" id="core-1"></div>
+                        <div class="core" id="core-2"></div>
+                        <div class="core" id="core-3"></div>
+                        <div class="core" id="core-4"></div>
+                    </div>
+                </div>
+
+                <div id="comp-ram" class="component" onclick="handleComponentClick('ram')">
+                    <i data-lucide="memory-stick" class="mb-1"></i> RAM
+                    <div id="ram-slots" class="w-full h-full mt-2 relative"></div>
+                </div>
+
+                <div id="comp-ssd" class="component" onclick="handleComponentClick('ssd')">
+                    <i data-lucide="hard-drive" class="mb-1"></i> SSD
+                </div>
+
+                <div id="comp-gpu" class="component" onclick="handleComponentClick('gpu')">
+                    <i data-lucide="monitor-play" class="mb-1"></i> GPU
+                </div>
+
+                <div id="comp-os" class="component" onclick="handleComponentClick('os')">
+                    <i data-lucide="settings" class="mb-1"></i> Sist. Operativo (Planificador)
+                </div>
+
+                <div id="comp-wifi" class="component" onclick="handleComponentClick('wifi')">
+                    <i data-lucide="wifi" class="mb-1"></i> Wi-Fi
+                </div>
+
+                <div id="comp-battery" class="component" onclick="handleComponentClick('battery')">
+                    <i data-lucide="battery-charging" class="mb-1"></i> Batería
+                </div>
+            </div>
+
+            <!-- Dynamic Process/Thread Containers -->
+            <div id="dynamic-elements"
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; transform: translateZ(50px);">
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Panel -->
+    <div class="sidebar glass" id="control-panel">
+        <div class="p-6 flex-1 overflow-y-auto">
+            <div id="sim-content">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-xs font-bold text-cyan-400 tracking-wider uppercase" id="step-indicator">Paso 1 de
+                        8</span>
+                </div>
+                <h2 class="text-2xl font-bold mb-4" id="info-title">Iniciando el sistema</h2>
+                <p class="text-slate-300 text-sm leading-relaxed mb-6" id="info-desc">Al encender la laptop, el sistema
+                    operativo se carga en memoria y toma control del hardware.</p>
+
+                <div class="bg-slate-800/50 rounded-lg p-4 mb-6 border border-slate-700">
+                    <h3 class="text-xs text-slate-400 uppercase tracking-wider mb-2">Concepto Clave</h3>
+                    <p class="text-sm font-semibold text-white" id="info-concept">El Sistema Operativo es el director de
+                        la orquesta.</p>
+                </div>
+            </div>
+
+            <div id="exp-content"
+                class="hidden h-full flex flex-col justify-center items-center text-center text-slate-400">
+                <i data-lucide="mouse-pointer-click" class="w-16 h-16 mb-4 opacity-50"></i>
+                <p>Haz clic en cualquier componente de la laptop para explorar su función en detalle.</p>
+            </div>
+        </div>
+
+        <!-- Controls Footer -->
+        <div class="p-6 border-t border-slate-700/50 bg-slate-900/50" id="sim-controls">
+            <div class="flex justify-between items-center mb-4">
+                <button id="btn-prev" class="p-2 hover:bg-slate-800 rounded transition text-slate-300" disabled><i
+                        data-lucide="chevron-left"></i></button>
+                <button id="btn-play"
+                    class="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-2 rounded-full font-bold transition shadow-lg shadow-cyan-500/30">
+                    <i data-lucide="play" class="w-4 h-4"></i> Auto
+                </button>
+                <button id="btn-next" class="p-2 hover:bg-slate-800 rounded transition text-slate-300"><i
+                        data-lucide="chevron-right"></i></button>
+            </div>
+            <button id="btn-reset" class="w-full text-xs text-slate-500 hover:text-slate-300 transition text-center"><i
+                    data-lucide="rotate-ccw" class="inline w-3 h-3 mr-1"></i> Reiniciar Simulación</button>
+        </div>
+    </div>
+
+    <!-- Floating Info Card (Modal for Exploration) -->
+    <div id="floating-card" class="glass rounded-xl p-6 border border-slate-600 shadow-2xl relative">
+        <button id="btn-close-card" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i
+                data-lucide="x"></i></button>
+        <div class="flex items-center gap-3 mb-4">
+            <div class="p-3 rounded-lg bg-cyan-500/20 text-cyan-400" id="card-icon"></div>
+            <h2 class="text-xl font-bold" id="card-title">Componente</h2>
+        </div>
+        <div class="space-y-4 text-sm">
+            <div>
+                <strong class="text-slate-300 block mb-1">Función Principal:</strong>
+                <p id="card-func" class="text-slate-100"></p>
+            </div>
+            <div>
+                <strong class="text-slate-300 block mb-1">Relación (Procesos/Multitarea):</strong>
+                <p id="card-rel" class="text-slate-100"></p>
+            </div>
+            <div class="bg-slate-800/50 p-3 rounded border border-slate-700">
+                <strong class="text-yellow-400 text-xs uppercase block mb-1">Ejemplo</strong>
+                <p id="card-ex" class="text-slate-200 italic"></p>
+            </div>
+            <!-- Contenedor extra para botón de RAM -->
+            <div id="card-extra-action"></div>
+        </div>
+    </div>
+
+    <!-- RAM Popup Overlay (Fondo oscuro difuminado) -->
+    <div id="ram-overlay"
+        class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] hidden transition-opacity duration-300 opacity-0"
+        onclick="closeRamPopup()"></div>
+
+    <!-- RAM Memory View Popup -->
+    <div id="ram-popup"
+        class="glass rounded-xl p-6 border border-purple-500 shadow-[0_0_40px_rgba(168,85,247,0.3)] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[60] w-[550px] hidden flex-col transition-all duration-300 scale-95 opacity-0">
+        <div class="flex justify-between items-center mb-4 border-b border-purple-500/30 pb-3">
+            <h2 class="text-xl font-bold text-purple-400 flex items-center gap-2">
+                <i data-lucide="microchip"></i> Memoria RAM
+            </h2>
+            <button onclick="closeRamPopup()"
+                class="text-slate-400 hover:text-white transition bg-slate-800/50 rounded p-1"><i
+                    data-lucide="x"></i></button>
+        </div>
+
+        <div class="flex gap-4 mb-5">
+            <div
+                class="w-24 h-24 flex-shrink-0 flex items-center justify-center bg-purple-900/30 rounded-lg border border-purple-500/30 shadow-inner">
+                <i data-lucide="memory-stick" class="w-12 h-12 text-purple-400"></i>
+            </div>
+            <div class="flex-1 flex flex-col justify-center">
+                <strong class="text-purple-300 text-xs uppercase tracking-wider block mb-1">Concepto y
+                    Explicación</strong>
+                <p class="text-sm text-slate-200 leading-relaxed mb-2">
+                    La <b>RAM (Random Access Memory)</b> es el espacio de trabajo ultrarrápido a corto plazo. Mantiene
+                    activos los programas (procesos) y datos que la CPU necesita ejecutar en este preciso instante.
+                </p>
+                <div class="bg-purple-900/30 p-2 rounded border border-purple-500/30 text-xs text-slate-300">
+                    <strong class="text-purple-400">Ejemplo:</strong> Al hacer clic en un icono, el programa viaja del
+                    SSD hacia la RAM. Si la RAM se llena de procesos, la laptop se vuelve lenta.
+                </div>
+            </div>
+        </div>
+
+        <p class="text-xs text-slate-400 uppercase tracking-wider mb-2 border-t border-slate-700/50 pt-4">
+            Mapa en vivo de la memoria RAM:
+        </p>
+
+        <div class="bg-slate-900/80 p-4 rounded-lg border border-slate-700">
+            <div class="grid grid-cols-8 gap-1.5" id="ram-memory-grid">
+                <!-- JS insertará los bloques aquí -->
+            </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-slate-300 justify-center bg-slate-800/50 p-3 rounded"
+            id="ram-legend">
+            <!-- JS insertará la leyenda aquí -->
+        </div>
+    </div>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Data Definitions
+        const componentsData = {
+            'cpu': { name: 'CPU (Procesador)', icon: 'cpu', color: 'text-orange-400', func: 'Es el cerebro de la laptop. Ejecuta instrucciones de los programas paso a paso.', rel: 'Procesa los hilos enviados por el sistema operativo. Sus múltiples núcleos permiten el paralelismo real.', ex: 'Ejecuta el código del navegador, la música y la videollamada en pequeños turnos rapidísimos.' },
+            'ram': { name: 'Memoria RAM', icon: 'memory-stick', color: 'text-purple-400', func: 'Guarda temporalmente los procesos y datos que están actualmente en uso.', rel: 'Mantiene los procesos abiertos. Más RAM permite tener más programas activos sin que la laptop se vuelva lenta.', ex: 'Si tienes Chrome, Word y Spotify abiertos, todos ellos ocupan espacio como "Procesos" en la RAM.' },
+            'ssd': { name: 'Almacenamiento SSD', icon: 'hard-drive', color: 'text-slate-400', func: 'Guarda programas, archivos y el sistema operativo de forma permanente.', rel: 'Cuando abres un programa, sus datos se copian del SSD hacia la RAM para convertirse en un proceso vivo.', ex: 'Word está instalado en el SSD, pero al hacerle doble clic, se carga y se convierte en un proceso en la RAM.' },
+            'gpu': { name: 'Tarjeta Gráfica (GPU)', icon: 'monitor-play', color: 'text-red-400', func: 'Procesa gráficos, video, animaciones 3D e interfaces complejas.', rel: 'Apoya a la CPU liberándola de tareas visuales pesadas, permitiendo que la CPU se enfoque en lógica.', ex: 'Al jugar o ver un video en 4K, la GPU hace el trabajo pesado de dibujar los píxeles.' },
+            'os': { name: 'Sistema Operativo', icon: 'settings', color: 'text-cyan-400', func: 'El software principal (Windows, macOS, Linux) que administra todo el dispositivo.', rel: 'Su "Planificador" decide qué proceso o hilo usa la CPU en cada milisegundo, creando la magia de la multitarea.', ex: 'Decide que tu videollamada tiene prioridad alta para que no se corte el audio mientras descargas un archivo.' },
+            'wifi': { name: 'Red Wi-Fi', icon: 'wifi', color: 'text-blue-400', func: 'Permite la comunicación de la laptop con internet o redes locales.', rel: 'Los procesos generan hilos de red para solicitar o enviar datos al exterior sin bloquear la interfaz.', ex: 'El navegador usa un hilo de red para descargar una página mientras otro hilo te permite seguir haciendo scroll.' },
+            'battery': { name: 'Batería y Energía', icon: 'battery-charging', color: 'text-yellow-400', func: 'Alimenta todos los componentes de la laptop.', rel: 'El sistema operativo gestiona la energía; si la batería está baja, puede reducir la velocidad de la CPU para que los procesos gasten menos.', ex: 'Cierra procesos en segundo plano o baja el brillo para que puedas terminar tu tarea antes de que se apague.' }
+        };
+
+        const steps = [
+            {
+                title: "Encendido de la laptop",
+                desc: "Al encender la laptop, el sistema operativo se carga desde el SSD hacia la RAM y toma el control de todo el hardware.",
+                concept: "Boot: El software base se prepara para administrar recursos.",
+                activeComps: ['ssd', 'ram', 'os'],
+                paths: ['path-ssd-ram'],
+                action: () => { clearDynamic(); animateData('path-ssd-ram'); }
+            },
+            {
+                title: "Apertura de un programa",
+                desc: "Cuando haces clic en un icono, el programa viaja del SSD a la RAM. Ahora deja de ser un simple archivo y se convierte en un PROCESO activo.",
+                concept: "Proceso: Un programa en ejecución, cargado en memoria y listo para actuar.",
+                activeComps: ['ssd', 'ram'],
+                paths: ['path-ssd-ram'],
+                action: () => {
+                    clearDynamic();
+                    animateData('path-ssd-ram');
+                    setTimeout(() => createProcessBox('Navegador', '#3b82f6', 10, 10), 500);
+                    setTimeout(() => { document.getElementById('win-browser').style.opacity = '1'; }, 1000);
+                }
+            },
+            {
+                title: "Creación de Hilos",
+                desc: "Para ser más rápido, el proceso (ej. Navegador) se divide en tareas más pequeñas llamadas HILOS (threads). Un hilo dibuja la pantalla, otro descarga datos, etc.",
+                concept: "Hilo: Una unidad pequeña de trabajo dentro de un proceso. Comparten la misma memoria del proceso padre.",
+                activeComps: ['ram'],
+                paths: [],
+                action: () => {
+                    createProcessBox('Navegador', '#3b82f6', 10, 10);
+                    document.getElementById('win-browser').style.opacity = '1';
+                    setTimeout(() => generateThreadsFromProcess(), 800);
+                }
+            },
+            {
+                title: "Planificación de CPU",
+                desc: "El planificador del Sistema Operativo toma esos hilos y decide cuál entra a los núcleos de la CPU y por cuánto tiempo (milisegundos).",
+                concept: "Planificador (Scheduler): El semáforo inteligente que dirige el tráfico de tareas hacia la CPU.",
+                activeComps: ['os', 'cpu', 'ram'],
+                paths: ['path-os-cpu', 'path-ram-cpu'],
+                action: () => {
+                    createProcessBox('Navegador', '#3b82f6', 10, 10);
+                    document.getElementById('win-browser').style.opacity = '1';
+                    animateData('path-ram-cpu'); animateData('path-os-cpu');
+                    simulateCPUCoresSingle();
+                }
+            },
+            {
+                title: "Multitarea Real",
+                desc: "Abres más programas: Música y Videollamada. Todos se cargan en RAM y envían hilos. La CPU alterna entre ellos tan rápido que parece que ocurren a la vez.",
+                concept: "Multitarea: Alternancia ultrarrápida de tiempo de CPU entre múltiples procesos e hilos.",
+                activeComps: ['cpu', 'ram', 'os'],
+                paths: ['path-ram-cpu', 'path-os-cpu'],
+                action: () => {
+                    createProcessBox('Navegador', '#3b82f6', 10, 10);
+                    createProcessBox('Música', '#a855f7', 10, 50);
+                    createProcessBox('Video', '#ef4444', 10, 90);
+                    document.getElementById('win-browser').style.opacity = '1';
+                    document.getElementById('win-music').style.opacity = '1';
+                    document.getElementById('win-video').style.opacity = '1';
+                    animateData('path-ram-cpu'); animateData('path-os-cpu');
+                    simulateCPUCoresMulti();
+                }
+            },
+            {
+                title: "Uso de todo el hardware",
+                desc: "Los procesos no solo usan CPU. El video usa la GPU, la música carga del SSD, y la videollamada envía datos por la red Wi-Fi.",
+                concept: "Sistema integral: Un proceso interactúa con múltiples componentes físicos a través del OS.",
+                activeComps: ['cpu', 'ram', 'gpu', 'wifi', 'os'],
+                paths: ['path-ram-cpu', 'path-cpu-gpu', 'path-cpu-wifi'],
+                action: () => {
+                    createProcessBox('Navegador', '#3b82f6', 10, 10);
+                    createProcessBox('Música', '#a855f7', 10, 50);
+                    createProcessBox('Video', '#ef4444', 10, 90);
+                    document.querySelectorAll('.window').forEach(w => w.style.opacity = '1');
+                    ['path-ram-cpu', 'path-cpu-gpu', 'path-cpu-wifi', 'path-os-cpu'].forEach(animateData);
+                    simulateCPUCoresMulti();
+                }
+            },
+            {
+                title: "Interacción del Usuario",
+                desc: "Escribes en el teclado o mueves el mouse. El Sistema Operativo captura esa señal (interrupción) y se la entrega inmediatamente al proceso que tienes en pantalla.",
+                concept: "Entrada/Salida: El hardware se comunica con el software mediante interrupciones manejadas por el OS.",
+                activeComps: ['os', 'cpu'],
+                paths: ['path-os-cpu'],
+                action: () => {
+                    createProcessBox('Navegador', '#3b82f6', 10, 10);
+                    document.getElementById('win-browser').style.opacity = '1';
+                    document.getElementById('win-browser').style.transform = 'scale(1.05)';
+                    document.getElementById('win-browser').style.boxShadow = '0 0 20px #3b82f6';
+                    animateData('path-os-cpu');
+                }
+            },
+            {
+                title: "Cierre del proceso",
+                desc: "Cierras el programa. El proceso finaliza, el Sistema Operativo limpia la Memoria RAM y la CPU queda libre para otras tareas.",
+                concept: "Liberación de recursos: Un buen sistema mantiene la RAM libre limpiando lo que ya no se usa.",
+                activeComps: ['ram', 'os'],
+                paths: [],
+                action: () => {
+                    document.querySelectorAll('.window').forEach(w => {
+                        w.style.opacity = '0';
+                        w.style.transform = 'scale(1)';
+                        w.style.boxShadow = 'none';
+                    });
+                    const dynamic = document.getElementById('dynamic-elements');
+                    dynamic.innerHTML = '<div class="absolute top-20 right-20 text-red-400 font-bold text-sm animate-pulse">Liberando RAM...</div>';
+                    setTimeout(clearDynamic, 1500);
+                }
+            }
+        ];
+
+        // State variables
+        let currentMode = 'sim'; // 'sim' or 'exp'
+        let currentStep = 0;
+        let isPlaying = false;
+        let playInterval;
+        let animationTimers = [];
+
+        // DOM Elements
+        const btnSim = document.getElementById('btn-mode-sim');
+        const btnExp = document.getElementById('btn-mode-exp');
+        const simContent = document.getElementById('sim-content');
+        const expContent = document.getElementById('exp-content');
+        const simControls = document.getElementById('sim-controls');
+
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const btnPlay = document.getElementById('btn-play');
+        const btnReset = document.getElementById('btn-reset');
+
+        const infoTitle = document.getElementById('info-title');
+        const infoDesc = document.getElementById('info-desc');
+        const infoConcept = document.getElementById('info-concept');
+        const stepIndicator = document.getElementById('step-indicator');
+
+        const floatingCard = document.getElementById('floating-card');
+        const btnCloseCard = document.getElementById('btn-close-card');
+
+        // Mode Switching
+        btnSim.addEventListener('click', () => setMode('sim'));
+        btnExp.addEventListener('click', () => setMode('exp'));
+
+        function setMode(mode) {
+            currentMode = mode;
+            clearDynamic();
+            resetComponents();
+            hideCard();
+
+            if (mode === 'sim') {
+                btnSim.className = "px-4 py-2 rounded-full text-sm font-semibold transition bg-cyan-600 text-white shadow-lg";
+                btnExp.className = "px-4 py-2 rounded-full text-sm font-semibold transition text-slate-300 hover:text-white";
+                simContent.classList.remove('hidden');
+                simControls.classList.remove('hidden');
+                expContent.classList.add('hidden');
+                document.getElementById('laptop-world').style.transform = "rotateX(60deg) rotateZ(-45deg) scale(0.85)";
+                renderStep();
+            } else {
+                btnExp.className = "px-4 py-2 rounded-full text-sm font-semibold transition bg-cyan-600 text-white shadow-lg";
+                btnSim.className = "px-4 py-2 rounded-full text-sm font-semibold transition text-slate-300 hover:text-white";
+                simContent.classList.add('hidden');
+                simControls.classList.add('hidden');
+                expContent.classList.remove('hidden');
+                document.getElementById('laptop-world').style.transform = "rotateX(50deg) rotateZ(-30deg) scale(0.9)";
+                pauseAuto();
+
+                // Show all windows for visual in explore mode
+                document.querySelectorAll('.window').forEach(w => w.style.opacity = '1');
+            }
+        }
+
+        // Component Interaction (Explore Mode & RAM logic)
+        function handleComponentClick(compId) {
+            // Si la simulación está corriendo y hacen clic para leer, pausamos por comodidad
+            if (isPlaying) pauseAuto();
+
+            // La RAM siempre abre su popup detallado superior
+            if (compId === 'ram') {
+                resetComponents();
+                document.getElementById(`comp-ram`).classList.add('active');
+                openRamPopup();
+                return;
+            }
+
+            // Para todos los demás componentes mostramos la tarjeta flotante
+            resetComponents();
+            document.getElementById(`comp-${compId}`).classList.add('active');
+
+            const data = componentsData[compId];
+            document.getElementById('card-icon').innerHTML = `<i data-lucide="${data.icon}" class="w-6 h-6"></i>`;
+            document.getElementById('card-title').innerText = data.name;
+            document.getElementById('card-title').className = `text-xl font-bold ${data.color}`;
+            document.getElementById('card-func').innerText = data.func;
+            document.getElementById('card-rel').innerText = data.rel;
+            document.getElementById('card-ex').innerText = data.ex;
+
+            // Acción extra si el componente es la RAM (ya no es necesario pero se mantiene por seguridad)
+            const extraAction = document.getElementById('card-extra-action');
+            extraAction.innerHTML = '';
+
+            lucide.createIcons();
+            floatingCard.classList.add('visible');
+        }
+
+        btnCloseCard.addEventListener('click', hideCard);
+        function hideCard() {
+            floatingCard.classList.remove('visible');
+            resetComponents();
+
+            // Restaurar resaltado si estamos en modo simulación
+            if (currentMode === 'sim') {
+                const step = steps[currentStep];
+                step.activeComps.forEach(c => document.getElementById(`comp-${c}`).classList.add('active'));
+            }
+        }
+
+        // RAM Popup Logic
+        function openRamPopup() {
+            const popup = document.getElementById('ram-popup');
+            const overlay = document.getElementById('ram-overlay');
+
+            popup.classList.remove('hidden');
+            overlay.classList.remove('hidden');
+
+            // Pequeño timeout para permitir que se aplique la clase flex/block antes de animar
+            setTimeout(() => {
+                popup.classList.remove('scale-95', 'opacity-0');
+                popup.classList.add('scale-100', 'opacity-100');
+                overlay.classList.remove('opacity-0');
+                overlay.classList.add('opacity-100');
+            }, 10);
+            renderRamGrid();
+            lucide.createIcons();
+        }
+
+        function closeRamPopup() {
+            const popup = document.getElementById('ram-popup');
+            const overlay = document.getElementById('ram-overlay');
+
+            popup.classList.remove('scale-100', 'opacity-100');
+            popup.classList.add('scale-95', 'opacity-0');
+            overlay.classList.remove('opacity-100');
+            overlay.classList.add('opacity-0');
+
+            setTimeout(() => {
+                popup.classList.add('hidden');
+                overlay.classList.add('hidden');
+
+                resetComponents();
+                // Restaurar resaltado si estamos en modo simulación
+                if (currentMode === 'sim') {
+                    const step = steps[currentStep];
+                    step.activeComps.forEach(c => document.getElementById(`comp-${c}`).classList.add('active'));
+                }
+            }, 300); // Coincide con la duración de la transición
+        }
+
+        function renderRamGrid() {
+            const grid = document.getElementById('ram-memory-grid');
+            const legend = document.getElementById('ram-legend');
+            grid.innerHTML = '';
+            legend.innerHTML = '';
+
+            const totalBlocks = 64; // Cuadrícula de 8x8
+            let blocks = new Array(totalBlocks).fill('free');
+
+            let inRam = ['os']; // El OS siempre está cargado
+
+            if (currentMode === 'sim') {
+                // Agregar navegador desde el paso 2 hasta antes de cerrarlo
+                if (currentStep >= 1 && currentStep <= 6) inRam.push('browser');
+                // Agregar música y video desde el paso de multitarea real
+                if (currentStep >= 4 && currentStep <= 6) {
+                    inRam.push('music');
+                    inRam.push('video');
+                }
+            } else {
+                // En modo exploración, mostrar un poco de todo como ejemplo visual
+                inRam = ['os', 'browser', 'music', 'video'];
+            }
+
+            // Configuración visual de cada proceso en memoria
+            const alloc = {
+                'os': { color: 'bg-cyan-500', border: 'border-cyan-400', name: 'Sist. Operativo', count: 12 },
+                'browser': { color: 'bg-blue-500', border: 'border-blue-400', name: 'Navegador', count: 14 },
+                'music': { color: 'bg-purple-500', border: 'border-purple-400', name: 'Música', count: 8 },
+                'video': { color: 'bg-red-500', border: 'border-red-400', name: 'Videollamada', count: 16 }
+            };
+
+            let currentIdx = 0;
+            inRam.forEach(proc => {
+                for (let i = 0; i < alloc[proc].count; i++) {
+                    if (currentIdx < totalBlocks) {
+                        blocks[currentIdx] = proc;
+                        currentIdx++;
+                    }
+                }
+                legend.innerHTML += `<div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded ${alloc[proc].color} shadow-[0_0_5px_currentColor]"></div> ${alloc[proc].name}</div>`;
+            });
+            legend.innerHTML += `<div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-slate-800 border border-slate-600"></div> Libre</div>`;
+
+            // Construir la interfaz de la cuadrícula con animaciones
+            blocks.forEach((b, index) => {
+                const el = document.createElement('div');
+                if (b === 'free') {
+                    el.className = `w-full pt-[100%] rounded-sm relative bg-slate-800/80 border border-slate-700/50 transition-colors hover:bg-slate-700 cursor-help`;
+                    el.title = "Bloque Libre: Disponible para cargar nuevos procesos.";
+                } else {
+                    el.className = `w-full pt-[100%] rounded-sm relative ${alloc[b].color} ${alloc[b].border} shadow-[0_0_8px_currentColor] opacity-0 animate-[fadeIn_0.3s_ease-out_forwards] transition-all hover:brightness-125 hover:scale-110 cursor-help z-10`;
+                    el.style.animationDelay = `${index * 0.02}s`; // Efecto cascada fluido al cargar bloques
+                    el.title = `Bloque Ocupado: Datos del proceso "${alloc[b].name}"`;
+                }
+                grid.appendChild(el);
+            });
+        }
+
+        // Simulation Logic
+        btnNext.addEventListener('click', () => { if (currentStep < steps.length - 1) { currentStep++; renderStep(); } pauseAuto(); });
+        btnPrev.addEventListener('click', () => { if (currentStep > 0) { currentStep--; renderStep(); } pauseAuto(); });
+        btnReset.addEventListener('click', () => { currentStep = 0; renderStep(); pauseAuto(); });
+
+        btnPlay.addEventListener('click', () => {
+            if (isPlaying) pauseAuto();
+            else startAuto();
+        });
+
+        function startAuto() {
+            isPlaying = true;
+            btnPlay.innerHTML = '<i data-lucide="pause" class="w-4 h-4"></i> Pausa';
+            lucide.createIcons();
+
+            // Advance immediately if not at end, or loop to start
+            if (currentStep >= steps.length - 1) {
+                currentStep = 0;
+                renderStep();
+            }
+
+            playInterval = setInterval(() => {
+                if (currentStep < steps.length - 1) {
+                    currentStep++;
+                    renderStep();
+                } else {
+                    pauseAuto(); // Stop at end
+                }
+            }, 6000); // 6 seconds per step
+        }
+
+        function pauseAuto() {
+            isPlaying = false;
+            clearInterval(playInterval);
+            btnPlay.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i> Auto';
+            btnPlay.className = "flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-2 rounded-full font-bold transition shadow-lg shadow-cyan-500/30";
+            lucide.createIcons();
+        }
+
+        function renderStep() {
+            const step = steps[currentStep];
+
+            // Update UI
+            stepIndicator.innerText = `Paso ${currentStep + 1} de ${steps.length}`;
+            infoTitle.innerText = step.title;
+            infoDesc.innerText = step.desc;
+            infoConcept.innerText = step.concept;
+
+            // Buttons
+            btnPrev.disabled = currentStep === 0;
+            btnNext.disabled = currentStep === steps.length - 1;
+            btnPrev.style.opacity = currentStep === 0 ? '0.3' : '1';
+            btnNext.style.opacity = currentStep === steps.length - 1 ? '0.3' : '1';
+
+            // Visuals
+            resetComponents();
+            clearDynamic();
+            document.querySelectorAll('.window').forEach(w => { w.style.opacity = '0'; w.style.transform = 'scale(1)'; w.style.boxShadow = 'none'; });
+
+            // Highlight Components
+            step.activeComps.forEach(c => document.getElementById(`comp-${c}`).classList.add('active'));
+
+            // Execute Action
+            if (step.action) step.action();
+        }
+
+        // Animation Helpers
+        function resetComponents() {
+            document.querySelectorAll('.component').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.data-flow').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.core').forEach(c => c.style.background = 'rgba(0,0,0,0.5)');
+        }
+
+        function clearDynamic() {
+            document.getElementById('dynamic-elements').innerHTML = '';
+            animationTimers.forEach(clearTimeout);
+            animationTimers = [];
+        }
+
+        function animateData(pathId) {
+            const p = document.getElementById(pathId);
+            if (p) p.classList.add('active');
+        }
+
+        function createProcessBox(name, color, topOff, delayFactor) {
+            const container = document.getElementById('dynamic-elements');
+            const box = document.createElement('div');
+            box.className = 'process-block';
+            // Position roughly over RAM
+            box.style.top = (100 + topOff) + 'px';
+            box.style.right = '50px';
+            box.style.width = '80px';
+            box.style.background = `rgba(${hexToRgb(color)}, 0.8)`;
+            box.style.borderColor = color;
+            box.style.boxShadow = `0 0 10px ${color}`;
+            box.innerText = `Proc: ${name}`;
+
+            container.appendChild(box);
+
+            // Animate in
+            setTimeout(() => {
+                box.style.opacity = '1';
+                box.style.transform = 'translateZ(60px) translateY(-20px)';
+            }, delayFactor);
+        }
+
+        function generateThreadsFromProcess() {
+            const container = document.getElementById('dynamic-elements');
+            for (let i = 0; i < 4; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'thread-dot';
+                dot.style.top = '90px';
+                dot.style.right = (70 + (i * 15)) + 'px';
+                container.appendChild(dot);
+
+                setTimeout(() => {
+                    dot.style.opacity = '1';
+                    dot.style.transform = `translateY(-30px) translateX(${Math.random() * 20 - 10}px)`;
+                }, i * 200);
+            }
+        }
+
+        function simulateCPUCoresSingle() {
+            const cores = [document.getElementById('core-1'), document.getElementById('core-2'), document.getElementById('core-3'), document.getElementById('core-4')];
+            let activeCore = 0;
+
+            function tick() {
+                if (currentMode !== 'sim' || currentStep !== 3) return;
+                cores.forEach(c => c.style.background = 'rgba(0,0,0,0.5)');
+                cores[activeCore].style.background = '#22c55e'; // Green thread
+                activeCore = (activeCore + 1) % 4;
+                let t = setTimeout(tick, 300);
+                animationTimers.push(t);
+            }
+            tick();
+        }
+
+        function simulateCPUCoresMulti() {
+            const cores = [document.getElementById('core-1'), document.getElementById('core-2'), document.getElementById('core-3'), document.getElementById('core-4')];
+            const colors = ['#3b82f6', '#a855f7', '#ef4444', '#22c55e'];
+
+            function tick() {
+                if (currentMode !== 'sim' || (currentStep !== 4 && currentStep !== 5)) return;
+                cores.forEach((c, idx) => {
+                    // Randomly assign a process color or empty to a core
+                    if (Math.random() > 0.3) {
+                        c.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    } else {
+                        c.style.background = 'rgba(0,0,0,0.5)';
+                    }
+                });
+                let t = setTimeout(tick, 150); // Very fast context switching simulation
+                animationTimers.push(t);
+            }
+            tick();
+        }
+
+        function hexToRgb(hex) {
+            var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '0,0,0';
+        }
+
+        // Initialize
+        renderStep();
+
+    </script>
+</body>
+
+</html>
