@@ -145,8 +145,15 @@
         }
 
         @keyframes popupIn {
-            from { opacity: 0; transform: scale(0.9) translateY(10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
         }
 
         .floating-label.visible {
@@ -359,7 +366,8 @@
     <div id="label-popup-overlay" onclick="closeLabelPopup()">
         <div id="label-popup" onclick="event.stopPropagation()">
             <div class="flex items-center gap-3 mb-4">
-                <div id="popup-icon" class="w-12 h-12 rounded-full flex items-center justify-center border border-cyan-500/50 bg-cyan-500/10 text-cyan-400">
+                <div id="popup-icon"
+                    class="w-12 h-12 rounded-full flex items-center justify-center border border-cyan-500/50 bg-cyan-500/10 text-cyan-400">
                     <i class="fa-solid fa-atom text-xl"></i>
                 </div>
                 <div>
@@ -367,7 +375,8 @@
                 </div>
             </div>
             <p id="popup-desc" class="text-gray-300 leading-relaxed text-sm mb-5">Descripción</p>
-            <button onclick="closeLabelPopup()" class="w-full py-2.5 rounded-xl font-bold text-white bg-cyan-900/40 border border-cyan-500/30 hover:bg-cyan-800/60 transition-all">
+            <button onclick="closeLabelPopup()"
+                class="w-full py-2.5 rounded-xl font-bold text-white bg-cyan-900/40 border border-cyan-500/30 hover:bg-cyan-800/60 transition-all">
                 Cerrar
             </button>
         </div>
