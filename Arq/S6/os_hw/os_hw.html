@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interacción Hardware y Sistema Operativo en 3D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: white;
+        }
+
+        /* Glassmorphism Classes */
+        .glass {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-panel {
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        /* UI Layers */
+        #intro-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+            z-index: 50;
+            transition: opacity 0.5s ease;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .pointer-events-auto {
+            pointer-events: auto;
+        }
+
+        /* Floating Labels */
+        .floating-label {
+            position: absolute;
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid #00d4ff;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            transform: translate(-50%, -50%);
+            pointer-events: auto;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-shadow: 0 0 5px #00d4ff;
+            white-space: nowrap;
+        }
+
+        .floating-label:hover {
+            background: rgba(0, 212, 255, 0.5);
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        /* Animations */
+        @keyframes pulse-glow {
+            0% {
+                box-shadow: 0 0 5px #00d4ff;
+            }
+
+            50% {
+                box-shadow: 0 0 20px #00d4ff, inset 0 0 10px #00d4ff;
+            }
+
+            100% {
+                box-shadow: 0 0 5px #00d4ff;
+            }
+        }
+
+        .active-step {
+            animation: pulse-glow 2s infinite;
+            border-color: #00d4ff;
+        }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+</head>
+
+<body>
+
+    <!-- PANTALLA INICIAL -->
+    <div id="intro-screen">
+        <div class="glass glass-panel max-w-3xl text-center mx-4">
+            <h1
+                class="text-4xl md:text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                Interacción Hardware y Sistema Operativo
+            </h1>
+            <h2 class="text-xl md:text-2xl text-gray-300 mb-6">En modo 3D interactivo</h2>
+            <p class="text-md text-gray-400 mb-8 leading-relaxed">
+                El sistema operativo es el intermediario entre el hardware y las aplicaciones. Desde el arranque hasta
+                la ejecución de programas, coordina CPU, memoria, almacenamiento, dispositivos y seguridad para que el
+                usuario pueda interactuar con la computadora de forma simple.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button id="btn-start-3d"
+                    class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-semibold transition shadow-lg shadow-blue-500/50">
+                    Iniciar exploración
+                </button>
+            </div>
+            <p class="text-xs text-gray-500 mt-6">*Explora cómo una computadora pasa del encendido al control total del
+                sistema operativo.</p>
+            <span class="text-[12px] text-gray-400 tracking-widest font-bold mb-1">© 2026 —
+                Fines educativos -
+                Luis
+                Torrejón.</span>
+        </div>
+    </div>
+
+    <!-- INTERFAZ PRINCIPAL -->
+    <div id="ui-layer" class="hidden flex-col justify-between p-4">
+
+        <!-- Header Controls -->
+        <div class="flex justify-between items-start pointer-events-auto">
+            <h1 class="text-lg font-bold text-cyan-400 drop-shadow-md">Arquitectura OS/HW</h1>
+            <div class="flex gap-2">
+                <button id="btn-compare" class="glass px-3 py-1 rounded text-sm hover:bg-white/10 transition">Win vs
+                    Linux</button>
+                <button id="btn-examples"
+                    class="glass px-3 py-1 rounded text-sm hover:bg-white/10 transition">Ejemplos</button>
+                <button id="btn-reset"
+                    class="glass px-3 py-1 rounded text-sm hover:bg-white/10 transition text-red-400">Reiniciar</button>
+            </div>
+        </div>
+
+        <!-- Middle Area (Info & Simulation Panels) -->
+        <div class="flex-1 flex flex-col md:flex-row justify-between items-end pb-16 md:pb-4 gap-4 overflow-hidden">
+
+            <!-- Info Panel (Left) -->
+            <div id="info-panel"
+                class="glass glass-panel w-full md:w-80 max-h-[60vh] overflow-y-auto pointer-events-auto opacity-0 transition-opacity duration-300">
+                <h3 id="info-title" class="text-xl font-bold text-white mb-2 border-b border-gray-600 pb-2">Componente
+                </h3>
+                <p id="info-def" class="text-sm text-cyan-300 mb-2 font-semibold">Definición breve</p>
+                <p id="info-desc" class="text-sm text-gray-300 mb-4 leading-relaxed">Explicación técnica.</p>
+                <div id="info-extra" class="bg-black/30 p-2 rounded text-xs text-gray-400 mb-2 hidden"></div>
+                <div class="mt-4 flex flex-wrap gap-2" id="info-tags"></div>
+            </div>
+
+            <!-- Simulation Controls (Right) -->
+            <div id="sim-panel" class="glass glass-panel w-full md:w-96 pointer-events-auto">
+                <h3 class="text-lg font-bold mb-2">Simulación: Del Encendido al Usuario</h3>
+
+                <div class="bg-black/40 p-3 rounded-lg mb-3 min-h-[80px]">
+                    <h4 id="sim-step-title" class="text-cyan-400 font-semibold text-sm mb-1">Paso 0: Listo</h4>
+                    <p id="sim-step-desc" class="text-xs text-gray-300">Presiona Iniciar Simulación para comenzar el
+                        recorrido paso a paso.</p>
+                </div>
+
+                <div class="flex justify-between items-center mb-3">
+                    <button id="btn-sim-prev" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">&lt;
+                        Anterior</button>
+                    <span id="sim-counter" class="text-xs text-gray-400">0 / 17</span>
+                    <button id="btn-sim-next" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">Siguiente
+                        &gt;</button>
+                </div>
+
+                <button id="btn-sim-auto"
+                    class="w-full py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded text-sm font-bold shadow-lg transition">
+                    Iniciar Simulación Automática
+                </button>
+            </div>
+        </div>
+
+        <!-- Modals -->
+        <!-- Compare Modal -->
+        <div id="modal-compare"
+            class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 glass glass-panel w-11/12 max-w-2xl hidden pointer-events-auto z-50">
+            <h2 class="text-2xl font-bold mb-4 text-center">Windows vs Linux</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-blue-900/40 p-4 rounded border border-blue-500/30">
+                    <h3 class="font-bold text-blue-400 mb-2 text-lg">Windows</h3>
+                    <ul class="text-sm space-y-1 text-gray-300 list-disc pl-4">
+                        <li>Bootloader: Windows Boot Manager</li>
+                        <li>Kernel: NT Kernel</li>
+                        <li>Abstracción: HAL (Hardware Abstraction Layer)</li>
+                        <li>Aplicaciones: Win32 / UWP</li>
+                    </ul>
+                    <p class="text-xs mt-3 text-gray-400">Utiliza Windows Boot Manager para iniciar y un kernel NT que
+                        gestiona procesos y abstracción mediante HAL.</p>
+                </div>
+                <div class="bg-orange-900/40 p-4 rounded border border-orange-500/30">
+                    <h3 class="font-bold text-orange-400 mb-2 text-lg">Linux</h3>
+                    <ul class="text-sm space-y-1 text-gray-300 list-disc pl-4">
+                        <li>Bootloader: GRUB</li>
+                        <li>Kernel: Linux Kernel (Monolítico)</li>
+                        <li>Servicios: Systemd o init</li>
+                        <li>Módulos: Carga dinámica de drivers</li>
+                    </ul>
+                    <p class="text-xs mt-3 text-gray-400">Suele usar GRUB. El kernel Linux carga módulos dinámicos para
+                        manejar dispositivos y servicios del sistema.</p>
+                </div>
+            </div>
+            <p class="text-center text-sm text-gray-400 mt-4">Ambos sistemas arrancan el equipo, cargan un kernel,
+                gestionan hardware, memoria y procesos, y ejecutan aplicaciones.</p>
+            <button class="mt-4 w-full py-2 bg-gray-700 hover:bg-gray-600 rounded btn-close-modal">Cerrar</button>
+        </div>
+
+        <!-- Examples Modal -->
+        <div id="modal-examples"
+            class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 glass glass-panel w-11/12 max-w-xl hidden pointer-events-auto z-50">
+            <h2 class="text-2xl font-bold mb-4 text-center">Ejemplos Interactivos</h2>
+
+            <div class="mb-4">
+                <button id="btn-ex-file"
+                    class="w-full py-2 bg-green-700/50 hover:bg-green-600/50 border border-green-500 rounded text-left px-4 font-semibold mb-2 transition">
+                    ▶ Ejecutar: Abrir un archivo
+                </button>
+                <div id="path-file" class="text-xs text-green-300 hidden bg-black/40 p-2 rounded">
+                    Usuario hace clic &rarr; App solicita archivo &rarr; System Call &rarr; Kernel &rarr; File System
+                    &rarr; Driver Almacenamiento &rarr; SSD &rarr; RAM &rarr; CPU &rarr; GPU &rarr; Pantalla
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <button id="btn-ex-web"
+                    class="w-full py-2 bg-purple-700/50 hover:bg-purple-600/50 border border-purple-500 rounded text-left px-4 font-semibold mb-2 transition">
+                    ▶ Ejecutar: Abrir una página web
+                </button>
+                <div id="path-web" class="text-xs text-purple-300 hidden bg-black/40 p-2 rounded">
+                    Escribe URL &rarr; Teclado &rarr; Driver &rarr; Kernel &rarr; Navegador &rarr; System Call Red
+                    &rarr; Driver Red &rarr; Tarjeta Red &rarr; Internet &rarr; RAM &rarr; CPU &rarr; GPU &rarr;
+                    Pantalla
+                </div>
+            </div>
+            <button class="mt-2 w-full py-2 bg-gray-700 hover:bg-gray-600 rounded btn-close-modal">Cerrar</button>
+        </div>
+
+    </div>
+
+    <!-- Contenedor Etiquetas 2D -->
+    <div id="labels-container"
+        class="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden hidden z-0"></div>
+
+    <!-- Escena Three.js -->
+    <div id="scene-container" class="absolute top-0 left-0 w-full h-full -z-10"></div>
+
+    <!-- Script Principal -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import * as TWEEN from 'https://unpkg.com/@tweenjs/tween.js@23.1.1/dist/tween.esm.js';
+
+        // --- DATOS EDUCATIVOS ---
+        const componentData = {
+            "PowerButton": {
+                label: "Power Button",
+                def: "Inicia el suministro eléctrico.",
+                desc: "El botón de encendido inicia el suministro eléctrico del equipo. Al presionarlo, la fuente de poder entrega energía a la placa madre, CPU, RAM, almacenamiento y demás componentes.",
+                tags: ["Hardware", "Energía"]
+            },
+            "PSU": {
+                label: "Fuente de poder",
+                def: "Convierte y distribuye la energía.",
+                desc: "Convierte la energía eléctrica externa en voltajes adecuados para los componentes internos de la computadora. Sin alimentación estable, el sistema no puede iniciar.",
+                tags: ["Hardware", "Eléctrico"]
+            },
+            "Motherboard": {
+                label: "Motherboard / Placa madre",
+                def: "La base física de conexión.",
+                desc: "Es la base física donde se conectan todos los componentes. Permite la comunicación entre CPU, RAM, almacenamiento, BIOS/UEFI, GPU, puertos y dispositivos externos mediante el Bus de Datos.",
+                tags: ["Hardware", "Comunicación"]
+            },
+            "BIOS": {
+                label: "BIOS / UEFI",
+                def: "Primer software en ejecutarse.",
+                desc: "Inicializa el hardware, verifica componentes básicos (POST) y busca un dispositivo de arranque. BIOS Legacy es más antiguo (MBR). UEFI es moderno, seguro y usa GPT.",
+                extra: "BIOS Legacy vs UEFI Moderno",
+                tags: ["Firmware", "Arranque"]
+            },
+            "SSD": {
+                label: "Almacenamiento (SSD/Disco)",
+                def: "Guarda SO, apps y archivos.",
+                desc: "Memoria no volátil. Durante el arranque, el firmware busca aquí el bootloader para iniciar el sistema operativo. Puede tener particiones MBR (antiguo) o GPT (moderno).",
+                tags: ["Hardware", "Datos"]
+            },
+            "Bootloader": {
+                label: "Bootloader",
+                def: "Carga el SO en memoria.",
+                desc: "Programa que carga el sistema operativo en memoria RAM. En Windows es Windows Boot Manager. En Linux suele ser GRUB. Localiza el Kernel y lo inicia.",
+                extra: "Windows Boot Manager | Linux GRUB",
+                tags: ["Software", "Arranque"]
+            },
+            "RAM": {
+                label: "Memoria RAM",
+                def: "Memoria de trabajo temporal.",
+                desc: "Memoria temporal y muy rápida. Durante el arranque, el kernel, drivers y procesos se cargan en RAM para que la CPU pueda ejecutarlos velozmente.",
+                tags: ["Hardware", "Volátil"]
+            },
+            "CPU": {
+                label: "CPU (Procesador)",
+                def: "El cerebro que ejecuta instrucciones.",
+                desc: "Procesa tareas del sistema operativo, aplicaciones, interrupciones y llamadas al sistema. Contiene Núcleos, Hilos, Caché, Unidad de Control, ALU y Registros.",
+                tags: ["Hardware", "Procesamiento"]
+            },
+            "Kernel": {
+                label: "Kernel (Núcleo)",
+                def: "Núcleo del Sistema Operativo.",
+                desc: "Gestiona CPU, memoria, procesos, archivos, dispositivos, seguridad y comunicación con el hardware. Trabaja en 'Kernel Space' (Ring 0) con máximo privilegio.",
+                tags: ["Sistema Operativo", "Ring 0"]
+            },
+            "Ring": {
+                label: "Ring 0 / Ring 3",
+                def: "Niveles de privilegio.",
+                desc: "Ring 0 es el nivel de mayor privilegio (Kernel). Ring 3 es donde se ejecutan las aplicaciones (User Space). Protege al sistema de accesos indebidos.",
+                tags: ["Seguridad", "Arquitectura"]
+            },
+            "Syscall": {
+                label: "System Calls",
+                def: "Petición de app al Kernel.",
+                desc: "Permiten que una app (User Space) solicite servicios al kernel (leer archivo, usar red). Ej: App -> System Call -> Kernel -> Driver -> Hardware.",
+                tags: ["Software", "Intermediario"]
+            },
+            "Drivers": {
+                label: "Drivers",
+                def: "Traductores de hardware.",
+                desc: "Programas especializados que permiten al SO comunicarse con dispositivos físicos específicos (GPU, teclado, red, disco).",
+                tags: ["Sistema Operativo", "HAL"]
+            },
+            "HAL": {
+                label: "HAL",
+                def: "Hardware Abstraction Layer.",
+                desc: "Capa que permite al SO trabajar con diferentes componentes sin depender completamente de los detalles físicos de cada dispositivo. Estandariza la comunicación.",
+                tags: ["Arquitectura", "Software"]
+            },
+            "Processes": {
+                label: "Procesos e Hilos",
+                def: "Programas en ejecución.",
+                desc: "Un proceso es una app en memoria. Puede dividirse en 'Hilos' (Threads) para hacer tareas simultáneas. Son administrados por el Planificador (Scheduler) de CPU.",
+                tags: ["Sistema Operativo", "Ejecución"]
+            },
+            "Scheduler": {
+                label: "Scheduler / Planificador",
+                def: "Asigna tiempo de CPU.",
+                desc: "Decide qué proceso o hilo usa la CPU en cada momento. Esto crea la ilusión de multitarea, repartiendo los recursos eficientemente.",
+                tags: ["Kernel", "Gestión"]
+            },
+            "MemoryManager": {
+                label: "Memory Manager",
+                def: "Administra RAM y memoria virtual.",
+                desc: "Asigna memoria a los procesos, protege espacios (Paginación) y gestiona memoria virtual usando el disco (Swap) si la RAM se llena.",
+                tags: ["Kernel", "Gestión"]
+            },
+            "FileSystem": {
+                label: "File System",
+                def: "Organiza archivos en disco.",
+                desc: "Organiza los datos en carpetas, archivos, permisos y bloques físicos dentro del SSD/Disco duro.",
+                tags: ["Kernel", "Almacenamiento"]
+            },
+            "GPU": {
+                label: "GPU",
+                def: "Procesa gráficos.",
+                desc: "Procesa gráficos, ventanas, animaciones y video. El SO se comunica con ella mediante el driver de video para renderizar la pantalla.",
+                tags: ["Hardware", "Gráficos"]
+            },
+            "Monitor": {
+                label: "Monitor / Pantalla",
+                def: "Muestra la respuesta visual.",
+                desc: "Lo que se ve en la interfaz es el resultado de múltiples procesos coordinados por CPU, GPU, drivers y sistema operativo.",
+                tags: ["Periférico", "Salida"]
+            },
+            "Input": {
+                label: "Entrada de usuario",
+                def: "Teclado y Mouse.",
+                desc: "Generan eventos de entrada (Interrupciones). El SO recibe esos eventos mediante drivers y los entrega a la aplicación en foco.",
+                tags: ["Periférico", "Entrada"]
+            },
+            "Network": {
+                label: "Tarjeta de Red",
+                def: "Comunicación externa.",
+                desc: "Permite conexión a internet o LAN. El SO usa drivers y el stack TCP/IP (Kernel) para enviar/recibir paquetes de datos.",
+                tags: ["Hardware", "Conectividad"]
+            },
+            "App": {
+                label: "Aplicación / User Space",
+                def: "Software de usuario final.",
+                desc: "Navegadores, juegos, editores. Trabajan en User Space (Ring 3) con acceso limitado. Dependen del OS para acceder al hardware.",
+                tags: ["Usuario", "Ring 3"]
+            }
+        };
+
+        const simulationSteps = [
+            { t: "Paso 1: Encendido", d: "El usuario presiona el botón de encendido. La fuente de poder entrega energía a la placa madre y componentes internos.", hl: ["PowerButton", "PSU", "Motherboard"] },
+            { t: "Paso 2: BIOS / UEFI inicia", d: "El firmware se ejecuta primero. Inicializa el hardware y prepara el sistema para arrancar.", hl: ["BIOS"] },
+            { t: "Paso 3: POST", d: "Power-On Self-Test. Verifica que CPU, memoria, video y almacenamiento funcionen correctamente.", hl: ["CPU", "RAM", "GPU", "SSD"] },
+            { t: "Paso 4: Dispositivo de arranque", d: "UEFI localiza el disco de arranque y busca el bootloader usando esquemas como GPT o MBR.", hl: ["BIOS", "SSD"] },
+            { t: "Paso 5: Bootloader", d: "El Bootloader (ej. Windows Boot Manager o GRUB) carga el Kernel del SO en memoria RAM.", hl: ["Bootloader", "SSD", "RAM"] },
+            { t: "Paso 6: Kernel toma el control", d: "El Kernel inicia y toma control de CPU, memoria, dispositivos, seguridad y procesos.", hl: ["Kernel"] },
+            { t: "Paso 7: Carga de drivers", d: "El SO carga drivers para comunicarse con el hardware físico.", hl: ["Kernel", "Drivers", "GPU", "Network"] },
+            { t: "Paso 8: Servicios del sistema", d: "Se inician servicios internos (red, memory manager, file system, HAL).", hl: ["HAL", "MemoryManager", "FileSystem"] },
+            { t: "Paso 9: Interfaz gráfica", d: "El sistema está listo. Aparece la pantalla de login o el escritorio.", hl: ["Monitor", "GPU"] },
+            { t: "Paso 10: Usuario abre una aplicación", d: "Clic del usuario. El SO crea un proceso y carga el programa desde el SSD a la RAM.", hl: ["Input", "Kernel", "SSD", "RAM", "Processes"] },
+            { t: "Paso 11: Scheduler asigna CPU", d: "El planificador decide cuándo el proceso de la app usa la CPU (multitarea).", hl: ["Scheduler", "CPU", "Processes"] },
+            { t: "Paso 12: App solicita recursos", d: "La app usa 'System Calls' para pedir servicios al Kernel (no accede directo al hardware).", hl: ["App", "Syscall", "Kernel"] },
+            { t: "Paso 13: Kernel verifica permisos", d: "Revisión de seguridad (Ring 0 vs Ring 3) antes de permitir la operación.", hl: ["Kernel", "Ring"] },
+            { t: "Paso 14: Driver controla hardware", d: "El Kernel se comunica con el driver, que traduce la orden para el dispositivo.", hl: ["Kernel", "Drivers", "HardwareLayer"] },
+            { t: "Paso 15: Hardware ejecuta tarea", d: "El componente físico procesa los datos (CPU, GPU, Red, Disco).", hl: ["CPU", "GPU", "SSD"] },
+            { t: "Paso 16: Respuesta vuelve", d: "El resultado viaja: Hardware -> Driver -> Kernel -> Aplicación.", hl: ["HardwareLayer", "Drivers", "Kernel", "App"] },
+            { t: "Paso 17: Usuario recibe respuesta", d: "La aplicación actualiza la interfaz y el monitor muestra el resultado final.", hl: ["App", "GPU", "Monitor"] }
+        ];
+
+        // --- VARIABLES THREE.JS ---
+        let scene, camera, renderer, controls;
+        let objects = {}; // Guardar referencias a mallas
+        let labels = {};  // Guardar referencias a elementos HTML
+        let raycaster, mouse;
+        let dataLines = []; // Para animaciones de flujo
+
+        const LAYERS = {
+            HW: 0,
+            FW: 1.5,
+            OS: 3,
+            APP: 4.5
+        };
+
+        init();
+        animate();
+
+        function init() {
+            const container = document.getElementById('scene-container');
+
+            // Escena y Cámara
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('#0f172a');
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 8, 12);
+
+            // Renderizador
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Controles
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 - 0.1; // No bajar del suelo
+
+            // Luces
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 5);
+            scene.add(dirLight);
+
+            const spotLight = new THREE.SpotLight(0x00d4ff, 2);
+            spotLight.position.set(0, 10, 0);
+            spotLight.angle = Math.PI / 4;
+            spotLight.penumbra = 0.5;
+            scene.add(spotLight);
+
+            // Setup Objetos
+            buildArchitecture();
+
+            // Interacción
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            window.addEventListener('resize', onWindowResize);
+
+            // Eventos de ratón/toque unificados para el canvas (Raycasting)
+            renderer.domElement.addEventListener('pointerdown', onPointerDown);
+
+            // Botón Inicio 3D
+            document.getElementById('btn-start-3d').addEventListener('click', () => {
+                document.getElementById('intro-screen').style.opacity = 0;
+                setTimeout(() => {
+                    document.getElementById('intro-screen').style.display = 'none';
+                    document.getElementById('ui-layer').classList.remove('hidden');
+                    document.getElementById('ui-layer').classList.add('flex');
+                    document.getElementById('labels-container').classList.remove('hidden');
+                }, 500);
+            });
+
+            setupUI();
+        }
+
+        // --- CONSTRUCCIÓN 3D ---
+        function createMesh(geometry, color, x, y, z, name, transparent = false, opacity = 1.0) {
+            const material = new THREE.MeshPhysicalMaterial({
+                color: color,
+                metalness: 0.3,
+                roughness: 0.4,
+                transparent: transparent,
+                opacity: opacity,
+                emissive: new THREE.Color(color).multiplyScalar(0.2)
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(x, y, z);
+            mesh.userData = { id: name };
+            scene.add(mesh);
+            objects[name] = mesh;
+            createHtmlLabel(name, componentData[name]?.label || name);
+            return mesh;
+        }
+
+        function createHtmlLabel(id, text) {
+            const div = document.createElement('div');
+            div.className = 'floating-label';
+            div.textContent = text;
+            div.id = `label-${id}`;
+            div.onclick = () => selectComponent(id);
+            document.getElementById('labels-container').appendChild(div);
+            labels[id] = div;
+        }
+
+        function buildArchitecture() {
+            // Grupo Hardware (Físico) - Y: 0
+            const matPlaca = new THREE.MeshStandardMaterial({ color: 0x113311 });
+            const mobo = new THREE.Mesh(new THREE.BoxGeometry(8, 0.2, 6), matPlaca);
+            mobo.position.set(0, LAYERS.HW, 0);
+            mobo.userData = { id: "Motherboard" };
+            scene.add(mobo);
+            objects["Motherboard"] = mobo;
+            createHtmlLabel("Motherboard", "Placa Madre");
+
+            // CPU
+            createMesh(new THREE.BoxGeometry(1.5, 0.3, 1.5), 0xaaaaaa, 0, LAYERS.HW + 0.2, 0, "CPU");
+            // RAM
+            createMesh(new THREE.BoxGeometry(0.2, 0.8, 2), 0x0044ff, 1.5, LAYERS.HW + 0.4, 0, "RAM");
+            // SSD
+            createMesh(new THREE.BoxGeometry(1.5, 0.4, 2), 0x222222, -2.5, LAYERS.HW + 0.3, 1.5, "SSD");
+            // GPU
+            createMesh(new THREE.BoxGeometry(0.8, 1.5, 3), 0x111111, -1.5, LAYERS.HW + 0.8, -1.5, "GPU");
+            // PSU
+            createMesh(new THREE.BoxGeometry(1.5, 1.5, 1.5), 0x555555, 3, LAYERS.HW + 0.8, -2, "PSU");
+            // Botón Power (simulado en el chasis/frente)
+            createMesh(new THREE.CylinderGeometry(0.2, 0.2, 0.2, 16), 0xff0000, 4, LAYERS.HW + 0.2, 3, "PowerButton");
+            // Network / IO
+            createMesh(new THREE.BoxGeometry(0.5, 0.8, 1), 0x00ff00, -3.5, LAYERS.HW + 0.5, -1, "Network");
+
+            // Periféricos Externos (simulados)
+            createMesh(new THREE.BoxGeometry(3, 2, 0.2), 0x000000, 0, LAYERS.HW + 2, -4, "Monitor");
+            createMesh(new THREE.BoxGeometry(2, 0.1, 0.8), 0x333333, 0, LAYERS.HW, 4, "Input"); // Teclado/Mouse
+
+            // Grupo Firmware - Y: 1.5
+            createMesh(new THREE.BoxGeometry(0.5, 0.2, 0.5), 0xffff00, 1.5, LAYERS.FW, -1.5, "BIOS");
+            createMesh(new THREE.BoxGeometry(1, 0.2, 1), 0xffaa00, -2.5, LAYERS.FW, 1.5, "Bootloader", true, 0.8);
+
+            // Grupo Sistema Operativo (Kernel Space) - Y: 3
+            // Base transparente para Kernel Space
+            const ksGeo = new THREE.BoxGeometry(7, 0.1, 5);
+            const ksMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.1, wireframe: true });
+            const ks = new THREE.Mesh(ksGeo, ksMat);
+            ks.position.set(0, LAYERS.OS - 0.2, 0);
+            scene.add(ks);
+
+            createMesh(new THREE.SphereGeometry(0.8, 32, 32), 0x00d4ff, 0, LAYERS.OS, 0, "Kernel", true, 0.9);
+            createMesh(new THREE.BoxGeometry(1, 0.2, 1.5), 0x00aaff, -1.5, LAYERS.OS, 1.5, "Drivers", true, 0.8);
+            createMesh(new THREE.BoxGeometry(1, 0.2, 1), 0x0088ff, 1.5, LAYERS.OS, 1.5, "HAL", true, 0.8);
+            createMesh(new THREE.BoxGeometry(0.8, 0.2, 0.8), 0x0066ff, 1.5, LAYERS.OS, -1.5, "MemoryManager", true, 0.8);
+            createMesh(new THREE.BoxGeometry(0.8, 0.2, 0.8), 0x0066ff, -1.5, LAYERS.OS, -1.5, "FileSystem", true, 0.8);
+            createMesh(new THREE.CylinderGeometry(0.4, 0.4, 0.2, 16), 0xff00ff, 0, LAYERS.OS, -1.5, "Scheduler", true, 0.8);
+
+            // Grupo Aplicaciones (User Space) - Y: 4.5
+            const usGeo = new THREE.BoxGeometry(7, 0.1, 5);
+            const usMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.1, wireframe: true });
+            const us = new THREE.Mesh(usGeo, usMat);
+            us.position.set(0, LAYERS.APP - 0.2, 0);
+            scene.add(us);
+
+            createMesh(new THREE.BoxGeometry(1.5, 0.5, 1.5), 0x00ff88, 0, LAYERS.APP, 0, "App", true, 0.8);
+            createMesh(new THREE.BoxGeometry(1, 0.4, 1), 0x55ffaa, 2, LAYERS.APP, 0, "Processes", true, 0.8);
+
+            // Syscall (Flecha vertical de App a Kernel)
+            const cylinderGeo = new THREE.CylinderGeometry(0.1, 0.1, 1.3, 8);
+            createMesh(cylinderGeo, 0xffffff, 0, LAYERS.APP - 0.7, 0, "Syscall", true, 0.5);
+
+            // Anillos (Ring 0 / 3) simulados visualmente en plano OS
+            const ring0 = new THREE.Mesh(new THREE.RingGeometry(1, 1.1, 32), new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide }));
+            ring0.rotation.x = Math.PI / 2;
+            ring0.position.set(0, LAYERS.OS - 0.1, 0);
+            scene.add(ring0);
+
+            const ring3 = new THREE.Mesh(new THREE.RingGeometry(2.5, 2.6, 32), new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide }));
+            ring3.rotation.x = Math.PI / 2;
+            ring3.position.set(0, LAYERS.OS - 0.1, 0);
+            scene.add(ring3);
+
+            // Helper text para anillos ocultos clickeables
+            createMesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), 0xff0000, 1.1, LAYERS.OS, 0, "Ring", true, 0);
+        }
+
+        // --- LÓGICA DE INTERFAZ Y SIMULACIÓN ---
+        let currentStep = 0;
+        let isAutoPlaying = false;
+        let autoPlayInterval;
+
+        function setupUI() {
+            // Panel info cerrar/abrir manejado por selectComponent
+
+            // Simulación
+            document.getElementById('btn-sim-next').addEventListener('click', () => stepSimulation(1));
+            document.getElementById('btn-sim-prev').addEventListener('click', () => stepSimulation(-1));
+            document.getElementById('btn-sim-auto').addEventListener('click', toggleAutoPlay);
+
+            // Botones superiores
+            document.getElementById('btn-reset').addEventListener('click', resetScene);
+
+            // Modales
+            document.getElementById('btn-compare').addEventListener('click', () => {
+                document.getElementById('modal-compare').classList.remove('hidden');
+            });
+            document.getElementById('btn-examples').addEventListener('click', () => {
+                document.getElementById('modal-examples').classList.remove('hidden');
+            });
+
+            document.querySelectorAll('.btn-close-modal').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.target.parentElement.classList.add('hidden');
+                });
+            });
+
+            // Ejemplos
+            document.getElementById('btn-ex-file').addEventListener('click', () => {
+                document.getElementById('path-file').classList.remove('hidden');
+                document.getElementById('path-web').classList.add('hidden');
+                document.getElementById('modal-examples').classList.add('hidden');
+                runFlowAnimation(["Input", "App", "Syscall", "Kernel", "FileSystem", "Drivers", "SSD", "RAM", "CPU", "GPU", "Monitor"]);
+            });
+            document.getElementById('btn-ex-web').addEventListener('click', () => {
+                document.getElementById('path-web').classList.remove('hidden');
+                document.getElementById('path-file').classList.add('hidden');
+                document.getElementById('modal-examples').classList.add('hidden');
+                runFlowAnimation(["Input", "Drivers", "Kernel", "App", "Syscall", "Network", "RAM", "CPU", "GPU", "Monitor"]);
+            });
+        }
+
+        function selectComponent(id) {
+            // Reset emissive all
+            Object.values(objects).forEach(obj => {
+                if (obj.material.emissive) obj.material.emissive.setHex(0x000000);
+            });
+
+            const data = componentData[id];
+            if (!data) return;
+
+            // Highlight
+            if (objects[id] && objects[id].material.emissive) {
+                objects[id].material.emissive.setHex(0x00d4ff);
+                objects[id].material.emissiveIntensity = 0.8;
+            }
+
+            // Update UI
+            document.getElementById('info-panel').classList.remove('opacity-0');
+            document.getElementById('info-title').textContent = data.label;
+            document.getElementById('info-def').textContent = data.def;
+            document.getElementById('info-desc').textContent = data.desc;
+
+            const extra = document.getElementById('info-extra');
+            if (data.extra) {
+                extra.textContent = data.extra;
+                extra.classList.remove('hidden');
+            } else {
+                extra.classList.add('hidden');
+            }
+
+            const tagsContainer = document.getElementById('info-tags');
+            tagsContainer.innerHTML = '';
+            data.tags.forEach(t => {
+                const span = document.createElement('span');
+                span.className = 'px-2 py-1 bg-cyan-900/50 border border-cyan-700 rounded text-xs text-cyan-200';
+                span.textContent = t;
+                tagsContainer.appendChild(span);
+            });
+        }
+
+        function updateLabelsPosition() {
+            Object.keys(labels).forEach(key => {
+                const mesh = objects[key];
+                if (mesh) {
+                    const pos = mesh.position.clone();
+                    // Ligeramente arriba del objeto
+                    pos.y += 0.5;
+                    pos.project(camera);
+
+                    // Convert to CSS coordinates
+                    const x = (pos.x * .5 + .5) * window.innerWidth;
+                    const y = (pos.y * -.5 + .5) * window.innerHeight;
+
+                    // Solo mostrar si está enfrente de la cámara
+                    if (pos.z < 1) {
+                        labels[key].style.left = `${x}px`;
+                        labels[key].style.top = `${y}px`;
+                        labels[key].style.display = 'block';
+                    } else {
+                        labels[key].style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        function stepSimulation(dir) {
+            currentStep += dir;
+            if (currentStep < 1) currentStep = 1;
+            if (currentStep > simulationSteps.length) {
+                currentStep = simulationSteps.length;
+                if (isAutoPlaying) toggleAutoPlay(); // Stop at end
+                return;
+            }
+
+            const step = simulationSteps[currentStep - 1];
+
+            // Update UI
+            document.getElementById('sim-counter').textContent = `${currentStep} / ${simulationSteps.length}`;
+            document.getElementById('sim-step-title').textContent = step.t;
+            document.getElementById('sim-step-desc').textContent = step.d;
+
+            // Highlight logic
+            Object.values(objects).forEach(obj => {
+                if (obj.material.emissive) {
+                    obj.material.emissive.setHex(0x000000);
+                    obj.material.opacity = 0.3; // Dim others
+                }
+            });
+
+            step.hl.forEach(id => {
+                if (objects[id] && objects[id].material) {
+                    objects[id].material.emissive.setHex(0xffa500); // Orange highlight for simulation
+                    objects[id].material.opacity = 1.0;
+                }
+            });
+
+            // Camera movement based on layer focus
+            if (currentStep <= 4) moveCameraTo(0, 6, 8, 0, 0, 0); // Focus HW
+            else if (currentStep <= 8) moveCameraTo(0, 8, 6, 0, LAYERS.OS, 0); // Focus OS
+            else moveCameraTo(0, 10, 8, 0, LAYERS.APP, 0); // Focus All
+        }
+
+        function toggleAutoPlay() {
+            isAutoPlaying = !isAutoPlaying;
+            const btn = document.getElementById('btn-sim-auto');
+            if (isAutoPlaying) {
+                btn.textContent = "Detener Simulación";
+                btn.classList.replace('from-blue-600', 'from-red-600');
+                btn.classList.replace('to-cyan-600', 'to-orange-600');
+                if (currentStep === simulationSteps.length) currentStep = 0; // Reset if at end
+                stepSimulation(1); // Force first step
+                autoPlayInterval = setInterval(() => stepSimulation(1), 3500);
+            } else {
+                btn.textContent = "Iniciar Simulación Automática";
+                btn.classList.replace('from-red-600', 'from-blue-600');
+                btn.classList.replace('to-orange-600', 'to-cyan-600');
+                clearInterval(autoPlayInterval);
+            }
+        }
+
+        function resetScene() {
+            currentStep = 0;
+            if (isAutoPlaying) toggleAutoPlay();
+            document.getElementById('sim-counter').textContent = `0 / ${simulationSteps.length}`;
+            document.getElementById('sim-step-title').textContent = "Paso 0: Listo";
+            document.getElementById('sim-step-desc').textContent = "Presiona Iniciar Simulación para comenzar el recorrido.";
+
+            Object.values(objects).forEach(obj => {
+                if (obj.material.emissive) {
+                    obj.material.emissive.setHex(0x000000);
+                    // Restaurar opacidades originales según capa
+                    if (obj.userData.id === "Kernel" || obj.position.y > 1) {
+                        obj.material.opacity = 0.8;
+                    } else {
+                        obj.material.opacity = 1.0;
+                    }
+                }
+            });
+            document.getElementById('info-panel').classList.add('opacity-0');
+            moveCameraTo(0, 8, 12, 0, 0, 0);
+            clearDataLines();
+        }
+
+        // --- ANIMACIONES TWEEN Y FLUJO ---
+        function moveCameraTo(cx, cy, cz, tx, ty, tz) {
+            new TWEEN.Tween(camera.position)
+                .to({ x: cx, y: cy, z: cz }, 1000)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .start();
+
+            new TWEEN.Tween(controls.target)
+                .to({ x: tx, y: ty, z: tz }, 1000)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .start();
+        }
+
+        function clearDataLines() {
+            dataLines.forEach(line => scene.remove(line));
+            dataLines = [];
+        }
+
+        function runFlowAnimation(sequenceArray) {
+            clearDataLines();
+            resetScene(); // clean state
+
+            let points = [];
+            sequenceArray.forEach(id => {
+                if (objects[id]) {
+                    points.push(objects[id].position.clone());
+                    // Destellar
+                    setTimeout(() => {
+                        objects[id].material.emissive.setHex(0x00ff00);
+                        setTimeout(() => objects[id].material.emissive.setHex(0x000000), 500);
+                    }, points.length * 600);
+                }
+            });
+
+            if (points.length < 2) return;
+
+            // Crear linea curva
+            const curve = new THREE.CatmullRomCurve3(points);
+            const tubeGeom = new THREE.TubeGeometry(curve, 64, 0.05, 8, false);
+            const tubeMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 });
+            const tubeMesh = new THREE.Mesh(tubeGeom, tubeMat);
+            scene.add(tubeMesh);
+            dataLines.push(tubeMesh);
+
+            // Animar un punto moviendose
+            const particleGeom = new THREE.SphereGeometry(0.2, 16, 16);
+            const particleMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const particle = new THREE.Mesh(particleGeom, particleMat);
+            scene.add(particle);
+            dataLines.push(particle);
+
+            let progress = { val: 0 };
+            new TWEEN.Tween(progress)
+                .to({ val: 1 }, sequenceArray.length * 600)
+                .easing(TWEEN.Easing.Linear.None)
+                .onUpdate(() => {
+                    const pos = curve.getPointAt(progress.val);
+                    particle.position.copy(pos);
+                })
+                .onComplete(() => {
+                    setTimeout(clearDataLines, 1000);
+                })
+                .start();
+        }
+
+        // --- EVENTOS DEL RATÓN ---
+        function onPointerDown(event) {
+            // Solo actuar si UI interactiva no está siendo clicada (ej. canvas de fondo)
+            if (event.target.tagName !== 'CANVAS') return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            // Chequear solo objetos con userData.id
+            const interactables = Object.values(objects);
+            const intersects = raycaster.intersectObjects(interactables);
+
+            if (intersects.length > 0) {
+                const id = intersects[0].object.userData.id;
+                selectComponent(id);
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- LOOP PRINCIPAL ---
+        function animate(time) {
+            renderer.setAnimationLoop(() => {
+                TWEEN.update(time);
+                controls.update();
+                updateLabelsPosition();
+                renderer.render(scene, camera);
+            });
+        }
+    </script>
+</body>
+
+</html>
