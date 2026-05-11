@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computación Cuántica: Experiencia AR Virtual</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-purple: #bc13fe;
+            --dark-bg: #050a15;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: var(--dark-bg);
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .hud-panel {
+            pointer-events: auto;
+            background: rgba(0, 10, 30, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 40px rgba(0, 242, 255, 0.15);
+            border-radius: 12px;
+        }
+
+        .hologram-btn {
+            pointer-events: auto;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: 'Orbitron', sans-serif;
+            border: 1px solid var(--neon-blue);
+            background: rgba(0, 242, 255, 0.05);
+            font-size: 0.75rem;
+        }
+
+        .hologram-btn:hover:not(:disabled) {
+            background: var(--neon-blue);
+            color: black;
+            box-shadow: 0 0 25px var(--neon-blue);
+        }
+
+        .hologram-btn:disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+            border-color: #444;
+        }
+
+        .milestone-popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 850px;
+            /* Un poco más ancho para las flechas laterales */
+            max-height: 85vh;
+            z-index: 100;
+            pointer-events: none;
+            /* Cambiado para permitir clics en hijos específicos */
+        }
+
+        .popup-inner {
+            pointer-events: auto;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        /* Estilos de las flechas laterales */
+        .side-nav {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 242, 255, 0.1);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.3s;
+            z-index: 110;
+            font-size: 1.5rem;
+            backdrop-filter: blur(5px);
+        }
+
+        .side-nav:hover:not(.disabled) {
+            background: var(--neon-blue);
+            color: black;
+            box-shadow: 0 0 20px var(--neon-blue);
+        }
+
+        .side-nav.disabled {
+            opacity: 0.1;
+            cursor: not-allowed;
+            border-color: #333;
+        }
+
+        .side-nav-prev {
+            left: -60px;
+            border-radius: 12px 0 0 12px;
+        }
+
+        .side-nav-next {
+            right: -60px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        @media (max-width: 1024px) {
+            .side-nav-prev {
+                left: 0;
+            }
+
+            .side-nav-next {
+                right: 0;
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.4;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.4;
+            }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--neon-blue);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .shadow-text {
+            text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="experience-container"></div>
+
+    <div class="ui-overlay flex flex-col justify-between p-6">
+        <header class="flex justify-between items-start">
+            <div class="pointer-events-auto">
+                <h1
+                    class="text-2xl md:text-4xl font-bold uppercase tracking-widest text-cyan-400 font-['Orbitron'] shadow-text">
+                    Quantum Museum
+                </h1>
+                <p class="text-gray-400 text-sm mt-1 max-w-md hidden md:block">
+                    Cronología técnica detallada de la mecánica cuántica y su evolución computacional.
+                </p>
+                <span class="text-[12px] text-gray-400 tracking-widest font-bold mb-1">© 2026 —
+                    Fines educativos -
+                    Luis
+                    Torrejón</span>
+            </div>
+            <div class="hud-panel p-3 flex flex-col gap-1">
+                <div id="year-display" class="text-xl font-bold font-['Orbitron'] text-cyan-400 text-right">READY</div>
+                <div class="flex items-center justify-end gap-2">
+                    <span class="text-[10px] font-bold uppercase text-gray-400 tracking-tighter">Motor de
+                        Navegación</span>
+                    <div class="w-2 h-2 bg-cyan-400 rounded-full pulse shadow-[0_0_8px_rgba(0,242,255,0.8)]"></div>
+                </div>
+            </div>
+        </header>
+
+        <footer class="flex flex-wrap justify-center gap-3 mb-4">
+            <button onclick="resetCamera()" class="hologram-btn px-4 py-2 rounded">Reiniciar Vista</button>
+            <button onclick="startJourney()" class="hologram-btn px-4 py-2 rounded">Ruta Guiada</button>
+            <button onclick="openModal('architecture')"
+                class="hologram-btn px-4 py-2 rounded border-purple-500 text-purple-300">Arquitectura</button>
+            <button onclick="openModal('bit-qubit')"
+                class="hologram-btn px-4 py-2 rounded border-purple-500 text-purple-300">Conceptos</button>
+            <button onclick="openModal('apps')"
+                class="hologram-btn px-4 py-2 rounded border-green-500 text-green-300">Futuro</button>
+        </footer>
+    </div>
+
+    <!-- Contenedor del Popup de Hitos con Flechas Laterales -->
+    <div id="milestone-modal" class="milestone-popup">
+        <div id="nav-prev" onclick="prevStep()" class="side-nav side-nav-prev">❮</div>
+        <div class="popup-inner hud-panel p-8" id="milestone-content-container">
+            <div id="milestone-content"></div>
+        </div>
+        <div id="nav-next" onclick="nextStep()" class="side-nav side-nav-next">❯</div>
+    </div>
+
+    <div id="special-modal" class="milestone-popup hud-panel p-8" style="pointer-events: auto;">
+        <button onclick="closeModals()"
+            class="absolute top-4 right-4 text-cyan-400 hover:text-white transition">✕</button>
+        <div id="special-content"></div>
+    </div>
+
+    <!-- Contenedor del visor de imágenes a pantalla completa -->
+    <div id="image-viewer"
+        class="fixed inset-0 bg-black/90 z-[200] hidden flex justify-center items-center backdrop-blur-sm transition-opacity duration-300 opacity-0 pointer-events-auto"
+        onclick="closeImageViewer()">
+        <button
+            class="absolute top-6 right-6 text-white hover:text-cyan-400 text-5xl font-bold transition-colors z-[210]">&times;</button>
+        <img id="image-viewer-img" src=""
+            class="max-w-[90%] max-h-[90%] object-contain rounded-lg shadow-[0_0_50px_rgba(0,242,255,0.3)] transform scale-95 transition-transform duration-300"
+            onclick="event.stopPropagation()">
+    </div>
+
+    <script>
+        const milestones = [
+            {
+                year: "1900",
+                title: "Max Planck y la Cuantización de la Energía",
+                desc: "Al intentar resolver la 'catástrofe ultravioleta' de la radiación del cuerpo negro, Max Planck propuso que la energía no se intercambia de forma continua, sino en paquetes discretos llamados 'cuantos'. Esta hipótesis rompió con siglos de física clásica y estableció la base fundamental de toda la tecnología moderna. Sin esta noción de energía discreta (E = hf), no entenderíamos la estructura atómica ni el comportamiento de la luz.",
+                concept: "Cuantización",
+                example: "La radiación del cuerpo negro ya no se volvía infinita en altas frecuencias, permitiendo el nacimiento de la física de partículas.",
+                question: "¿Podría existir la electrónica moderna de silicio sin entender que los niveles de energía en los semiconductores están cuantizados?",
+                image: "imagenes/planck.jpg",
+                color: 0x00f2ff
+            },
+            {
+                year: "1920-1930",
+                title: "La Edad de Oro: Formalización de la Mecánica Cuántica",
+                desc: "Durante esta década, mentes como Einstein, Bohr, Heisenberg y Schrödinger definieron las reglas del microcosmos. Heisenberg introdujo la mecánica de matrices y el Principio de Incertidumbre, mientras que Schrödinger desarrolló su famosa ecuación de onda. Paul Dirac unificó estas ideas con la relatividad especial, prediciendo la antimateria. Fue aquí donde se formalizó la 'superposición': la idea de que un sistema existe en todos sus estados posibles simultáneamente hasta que se realiza una medición.",
+                concept: "Mecánica Ondulatoria",
+                example: "El Principio de Exclusión de Pauli explica por qué la materia es sólida y cómo se organizan los electrones en las órbitas.",
+                question: "¿Si una partícula es también una onda, cómo afecta esto a nuestra capacidad de almacenar información en espacios nanoscópicos?",
+                image: "imagenes/solvay.png",
+                color: 0x00f2ff
+            },
+            {
+                year: "1981",
+                title: "Richard Feynman: 'Simulating Physics with Computers'",
+                desc: "En una conferencia mítica en el MIT, Richard Feynman lanzó un desafío al mundo: la naturaleza es cuántica, y si queremos simularla, necesitamos una computadora que sea intrínsecamente cuántica. Argumentó que una computadora clásica requiere un crecimiento exponencial de recursos para simular incluso sistemas cuánticos pequeños, mientras que una máquina basada en qubits podría hacerlo de manera eficiente, imitando las propias reglas de la física.",
+                concept: "Computabilidad Cuántica",
+                example: "Simular una molécula de cafeína de forma exacta requeriría más memoria clásica que átomos hay en la Tierra.",
+                question: "¿Fue este el momento en que la computación dejó de ser una rama de las matemáticas para convertirse en una rama de la física aplicada?",
+                image: "imagenes/feynman.png",
+                color: 0xbc13fe
+            },
+            {
+                year: "1985",
+                title: "David Deutsch y la Máquina de Turing Cuántica",
+                desc: "Mientras que Feynman propuso la idea, David Deutsch la formalizó matemáticamente. En su artículo seminal, describió la Máquina de Turing Cuántica Universal, demostrando que una computadora cuántica puede realizar cualquier tarea que una clásica pueda, pero además puede aprovechar el paralelismo cuántico para resolver ciertos problemas mucho más rápido. Deutsch sentó las bases para el desarrollo de puertas lógicas cuánticas.",
+                concept: "Universalidad",
+                example: "Formalización del Qubit como la unidad fundamental que puede realizar una 'operación paralela' masiva.",
+                question: "¿Si una computadora cuántica puede ejecutar todos los algoritmos clásicos, llegará el día en que el bit sea obsoleto?",
+                image: "imagenes/deutsch.png",
+                color: 0xbc13fe
+            },
+            {
+                year: "1994",
+                title: "Algoritmo de Shor: La Amenaza a la Criptografía",
+                desc: "Peter Shor conmocionó al mundo al presentar un algoritmo cuántico capaz de factorizar números enteros grandes en tiempo polinómico. La seguridad de casi toda la infraestructura de internet (protocolos RSA, HTTPS) se basa en que factorizar es difícil para las computadoras clásicas. El algoritmo de Shor demostró que una computadora cuántica lo suficientemente grande podría descifrar cualquier comunicación actual, obligando a la creación de la criptografía post-cuántica.",
+                concept: "Factorización de Shor",
+                example: "Un número de 2048 bits que tardaría trillones de años en factorizarse clásicamente, podría resolverse en horas con una PC cuántica madura.",
+                question: "¿Cómo cambiaría el poder geopolítico si una nación lograra construir una PC cuántica capaz de ejecutar el algoritmo de Shor antes que los demás?",
+                image: "imagenes/shor.png",
+                color: 0xbc13fe
+            },
+            {
+                year: "1996",
+                title: "Algoritmo de Grover: Aceleración de Búsquedas",
+                desc: "Lov Grover desarrolló un algoritmo que proporciona una aceleración cuadrática para buscar en bases de datos no estructuradas. Si tienes un millón de elementos, una PC clásica necesita un millón de intentos para encontrar uno específico en el peor caso; la PC cuántica de Grover solo necesita mil. Este algoritmo no solo sirve para bases de datos, sino para optimización y cualquier problema de búsqueda de soluciones.",
+                concept: "Búsqueda No Estructurada",
+                example: "Encontrar una aguja en un pajar se vuelve drásticamente más rápido mediante el uso de la 'amplificación de amplitud'.",
+                question: "¿Podría el algoritmo de Grover ser la pieza clave para que la Inteligencia Artificial alcance niveles de razonamiento sobrehumanos?",
+                image: "imagenes/grover.png",
+                color: 0xbc13fe
+            },
+            {
+                year: "2011",
+                title: "D-Wave y el Recocido Cuántico Comercial",
+                desc: "La empresa canadiense D-Wave Systems anunció la venta de la D-Wave One, etiquetada como la primera computadora cuántica comercial. A diferencia de las computadoras de 'puertas lógicas' (como las de IBM), D-Wave usa el 'Quantum Annealing', una técnica específica para resolver problemas de optimización mínima. Aunque fue polémico al inicio, demostró que el mercado estaba listo para invertir en hardware cuántico real.",
+                concept: "Quantum Annealing",
+                example: "Optimización de rutas de tráfico y detección de fallos en software complejo de naves espaciales.",
+                question: "¿Es el recocido cuántico un puente necesario o un callejón sin salida comparado con la computación universal?",
+                image: "imagenes/dwave.png",
+                color: 0x00d4ff
+            },
+            {
+                year: "2016",
+                title: "IBM Quantum Experience: Acceso Global",
+                desc: "IBM dio un paso histórico al conectar uno de sus procesadores cuánticos de 5 qubits a la nube, permitiendo que cualquier persona con internet pudiera programarlo de forma gratuita. Esto transformó un campo que era puramente académico y de laboratorios secretos en una comunidad abierta. Miles de investigadores y estudiantes comenzaron a usar Qiskit para escribir sus propios programas cuánticos reales por primera vez.",
+                concept: "Cloud Computing Cuántico",
+                example: "Estudiantes en sus casas ejecutando el experimento de la campana (Bell Test) en hardware criogénico real a miles de kilómetros.",
+                question: "¿Fue este el 'momento PC' de la computación cuántica, donde la tecnología salió de la torre de marfil al mundo real?",
+                image: "imagenes/ibm_q.png",
+                color: 0x00d4ff
+            },
+            {
+                year: "2019",
+                title: "Google Sycamore: La Supremacía Cuántica",
+                desc: "Google anunció en la revista Nature que su procesador Sycamore de 53 qubits alcanzó la 'Supremacía Cuántica' (Quantum Supremacy). Realizaron un cálculo específico (muestreo de circuitos aleatorios) que les tomó 200 segundos. Google estimó que a la supercomputadora clásica más potente del mundo le tomaría 10,000 años. Aunque IBM cuestionó el tiempo clásico, el hito marcó la primera vez que un hardware cuántico superó claramente a uno clásico en una tarea definida.",
+                concept: "Supremacía Cuántica",
+                example: "Demostración de que un chip cuántico superconductivo puede operar más allá del límite de las supercomputadoras clásicas.",
+                question: "¿Ahora que sabemos que la ventaja es posible, cuánto tiempo falta para que sea útil para problemas prácticos?",
+                image: "imagenes/sycamore.png",
+                color: 0x00d4ff
+            },
+            {
+                year: "2023",
+                title: "IBM Quantum System Two: Arquitectura Modular",
+                desc: "IBM presentó el System Two, su primera computadora cuántica totalmente modular. Hasta entonces, escalar era difícil por las limitaciones del enfriamiento. Esta arquitectura permite interconectar múltiples procesadores (como el chip Condor de 1,121 qubits) dentro de un solo sistema criogénico masivo. Es un cambio de diseño: de máquinas experimentales únicas a centros de datos cuánticos escalables que integran computación clásica y cuántica fluida.",
+                concept: "Escalabilidad Modular",
+                example: "Unidades modulares que permiten crecer en potencia sin tener que rediseñar todo el sistema de enfriamiento.",
+                question: "¿Estamos viendo el nacimiento del primer mainframe cuántico comercial de la historia?",
+                image: "imagenes/ibm_system_two.png",
+                color: 0x00d4ff
+            },
+            {
+                year: "2024",
+                title: "Google Willow: La Frontera de la Corrección de Errores",
+                desc: "El procesador Willow de Google representa un avance crítico en la fidelidad. Los qubits son extremadamente frágiles y cualquier ruido causa errores. Willow fue diseñado específicamente para implementar 'códigos de corrección de errores' de forma eficiente, permitiendo que el hardware detecte y corrija sus propios fallos cuánticos antes de que arruinen el cálculo. Esto es esencial para pasar de la era de 'qubits ruidosos' (NISQ) a la computación cuántica madura.",
+                concept: "Qubits Lógicos",
+                example: "Agrupación de múltiples qubits físicos para crear un único 'qubit lógico' que no comete errores.",
+                question: "¿Si logramos la corrección de errores perfecta, habrá algún problema matemático que no podamos resolver?",
+                image: "imagenes/willow.png",
+                color: 0x00ff88
+            },
+            {
+                year: "2025",
+                title: "Microsoft Majorana 1: Qubits Topológicos",
+                desc: "Microsoft ha apostado por un camino diferente: los qubits topológicos basados en fermiones de Majorana. A diferencia de los qubits de IBM o Google, que son circuitos superconductores, el chip Majorana 1 utiliza propiedades geométricas de la materia para proteger la información. En teoría, estos qubits son mucho más estables por diseño físico, lo que podría permitir computadoras mucho más compactas y con menor necesidad de corrección de errores por software.",
+                concept: "Computación Topológica",
+                example: "Uso de 'trenzas' (braids) cuánticas para realizar operaciones lógicas que son inmunes a pequeñas vibraciones térmicas.",
+                question: "¿Será la elegancia de la topología la ganadora frente a la fuerza bruta de los circuitos superconductores?",
+                image: "imagenes/majorana.png",
+                color: 0x00ff88
+            },
+            {
+                year: "Futuro",
+                title: "Computación Cuántica Tolerante a Fallos (FTQC)",
+                desc: "El horizonte final es la Computación Cuántica Tolerante a Fallos (Fault-Tolerant Quantum Computing). En esta etapa, tendremos millones de qubits lógicos estables trabajando en paralelo. Esto permitirá el diseño de catalizadores químicos para eliminar el CO2 de la atmósfera, la creación de superconductores a temperatura ambiente y la simulación biológica a nivel molecular para curar enfermedades hoy incurables. Es el inicio de una nueva era tecnológica para la humanidad.",
+                concept: "Computación Post-NISQ",
+                example: "Simulación completa del metabolismo humano para probar fármacos de forma virtual y personalizada.",
+                question: "¿Qué responsabilidades éticas conlleva poseer una tecnología capaz de simular la vida misma?",
+                image: "imagenes/ftqc.png",
+                color: 0xffaa00
+            }
+        ];
+
+        let scene, camera, renderer, controls, raycaster, mouse;
+        let particles, nodes = [];
+        let currentIndex = -1;
+
+        function init3D() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.getElementById('experience-container').appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxDistance = 60;
+            controls.minDistance = 2;
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            scene.add(new THREE.AmbientLight(0x404040, 3));
+            const pl = new THREE.PointLight(0x00f2ff, 2.5, 100);
+            pl.position.set(15, 15, 15);
+            scene.add(pl);
+
+            const pCount = 4000;
+            const pPos = new Float32Array(pCount * 3);
+            for (let i = 0; i < pCount * 3; i++) pPos[i] = (Math.random() - 0.5) * 150;
+            const pGeo = new THREE.BufferGeometry();
+            pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+            particles = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.04, color: 0x00f2ff, transparent: true, opacity: 0.25 }));
+            scene.add(particles);
+
+            createTimeline();
+            resetCamera();
+
+            window.addEventListener('click', onDocumentMouseDown, false);
+            window.addEventListener('mousemove', onDocumentMouseMove, false);
+            animate();
+        }
+
+        function createTextLabel(text, year) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 512;
+            canvas.height = 320;
+            ctx.fillStyle = 'rgba(0,0,0,0)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'rgba(0, 242, 255, 0.5)';
+            ctx.font = 'bold 54px Orbitron';
+            ctx.fillStyle = '#00f2ff';
+            ctx.textAlign = 'center';
+            ctx.fillText(year, 256, 80);
+            ctx.shadowBlur = 0;
+            ctx.font = '36px Rajdhani';
+            ctx.fillStyle = '#ffffff';
+            const words = text.split(' ');
+            let line = '';
+            let lines = [];
+            for (let n = 0; n < words.length; n++) {
+                let testLine = line + words[n] + ' ';
+                let metrics = ctx.measureText(testLine);
+                if (metrics.width > 460 && n > 0) {
+                    lines.push(line);
+                    line = words[n] + ' ';
+                } else {
+                    line = testLine;
+                }
+            }
+            lines.push(line);
+            let yStart = 150;
+            lines.forEach((l, index) => {
+                ctx.fillText(l.trim(), 256, yStart + (index * 48));
+            });
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(6, 3.75, 1);
+            return sprite;
+        }
+
+        function createTimeline() {
+            milestones.forEach((m, i) => {
+                const group = new THREE.Group();
+                group.userData = { index: i };
+                const node = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.6, 32, 32),
+                    new THREE.MeshPhongMaterial({ color: m.color, emissive: m.color, emissiveIntensity: 0.8, shininess: 100 })
+                );
+                node.userData = { clickable: true, index: i };
+                group.add(node);
+                const ring = new THREE.Mesh(
+                    new THREE.TorusGeometry(0.9, 0.04, 16, 100),
+                    new THREE.MeshBasicMaterial({ color: m.color, transparent: true, opacity: 0.3 })
+                );
+                ring.rotation.x = Math.PI / 2;
+                group.add(ring);
+                const label = createTextLabel(m.title, m.year);
+                label.position.y = 2.4;
+                group.add(label);
+                const angle = i * 0.45;
+                const radius = 18;
+                group.position.set(Math.sin(angle) * radius, i * -4, Math.cos(angle) * radius - 10);
+                nodes.push(group);
+                scene.add(group);
+            });
+        }
+
+        function onDocumentMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(scene.children, true);
+            const isHovering = intersects.some(intersect => intersect.object.userData.clickable);
+            document.body.style.cursor = isHovering ? 'pointer' : 'default';
+        }
+
+        function onDocumentMouseDown(event) {
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(scene.children, true);
+            for (let i = 0; i < intersects.length; i++) {
+                if (intersects[i].object.userData.clickable) {
+                    goToMilestone(intersects[i].object.userData.index);
+                    break;
+                }
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            particles.rotation.y += 0.0002;
+            controls.update();
+            nodes.forEach((n, i) => {
+                const scale = (currentIndex === i) ? 1.5 : 1;
+                n.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.1);
+                n.children.forEach(child => {
+                    if (child instanceof THREE.Sprite) child.lookAt(camera.position);
+                });
+            });
+            renderer.render(scene, camera);
+        }
+
+        function resetCamera() {
+            gsap.to(camera.position, { x: 0, y: 5, z: 40, duration: 2.5, ease: "power3.inOut" });
+            gsap.to(controls.target, { x: 0, y: -10, z: -10, duration: 2.5 });
+            currentIndex = -1;
+            closeModals();
+        }
+
+        function goToMilestone(index) {
+            if (index < 0 || index >= milestones.length) return;
+            currentIndex = index;
+            const m = milestones[index];
+            const node = nodes[index];
+            gsap.to(camera.position, {
+                x: node.position.x + 5,
+                y: node.position.y + 1,
+                z: node.position.z + 8,
+                duration: 2,
+                ease: "power4.out"
+            });
+            gsap.to(controls.target, {
+                x: node.position.x,
+                y: node.position.y,
+                z: node.position.z,
+                duration: 2
+            });
+            document.getElementById('year-display').innerText = m.year;
+            showPopup(index);
+        }
+
+        function showPopup(index) {
+            const m = milestones[index];
+            const modal = document.getElementById('milestone-modal');
+            const content = document.getElementById('milestone-content');
+
+            // Actualizar estado de las flechas
+            document.getElementById('nav-prev').className = index === 0 ? 'side-nav side-nav-prev disabled' : 'side-nav side-nav-prev';
+            document.getElementById('nav-next').className = index === milestones.length - 1 ? 'side-nav side-nav-next disabled' : 'side-nav side-nav-next';
+
+            content.innerHTML = `
+                <div class="flex flex-col gap-6">
+                    <div class="flex justify-between items-start sticky top-0 bg-transparent z-10">
+                        <div>
+                            <span class="text-5xl font-bold text-cyan-400 font-['Orbitron'] shadow-text">${m.year}</span>
+                            <h2 class="text-2xl font-bold text-white uppercase tracking-wider mt-1 border-l-4 border-cyan-500 pl-4">${m.title}</h2>
+                        </div>
+                        <button onclick="closeModals()" class="bg-red-500/20 hover:bg-red-500 text-white px-4 py-2 rounded transition pointer-events-auto">CERRAR</button>
+                    </div>
+
+                    <div class="relative overflow-hidden rounded-xl border border-cyan-500/40 shadow-2xl group">
+                        <img src="${m.image}" class="w-full h-80 object-cover transform group-hover:scale-105 transition duration-700 cursor-pointer" alt="${m.title}" onclick="openImageViewer(this.src)" onerror="this.src='https://via.placeholder.com/800x600/050a15/00f2ff?text=Referencia+Cientifica'">
+                        <div class="absolute bottom-0 w-full bg-gradient-to-t from-black via-black/60 to-transparent p-5 pointer-events-none">
+                            <span class="text-[11px] uppercase font-bold text-cyan-400 tracking-[3px]">REGISTRO HISTÓRICO: ${m.concept}</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6 text-gray-200">
+                        <div class="prose prose-invert max-w-none">
+                            <p class="text-lg leading-relaxed text-justify first-letter:text-4xl first-letter:font-bold first-letter:text-cyan-400 first-letter:mr-2 first-letter:float-left">
+                                ${m.desc}
+                            </p>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-cyan-900/30 p-5 rounded-lg border-l-2 border-cyan-500">
+                                <h4 class="text-xs uppercase font-bold text-cyan-400 mb-2">Impacto Técnico</h4>
+                                <p class="text-sm leading-snug">${m.example}</p>
+                            </div>
+                            <div class="bg-purple-900/30 p-5 rounded-lg border-l-2 border-purple-500">
+                                <h4 class="text-xs uppercase font-bold text-purple-400 mb-2">Análisis Crítico</h4>
+                                <p class="text-sm italic leading-snug">"${m.question}"</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-center items-center py-4 border-t border-gray-800 mt-4">
+                         <div class="text-center">
+                            <p class="text-[10px] text-gray-500 uppercase">Hito Actual</p>
+                            <p class="font-mono text-cyan-400">${index + 1} / ${milestones.length}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            modal.style.display = 'block';
+            gsap.fromTo(modal, { opacity: 0, scale: 0.9, y: 50 }, { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: "back.out(1.7)" });
+        }
+
+        function startJourney() { goToMilestone(0); }
+        function nextStep() { if (currentIndex < milestones.length - 1) goToMilestone(currentIndex + 1); }
+        function prevStep() { if (currentIndex > 0) goToMilestone(currentIndex - 1); }
+
+        function closeModals() {
+            document.querySelectorAll('.milestone-popup').forEach(m => m.style.display = 'none');
+        }
+
+        function openImageViewer(src) {
+            const viewer = document.getElementById('image-viewer');
+            const img = document.getElementById('image-viewer-img');
+            img.src = src;
+            viewer.classList.remove('hidden');
+            setTimeout(() => {
+                viewer.classList.remove('opacity-0');
+                img.classList.remove('scale-95');
+                img.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeImageViewer() {
+            const viewer = document.getElementById('image-viewer');
+            const img = document.getElementById('image-viewer-img');
+            viewer.classList.add('opacity-0');
+            img.classList.remove('scale-100');
+            img.classList.add('scale-95');
+            setTimeout(() => {
+                viewer.classList.add('hidden');
+                img.src = '';
+            }, 300);
+        }
+
+        function openModal(type) {
+            closeModals();
+            const modal = document.getElementById('special-modal');
+            const content = document.getElementById('special-content');
+            modal.style.display = 'block';
+
+            if (type === 'architecture') {
+                content.innerHTML = `
+                    <h2 class="text-2xl font-bold text-cyan-400 mb-6 font-['Orbitron']">Ingeniería Criogénica</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="relative rounded overflow-hidden border border-cyan-500/30 group">
+                             <img src="imagenes/ftqc.png" class="object-cover h-48 w-full cursor-pointer transition transform group-hover:scale-105" onclick="openImageViewer(this.src)">
+                             <div class="absolute bottom-0 p-2 bg-black/70 w-full text-[10px] pointer-events-none">Crióstato de Dilución (ETH Zurich)</div>
+                        </div>
+                        <div class="space-y-3">
+                             <h4 class="text-sm font-bold text-cyan-400">Control de la Decoherencia</h4>
+                             <p class="text-xs text-gray-400 leading-relaxed">Para que los qubits funcionen, deben aislarse de toda radiación térmica. Se enfrían a 15 milikelvin, una temperatura mucho más baja que la del vacío interestelar.</p>
+                             <div class="p-3 bg-cyan-900/10 border border-cyan-800 rounded">
+                                <span class="text-[10px] text-cyan-500 font-bold uppercase">Componente: Líneas de Microondas</span>
+                                <p class="text-[11px] text-gray-300">Cables superconductores que transmiten pulsos electromagnéticos para cambiar los estados 0 y 1.</p>
+                             </div>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'bit-qubit') {
+                content.innerHTML = `
+                    <h2 class="text-2xl font-bold text-cyan-400 mb-6 font-['Orbitron']">Lógica de Estados</h2>
+                    <div class="flex flex-col items-center mb-8 bg-black/30 p-6 rounded-xl border border-cyan-900">
+                        <img src="imagenes/bloch.png" class="h-48 mb-4 invert brightness-125 cursor-pointer hover:scale-105 transition" onclick="openImageViewer(this.src)">
+                        <p class="text-xs text-cyan-300 text-center max-w-sm italic">La Esfera de Bloch: Representación geométrica del estado de un qubit puro.</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="p-4 border border-gray-800 bg-gray-900/40 rounded-lg">
+                            <h3 class="text-lg font-bold text-gray-400 mb-2">Bit (Binario)</h3>
+                            <p class="text-xs text-gray-500">Determinista: Es 0 o 1. Un interruptor físico macroscópico.</p>
+                        </div>
+                        <div class="p-4 border border-cyan-800 bg-cyan-900/40 rounded-lg">
+                            <h3 class="text-lg font-bold text-cyan-400 mb-2">Qubit (Cuántico)</h3>
+                            <p class="text-xs text-cyan-300">Probabilístico: Superposición de |0⟩ y |1⟩. Aprovecha la interferencia destructiva para descartar resultados erróneos.</p>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'apps') {
+                content.innerHTML = `
+                    <h2 class="text-2xl font-bold text-green-400 mb-6 font-['Orbitron']">Horizonte Tecnológico</h2>
+                    <div class="space-y-4 max-h-80 overflow-y-auto pr-2">
+                        <div class="flex gap-4 p-4 bg-green-950/10 rounded border border-green-500/20 hover:bg-green-900/20 transition">
+                            <img src="imagenes/helix.png" class="w-16 h-16 object-contain cursor-pointer hover:scale-110 transition" onclick="openImageViewer(this.src)">
+                            <div>
+                                <h4 class="font-bold text-green-300">Fármacos Moleculares</h4>
+                                <p class="text-xs text-gray-400 mt-1">Simulación precisa de interacciones proteicas para erradicar enfermedades genéticas mediante diseño computacional directo.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 p-4 bg-green-950/10 rounded border border-green-500/20 hover:bg-green-900/20 transition">
+                            <img src="imagenes/battery.png" class="w-16 h-16 object-contain cursor-pointer hover:scale-110 transition" onclick="openImageViewer(this.src)">
+                            <div>
+                                <h4 class="font-bold text-green-300">Super-Materiales</h4>
+                                <p class="text-xs text-gray-400 mt-1">Descubrimiento de compuestos para superconductores a temperatura ambiente, eliminando pérdidas en la red eléctrica global.</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        window.onload = () => {
+            init3D();
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+    </script>
+</body>
+
+</html>
