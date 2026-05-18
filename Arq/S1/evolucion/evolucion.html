@@ -1,0 +1,1800 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evolución de las Generaciones Tecnológicas - Experiencia AR Virtual</title>
+    <!-- Tailwind CSS para diseño fluido y responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Iconos FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter para legibilidad premium -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+
+        /* Efectos de Brillo Neón */
+        .neon-border-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+            border: 1px solid rgba(6, 182, 212, 0.6);
+        }
+
+        .neon-border-purple {
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+            border: 1px solid rgba(168, 85, 247, 0.6);
+        }
+
+        .neon-text-cyan {
+            text-shadow: 0 0 8px rgba(6, 182, 212, 0.8);
+        }
+
+        .neon-text-purple {
+            text-shadow: 0 0 8px rgba(168, 85, 247, 0.8);
+        }
+
+        /* Cuadrícula holográfica de fondo */
+        .cyber-grid {
+            background-image:
+                linear-gradient(rgba(6, 182, 212, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* Línea de escaneo holográfico */
+        @keyframes scanline {
+            0% {
+                transform: translateY(-100%);
+            }
+
+            100% {
+                transform: translateY(100%);
+            }
+        }
+
+        .hologram-scan::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 242, 254, 0.15) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 4px, 6px 100%;
+            z-index: 10;
+            pointer-events: none;
+            animation: scanline 8s linear infinite;
+        }
+
+        /* Ocultar scrollbars sin perder funcionalidad */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Efecto de pulso para simulación activa */
+        @keyframes pulse-soft {
+
+            0%,
+            100% {
+                opacity: 0.2;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+        }
+
+        .pulse-light {
+            animation: pulse-soft 2s infinite;
+        }
+    </style>
+</head>
+
+<body class="cyber-grid min-h-screen flex flex-col justify-between">
+
+    <!-- HEADER PRINCIPAL -->
+    <header
+        class="border-b border-gray-800 bg-gray-950/80 backdrop-blur-md sticky top-0 z-40 transition-all duration-300">
+        <div
+            class="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div
+                    class="h-10 w-10 rounded-lg bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid fa-microchip text-lg text-white"></i>
+                </div>
+                <div>
+                    <h1
+                        class="text-xl sm:text-2xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-indigo-200 to-purple-400">
+                        HISTORIA DE LA COMPUTACIÓN
+                    </h1>
+                    <p class="text-xs text-gray-400">De los tubos de vacío a la era de la inteligencia artificial y edge
+                        computing</p>
+                </div>
+            </div>
+
+
+        </div>
+    </header>
+
+    <!-- INTRODUCCIÓN GENERAL -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow flex flex-col gap-8">
+        <section class="bg-gray-900/40 border border-gray-800/80 rounded-2xl p-6 backdrop-blur-sm">
+            <div class="grid grid-cols-1 lg:grid-cols-1 gap-6 items-center">
+                <div class="lg:col-span-1 space-y-3">
+                    <h2 class="text-lg font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-cube"></i> Portal de Aprendizaje
+                    </h2>
+                    <p class="text-gray-300 text-sm sm:text-base leading-relaxed">
+                        Explora la asombrosa metamorfosis de la computación. A lo largo de seis generaciones
+                        tecnológicas, la humanidad ha dominado el flujo físico y digital de la información, guiada por
+                        tres fuerzas vectoriales continuas: la <strong>miniaturización extrema</strong>, la búsqueda de
+                        la <strong>eficiencia térmica y energética</strong>, y la consolidación de <strong>paradigmas
+                            distribuidos</strong>.
+                    </p>
+                    <div class="flex flex-wrap gap-2 text-xs">
+                        <span class="px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-gray-400"><i
+                                class="fa-solid fa-microchip mr-1"></i> CPU, GPU, NPU</span>
+                        <span class="px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-gray-400"><i
+                                class="fa-solid fa-cloud mr-1"></i> Cloud &amp; Edge</span>
+                        <span class="px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-gray-400"><i
+                                class="fa-solid fa-temperature-empty mr-1"></i> Eficiencia Térmica</span>
+                        <span class="px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-gray-400"><i
+                                class="fa-solid fa-network-wired mr-1"></i> IoT e IA</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CORE AR INTERACTIVE VIEWPORT SECTION -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+
+            <!-- PANEL DE CONTROL E INFORMACIÓN DE GENERACIÓN (IZQUIERDO) -->
+            <div
+                class="lg:col-span-5 flex flex-col justify-between bg-gray-950/50 border border-gray-800 rounded-2xl p-6 relative overflow-hidden backdrop-blur-md">
+                <!-- Decoración Sci-fi -->
+                <div
+                    class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-cyan-500/10 to-transparent pointer-events-none rounded-tr-2xl">
+                </div>
+
+                <div class="space-y-4">
+                    <!-- Cabecera de Tarjeta -->
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span id="gen-tag"
+                                class="text-xs font-bold tracking-widest px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 uppercase">1ª
+                                Generación</span>
+                            <h3 id="gen-title" class="text-2xl font-bold mt-2 text-white">Tubos de Vacío</h3>
+                            <p id="gen-period" class="text-sm text-cyan-400 font-semibold mt-0.5">1940 – 1956</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-gray-500 font-mono">ESTACIÓN</span>
+                            <div id="gen-number" class="text-3xl font-black text-gray-800 font-mono">01/06</div>
+                        </div>
+                    </div>
+
+                    <!-- Datos Técnicos / Descripción -->
+                    <p id="gen-description" class="text-sm text-gray-300 leading-relaxed min-h-[80px]">
+                        Tecnología basada en tubos de vacío termiónicos que posibilitó el primer procesamiento digital
+                        electrónico a gran escala. Las máquinas eran enormes, costosas y consumían una cantidad
+                        exorbitante de electricidad.
+                    </p>
+
+                    <!-- Indicadores de Rendimiento / Métricas -->
+                    <div class="space-y-2.5 pt-2 border-t border-gray-900">
+                        <div class="text-xs font-bold tracking-wider text-cyan-400/80 uppercase">Análisis del Hardware
+                        </div>
+
+                        <!-- Miniaturización -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-gray-400">Escala / Miniaturización</span>
+                                <span id="metric-scale-lbl" class="text-cyan-400 font-semibold">Cuarto Entero</span>
+                            </div>
+                            <div class="w-full bg-gray-900 rounded-full h-1.5 overflow-hidden border border-gray-800">
+                                <div id="metric-scale-bar" class="bg-cyan-500 h-full transition-all duration-500"
+                                    style="width: 15%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Eficiencia Térmica -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-gray-400">Eficiencia Térmica</span>
+                                <span id="metric-thermal-lbl" class="text-orange-400 font-semibold">Crítica (Calor
+                                    Extremo)</span>
+                            </div>
+                            <div class="w-full bg-gray-900 rounded-full h-1.5 overflow-hidden border border-gray-800">
+                                <div id="metric-thermal-bar" class="bg-orange-500 h-full transition-all duration-500"
+                                    style="width: 5%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Conectividad -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-gray-400">Interconectividad</span>
+                                <span id="metric-connect-lbl" class="text-purple-400 font-semibold">Nula
+                                    (Aislada)</span>
+                            </div>
+                            <div class="w-full bg-gray-900 rounded-full h-1.5 overflow-hidden border border-gray-800">
+                                <div id="metric-connect-bar" class="bg-purple-500 h-full transition-all duration-500"
+                                    style="width: 5%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resumen de Pros y Contras -->
+                    <div class="grid grid-cols-2 gap-3 pt-3">
+                        <div class="bg-green-950/20 border border-green-900/30 p-2.5 rounded-lg">
+                            <div class="text-xs font-bold text-green-400 uppercase mb-1"><i
+                                    class="fa-solid fa-circle-check"></i> Hito Clave</div>
+                            <p id="gen-pro" class="text-xs text-gray-400">Primer procesamiento electrónico a gran escala
+                                (ENIAC).</p>
+                        </div>
+                        <div class="bg-red-950/20 border border-red-900/30 p-2.5 rounded-lg">
+                            <div class="text-xs font-bold text-red-400 uppercase mb-1"><i
+                                    class="fa-solid fa-triangle-exclamation"></i> Limitación</div>
+                            <p id="gen-con" class="text-xs text-gray-400">Consumo masivo de energía, generación extrema
+                                de calor.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de Acción de la Generación -->
+                <div class="mt-6 pt-4 border-t border-gray-900 flex justify-between gap-3">
+                    <button onclick="openDeepAnalysis()"
+                        class="flex-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 py-2.5 px-4 rounded-xl text-xs font-bold tracking-wider transition-all duration-300 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-microscope"></i> Análisis Holográfico
+                    </button>
+                    <button onclick="triggerHoloSound()"
+                        class="bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white p-2.5 rounded-xl text-xs transition-all duration-300"
+                        title="Activar audio de simulación">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- VISOR DE AR VIRTUAL 3D (CENTRAL) -->
+            <div
+                class="lg:col-span-7 flex flex-col justify-between bg-gray-950/80 border border-cyan-500/20 rounded-2xl overflow-hidden relative min-h-[450px] shadow-2xl shadow-cyan-950/10">
+                <!-- Capas de Decoración de Realidad Aumentada -->
+                <div class="hologram-scan absolute inset-0 pointer-events-none z-10"></div>
+
+                <!-- Overlay de HUD de Cámara AR -->
+                <div class="absolute inset-x-0 top-0 p-4 flex justify-between items-center z-20 pointer-events-none">
+                    <div
+                        class="flex items-center gap-2 bg-gray-900/90 border border-gray-800 px-3 py-1.5 rounded-lg backdrop-blur-md">
+                        <span class="h-2 w-2 rounded-full bg-red-600 animate-pulse"></span>
+                        <span class="text-[10px] font-mono tracking-widest text-red-400 font-bold uppercase">LIVE AR
+                            SIMULATION</span>
+                    </div>
+                    <div class="text-[10px] font-mono text-cyan-400/80 text-right hidden sm:block">
+                        <div>CAM: 1080p_FUTURISTIC</div>
+                        <div>AZIMUTH: <span id="cam-azimuth">45°</span> | DEPTH: <span id="cam-depth">100%</span></div>
+                    </div>
+                </div>
+
+                <div class="absolute inset-x-0 bottom-16 p-4 flex justify-center z-20 pointer-events-none">
+                    <div id="canvas-hint"
+                        class="bg-gray-900/90 border border-cyan-500/30 px-3 py-1 rounded-full backdrop-blur-md text-[10px] font-semibold text-cyan-300 tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-hand-pointer animate-bounce"></i> Arrastra para orbitar el holograma 3D
+                    </div>
+                </div>
+
+                <!-- CONTENEDOR THREE.JS -->
+                <div class="absolute inset-0 z-0 cursor-grab active:cursor-grabbing" id="threejs-container"></div>
+
+                <!-- CONTROLES DE NAVEGACIÓN (INFERIOR DEL VISOR) -->
+                <div
+                    class="w-full bg-gray-950/90 border-t border-gray-900 px-4 py-3 flex flex-wrap justify-between items-center gap-3 z-20 backdrop-blur-md">
+                    <div class="flex items-center gap-1">
+                        <button onclick="changeGeneration(-1)"
+                            class="h-10 w-10 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-300 hover:text-white flex items-center justify-center transition-all duration-200"
+                            title="Anterior generación">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                        <button id="btn-play" onclick="toggleAutoTour()"
+                            class="h-10 px-4 rounded-lg bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white flex items-center justify-center gap-2 font-bold text-xs uppercase tracking-wider transition-all duration-200 shadow-md shadow-cyan-500/10">
+                            <i class="fa-solid fa-play"></i> Auto-recorrido
+                        </button>
+                        <button onclick="resetTour()"
+                            class="h-10 w-10 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-300 hover:text-white flex items-center justify-center transition-all duration-200"
+                            title="Reiniciar recorrido">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </button>
+                        <button onclick="changeGeneration(1)"
+                            class="h-10 w-10 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-300 hover:text-white flex items-center justify-center transition-all duration-200"
+                            title="Siguiente generación">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                    <!-- Indicadores Rápidos de Puntos de Línea de Tiempo -->
+                    <div class="flex items-center gap-2">
+                        <div class="flex gap-1.5" id="timeline-dots">
+                            <!-- Inyectado mediante JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN: LOS 3 EJES TRANSVERSALES DE LA EVOLUCIÓN -->
+        <section class="space-y-4">
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-2">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-trend-up text-cyan-400"></i> Los 3 Ejes Transversales de la
+                        Evolución
+                    </h2>
+                    <p class="text-sm text-gray-400">Fuerzas físicas y tecnológicas constantes que han guiado cada salto
+                        de generación</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Eje 1: Miniaturización Extrema -->
+                <div
+                    class="bg-gray-950/40 border border-gray-800 hover:border-cyan-500/40 rounded-2xl p-6 transition-all duration-300 group hover:shadow-lg hover:shadow-cyan-950/10 flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <div
+                            class="h-12 w-12 rounded-xl bg-cyan-950/60 border border-cyan-800 flex items-center justify-center text-cyan-400 text-lg group-hover:scale-110 transition-transform duration-300">
+                            <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white">1. Miniaturización Extrema</h3>
+                        <p class="text-xs sm:text-sm text-gray-300 leading-relaxed">
+                            De ocupar salas de 150 metros cuadrados en la era termiónica a integrarse en chips
+                            milimétricos. El desarrollo del transistor de silicio y la fotolitografía permitió meter
+                            millones y hoy miles de millones de interruptores lógicos dentro del tamaño de un grano de
+                            arena.
+                        </p>
+                    </div>
+                    <button onclick="openMiniaturizationSim()"
+                        class="mt-4 w-full bg-gray-900 hover:bg-cyan-950 border border-gray-800 hover:border-cyan-800 text-cyan-400 py-2 px-3 rounded-lg text-xs font-semibold transition-all duration-300">
+                        Probar Simulador de Escala &rarr;
+                    </button>
+                </div>
+
+                <!-- Eje 2: Eficiencia Térmica -->
+                <div
+                    class="bg-gray-950/40 border border-gray-800 hover:border-purple-500/40 rounded-2xl p-6 transition-all duration-300 group hover:shadow-lg hover:shadow-purple-950/10 flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <div
+                            class="h-12 w-12 rounded-xl bg-purple-950/60 border border-purple-800 flex items-center justify-center text-purple-400 text-lg group-hover:scale-110 transition-transform duration-300">
+                            <i class="fa-solid fa-temperature-arrow-down"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white">2. Eficiencia Térmica</h3>
+                        <p class="text-xs sm:text-sm text-gray-300 leading-relaxed">
+                            El calor es el mayor enemigo del hardware lógico. Mientras que la primera generación
+                            requería turbinas de enfriamiento masivas para evitar incendios, los chips actuales utilizan
+                            litografías cuánticas avanzadas y voltajes ultra bajos, regulando la eficiencia térmica para
+                            dispositivos móviles.
+                        </p>
+                    </div>
+                    <button onclick="openThermalSim()"
+                        class="mt-4 w-full bg-gray-900 hover:bg-purple-950 border border-gray-800 hover:border-purple-800 text-purple-400 py-2 px-3 rounded-lg text-xs font-semibold transition-all duration-300">
+                        Probar Regulador Térmico &rarr;
+                    </button>
+                </div>
+
+                <!-- Eje 3: Paradigmas Emergentes -->
+                <div
+                    class="bg-gray-950/40 border border-gray-800 hover:border-indigo-500/40 rounded-2xl p-6 transition-all duration-300 group hover:shadow-lg hover:shadow-indigo-950/10 flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <div
+                            class="h-12 w-12 rounded-xl bg-indigo-950/60 border border-indigo-800 flex items-center justify-center text-indigo-400 text-lg group-hover:scale-110 transition-transform duration-300">
+                            <i class="fa-solid fa-globe"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white">3. Paradigmas Emergentes</h3>
+                        <p class="text-xs sm:text-sm text-gray-300 leading-relaxed">
+                            La computación evolucionó desde el cálculo puramente local y secuencial a una arquitectura
+                            inteligente, ubicua y distribuida. En la actualidad, el ecosistema se sustenta en una
+                            interconexión fluida entre la nube (Cloud), dispositivos IoT periféricos (Edge) y sistemas
+                            de Inteligencia Artificial.
+                        </p>
+                    </div>
+                    <button onclick="openDataFlowSim()"
+                        class="mt-4 w-full bg-gray-900 hover:bg-indigo-950 border border-gray-800 hover:border-indigo-800 text-indigo-400 py-2 px-3 rounded-lg text-xs font-semibold transition-all duration-300">
+                        Simular Flujo Inteligente &rarr;
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- DINAMICOS SIMULADORES FISICOS / DE INFRAESTRUCTURA -->
+        <section id="simuladores-seccion"
+            class="bg-gray-950/80 border border-gray-800 rounded-2xl p-6 backdrop-blur-md space-y-6">
+            <div
+                class="border-b border-gray-900 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div>
+                    <h3 class="text-lg font-extrabold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-flask-vial text-cyan-400"></i> Consola Integrada de Simulación Física y de
+                        Flujos
+                    </h3>
+                    <p class="text-xs text-gray-400">Interactúa con los controles para simular los límites del silicio y
+                        la transferencia de datos</p>
+                </div>
+                <!-- Selector de pestañas para simuladores -->
+                <div class="flex gap-1.5 bg-gray-900 p-1 rounded-lg border border-gray-800 text-xs">
+                    <button onclick="switchSim('miniaturization')" id="tab-miniaturization"
+                        class="px-3 py-1.5 rounded-md font-bold text-cyan-400 bg-gray-950 border border-gray-800 transition-all">Miniaturización</button>
+                    <button onclick="switchSim('thermal')" id="tab-thermal"
+                        class="px-3 py-1.5 rounded-md font-bold text-gray-400 hover:text-white transition-all">Eficiencia
+                        Térmica</button>
+                    <button onclick="switchSim('flow')" id="tab-flow"
+                        class="px-3 py-1.5 rounded-md font-bold text-gray-400 hover:text-white transition-all">Flujo de
+                        Datos CPU/GPU/NPU</button>
+                </div>
+            </div>
+
+            <!-- CONTENEDORES DE SIMULADOR -->
+
+            <!-- SIMULADOR 1: MINIATURIZACIÓN EXTREMA -->
+            <div id="sim-miniaturization" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                    <div class="md:col-span-4 space-y-3">
+                        <h4 class="text-base font-bold text-white"><i
+                                class="fa-solid fa-up-right-and-down-left-from-center mr-1.5 text-cyan-400"></i>
+                            Deslizador Comparativo de Escala</h4>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Mueve el control para viajar a través de los tamaños físicos de los elementos de computación
+                            lógica en el transcurso de los años.
+                        </p>
+                        <div class="pt-2">
+                            <label for="range-scale" class="block text-xs font-mono text-cyan-400 font-bold mb-2">AÑO DE
+                                LA LITOGRAFÍA:</label>
+                            <input type="range" id="range-scale" min="1940" max="2026" step="5" value="1940"
+                                class="w-full accent-cyan-500 bg-gray-900 h-2 rounded-lg cursor-pointer border border-gray-800"
+                                oninput="updateScaleSim(this.value)">
+                            <div class="flex justify-between text-[10px] text-gray-500 font-mono mt-1">
+                                <span>1940 (Habitaciones)</span>
+                                <span>2026 (3nm)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="md:col-span-8 bg-gray-900/60 border border-gray-800 rounded-xl p-4 flex flex-col justify-between min-h-[180px]">
+                        <div class="flex justify-between items-start gap-4 flex-wrap">
+                            <div>
+                                <div class="text-[10px] font-mono text-cyan-400 tracking-wider">ELEMENTO FÍSICO</div>
+                                <div id="scale-item-name" class="text-lg font-bold text-white mt-1">Tubo de Vacío
+                                    Termiónico</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-[10px] font-mono text-gray-400">DIÁMETRO DE COMPONENTE</div>
+                                <div id="scale-item-size" class="text-xl font-bold text-cyan-400 font-mono">~ 10 - 15 cm
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gráfico visual de escala comparativa -->
+                        <div
+                            class="my-4 h-16 bg-gray-950 rounded-lg flex items-center justify-center p-2 relative overflow-hidden border border-gray-900">
+                            <!-- Visualizador de cajas adaptativas para entender el tamaño -->
+                            <div id="scale-box"
+                                class="bg-cyan-500/20 border-2 border-cyan-400 rounded-lg flex items-center justify-center transition-all duration-300 font-mono text-[10px]"
+                                style="width: 100%; height: 100%;">
+                                <span id="scale-box-text">Tamaño de Habitación de Control</span>
+                            </div>
+                        </div>
+
+                        <div class="text-xs text-gray-400 leading-normal" id="scale-item-desc">
+                            En esta época, se requerían salas enteras y enormes gabinetes para albergar apenas unos
+                            miles de tubos lógicos.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SIMULADOR 2: EFICIENCIA TÉRMICA -->
+            <div id="sim-thermal" class="hidden space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                    <div class="md:col-span-4 space-y-3">
+                        <h4 class="text-base font-bold text-white"><i
+                                class="fa-solid fa-temperature-three-quarters mr-1.5 text-orange-400"></i> Monitor de
+                            Consumo y Calor</h4>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Ajusta el nivel de procesamiento simulado para evaluar cómo las diferentes épocas de
+                            hardware gestionaban la disipación de calor.
+                        </p>
+                        <div class="pt-2">
+                            <label for="range-thermal"
+                                class="block text-xs font-mono text-orange-400 font-bold mb-2">CARGA DE TRABAJO
+                                LOGICAL:</label>
+                            <input type="range" id="range-thermal" min="10" max="100" step="10" value="50"
+                                class="w-full accent-orange-500 bg-gray-900 h-2 rounded-lg cursor-pointer border border-gray-800"
+                                oninput="updateThermalSim(this.value)">
+                            <div class="flex justify-between text-[10px] text-gray-500 font-mono mt-1">
+                                <span>Carga Baja (10%)</span>
+                                <span>Carga Crítica (100%)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="md:col-span-8 bg-gray-900/60 border border-gray-800 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-gray-950 p-3 rounded-lg border border-gray-900 flex flex-col justify-between">
+                            <span class="text-[10px] font-mono text-gray-400">TEMP. SIMULADA</span>
+                            <div id="thermal-val-temp" class="text-2xl font-black text-orange-400 font-mono my-2">80°C
+                            </div>
+                            <span class="text-[10px] text-gray-500">Peligro térmico inicial</span>
+                        </div>
+                        <div class="bg-gray-950 p-3 rounded-lg border border-gray-900 flex flex-col justify-between">
+                            <span class="text-[10px] font-mono text-gray-400">CONSUMO ENERGÉTICO</span>
+                            <div id="thermal-val-power" class="text-2xl font-black text-yellow-500 font-mono my-2">150
+                                kW</div>
+                            <span class="text-[10px] text-gray-500">Demanda del sistema</span>
+                        </div>
+                        <div class="bg-gray-950 p-3 rounded-lg border border-gray-900 flex flex-col justify-between">
+                            <span class="text-[10px] font-mono text-gray-400">SISTEMA REQUERIDO</span>
+                            <div id="thermal-val-cooling" class="text-sm font-bold text-white my-2 uppercase">
+                                Ventilación de Agua / Aire Forzado</div>
+                            <span class="text-[10px] text-gray-500">Infraestructura</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SIMULADOR 3: FLUJO DE PROCESAMIENTO INTELIGENTE -->
+            <div id="sim-flow" class="hidden space-y-4">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                    <div class="lg:col-span-4 space-y-3">
+                        <h4 class="text-base font-bold text-white"><i
+                                class="fa-solid fa-network-wired mr-1.5 text-indigo-400"></i> Flujo de Procesamiento en
+                            la Era Inteligente</h4>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Simula una consulta compleja de usuario (ej. "Generar imagen por IA") y observa de forma
+                            dinámica cómo se dividen el trabajo el <strong>CPU</strong>, la <strong>GPU</strong> y la
+                            <strong>NPU</strong>, apoyándose en la nube (Cloud/Edge).
+                        </p>
+                        <button onclick="triggerDataFlowAnimation()"
+                            class="w-full bg-indigo-950 hover:bg-indigo-900 border border-indigo-800 text-indigo-300 py-2.5 px-4 rounded-xl text-xs font-bold tracking-wider transition-all duration-300 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-play"></i> Iniciar Flujo Digital
+                        </button>
+                    </div>
+
+                    <!-- Pipeline del simulador -->
+                    <div class="lg:col-span-8 bg-gray-900/60 border border-gray-800 rounded-xl p-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 relative">
+                            <!-- Flecha conectora para pantallas grandes -->
+                            <div
+                                class="hidden sm:block absolute top-1/2 left-4 right-4 h-0.5 bg-gray-800 -translate-y-1/2 z-0">
+                            </div>
+
+                            <!-- Nodo 1: Dispositivo -->
+                            <div id="node-client"
+                                class="bg-gray-950 border border-gray-800 p-3 rounded-lg text-center z-10 w-full sm:w-1/4 transition-all duration-300">
+                                <div
+                                    class="h-8 w-8 rounded-full bg-cyan-950 text-cyan-400 flex items-center justify-center mx-auto mb-2">
+                                    <i class="fa-solid fa-mobile-screen"></i>
+                                </div>
+                                <div class="text-xs font-bold text-white">1. Usuario</div>
+                                <p class="text-[9px] text-gray-500 mt-1">Dispositivo Edge</p>
+                            </div>
+
+                            <!-- Nodo 2: Procesadores Locales -->
+                            <div id="node-procs"
+                                class="bg-gray-950 border border-gray-800 p-3 rounded-lg text-center z-10 w-full sm:w-1/3 transition-all duration-300">
+                                <div class="flex justify-center gap-1.5 mb-2">
+                                    <span
+                                        class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-950 text-blue-400 border border-blue-900"
+                                        title="Procesador Propósito General">CPU</span>
+                                    <span
+                                        class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-green-950 text-green-400 border border-green-900"
+                                        title="Procesador Paralelo Masivo">GPU</span>
+                                    <span
+                                        class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-950 text-purple-400 border border-purple-900"
+                                        title="Procesador IA Tensorial">NPU</span>
+                                </div>
+                                <div class="text-xs font-bold text-white">2. Co-Procesamiento</div>
+                                <p class="text-[9px] text-gray-500 mt-1">Distribución local óptima</p>
+                            </div>
+
+                            <!-- Nodo 3: Nube -->
+                            <div id="node-cloud"
+                                class="bg-gray-950 border border-gray-800 p-3 rounded-lg text-center z-10 w-full sm:w-1/4 transition-all duration-300">
+                                <div
+                                    class="h-8 w-8 rounded-full bg-indigo-950 text-indigo-400 flex items-center justify-center mx-auto mb-2">
+                                    <i class="fa-solid fa-cloud"></i>
+                                </div>
+                                <div class="text-xs font-bold text-white">3. Nube / IA Global</div>
+                                <p class="text-[9px] text-gray-500 mt-1">Computación masiva</p>
+                            </div>
+                        </div>
+                        <div id="flow-status"
+                            class="mt-4 bg-gray-950 p-2.5 rounded-lg border border-gray-900 text-center text-xs text-gray-400 font-mono min-h-[36px]">
+                            Esperando inicio de simulación...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN: GLOSARIO AR DE COMPONENTES INTERACTIVOS -->
+        <section class="space-y-4">
+            <div>
+                <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-cyan-400"></i> Glosario de Componentes AR
+                </h2>
+                <p class="text-sm text-gray-400">Haz clic sobre cualquier elemento para realizar un diagnóstico
+                    holográfico detallado</p>
+            </div>
+
+            <!-- Lista interactiva de tarjetas de componentes con iconos -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <button onclick="openComponentDetail('tubo_vacio')"
+                    class="bg-gray-950/60 border border-gray-800 hover:border-cyan-500/50 p-4 rounded-xl text-center transition-all duration-300 group hover:bg-gray-900">
+                    <div
+                        class="h-10 w-10 rounded-lg bg-gray-900 flex items-center justify-center text-cyan-400 mx-auto mb-2.5 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-lightbulb"></i>
+                    </div>
+                    <div class="text-xs font-bold text-white truncate">Tubo de Vacío</div>
+                </button>
+                <button onclick="openComponentDetail('tarjeta_perforada')"
+                    class="bg-gray-950/60 border border-gray-800 hover:border-cyan-500/50 p-4 rounded-xl text-center transition-all duration-300 group hover:bg-gray-900">
+                    <div
+                        class="h-10 w-10 rounded-lg bg-gray-900 flex items-center justify-center text-cyan-400 mx-auto mb-2.5 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-ticket"></i>
+                    </div>
+                    <div class="text-xs font-bold text-white truncate">Tarjeta Perforada</div>
+                </button>
+                <button onclick="openComponentDetail('transistor')"
+                    class="bg-gray-950/60 border border-gray-800 hover:border-cyan-500/50 p-4 rounded-xl text-center transition-all duration-300 group hover:bg-gray-900">
+                    <div
+                        class="h-10 w-10 rounded-lg bg-gray-900 flex items-center justify-center text-cyan-400 mx-auto mb-2.5 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-bolt-lightning"></i>
+                    </div>
+                    <div class="text-xs font-bold text-white truncate">Transistor</div>
+                </button>
+                <button onclick="openComponentDetail('circuito_integrado')"
+                    class="bg-gray-950/60 border border-gray-800 hover:border-cyan-500/50 p-4 rounded-xl text-center transition-all duration-300 group hover:bg-gray-900">
+                    <div
+                        class="h-10 w-10 rounded-lg bg-gray-900 flex items-center justify-center text-cyan-400 mx-auto mb-2.5 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-table-cells-large"></i>
+                    </div>
+                    <div class="text-xs font-bold text-white truncate">Circuito Integrado</div>
+                </button>
+                <button onclick="openComponentDetail('microprocesador')"
+                    class="bg-gray-950/60 border border-gray-800 hover:border-cyan-500/50 p-4 rounded-xl text-center transition-all duration-300 group hover:bg-gray-900">
+                    <div
+                        class="h-10 w-10 rounded-lg bg-gray-900 flex items-center justify-center text-cyan-400 mx-auto mb-2.5 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-microchip"></i>
+                    </div>
+                    <div class="text-xs font-bold text-white truncate">Microprocesador</div>
+                </button>
+                <button onclick="openComponentDetail('mainframe')"
+                    class="bg-gray-950/60 border border-gray-800 hover:border-cyan-500/50 p-4 rounded-xl text-center transition-all duration-300 group hover:bg-gray-900">
+                    <div
+                        class="h-10 w-10 rounded-lg bg-gray-900 flex items-center justify-center text-cyan-400 mx-auto mb-2.5 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-server"></i>
+                    </div>
+                    <div class="text-xs font-bold text-white truncate">Mainframe</div>
+                </button>
+                <button onclick="openComponentDetail('pc_antiguo')"
+                    class="bg-gray-950/60 border border-gray-800 hover:border-cyan-500/50 p-4 rounded-xl text-center transition-all duration-300 group hover:bg-gray-900">
+                    <div
+                        class="h-10 w-10 rounded-lg bg-gray-900 flex items-center justify-center text-cyan-400 mx-auto mb-2.5 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-desktop"></i>
+                    </div>
+                    <div class="text-xs font-bold text-white truncate">PC Clásico</div>
+                </button>
+                <button onclick="openComponentDetail('smartphone')"
+                    class="bg-gray-950/60 border border-gray-800 hover:border-cyan-500/50 p-4 rounded-xl text-center transition-all duration-300 group hover:bg-gray-900">
+                    <div
+                        class="h-10 w-10 rounded-lg bg-gray-900 flex items-center justify-center text-cyan-400 mx-auto mb-2.5 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                    </div>
+                    <div class="text-xs font-bold text-white truncate">Smartphone</div>
+                </button>
+                <button onclick="openComponentDetail('wifi_lte')"
+                    class="bg-gray-950/60 border border-gray-800 hover:border-cyan-500/50 p-4 rounded-xl text-center transition-all duration-300 group hover:bg-gray-900">
+                    <div
+                        class="h-10 w-10 rounded-lg bg-gray-900 flex items-center justify-center text-cyan-400 mx-auto mb-2.5 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-wifi"></i>
+                    </div>
+                    <div class="text-xs font-bold text-white truncate">Wi-Fi &amp; LTE</div>
+                </button>
+                <button onclick="openComponentDetail('cloud_computing')"
+                    class="bg-gray-950/60 border border-gray-800 hover:border-cyan-500/50 p-4 rounded-xl text-center transition-all duration-300 group hover:bg-gray-900">
+                    <div
+                        class="h-10 w-10 rounded-lg bg-gray-900 flex items-center justify-center text-cyan-400 mx-auto mb-2.5 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-cloud"></i>
+                    </div>
+                    <div class="text-xs font-bold text-white truncate">Cloud Computing</div>
+                </button>
+                <button onclick="openComponentDetail('iot')"
+                    class="bg-gray-950/60 border border-gray-800 hover:border-cyan-500/50 p-4 rounded-xl text-center transition-all duration-300 group hover:bg-gray-900">
+                    <div
+                        class="h-10 w-10 rounded-lg bg-gray-900 flex items-center justify-center text-cyan-400 mx-auto mb-2.5 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-house-signal"></i>
+                    </div>
+                    <div class="text-xs font-bold text-white truncate">IoT Periférico</div>
+                </button>
+                <button onclick="openComponentDetail('computacion_cuantica')"
+                    class="bg-gray-950/60 border border-gray-800 hover:border-cyan-500/50 p-4 rounded-xl text-center transition-all duration-300 group hover:bg-gray-900">
+                    <div
+                        class="h-10 w-10 rounded-lg bg-gray-900 flex items-center justify-center text-cyan-400 mx-auto mb-2.5 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-atom"></i>
+                    </div>
+                    <div class="text-xs font-bold text-white truncate">Comp. Cuántica</div>
+                </button>
+            </div>
+        </section>
+
+        <!-- SECCIÓN: TABLA COMPARATIVA HISTÓRICA GENERAL -->
+        <section class="space-y-4">
+            <div>
+                <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white flex items-center gap-2">
+                    <i class="fa-solid fa-table-list text-cyan-400"></i> Tabla de Contraste Histórico de Generaciones
+                </h2>
+                <p class="text-sm text-gray-400">Análisis comparativo de rendimiento, consumo térmico, e hitos
+                    esenciales de desarrollo</p>
+            </div>
+
+            <div class="bg-gray-950/60 border border-gray-800 rounded-2xl overflow-hidden backdrop-blur-md">
+                <div class="overflow-x-auto no-scrollbar">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead
+                            class="bg-gray-900/80 border-b border-gray-800 text-cyan-400 font-bold uppercase tracking-wider">
+                            <tr>
+                                <th class="p-4">Generación</th>
+                                <th class="p-4">Periodo</th>
+                                <th class="p-4">Tecnología Base</th>
+                                <th class="p-4">Velocidad / Rendimiento</th>
+                                <th class="p-4">Disipación Térmica</th>
+                                <th class="p-4">Impacto Principal</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-900 text-gray-300 font-medium">
+                            <tr class="hover:bg-cyan-950/10 transition-all duration-150">
+                                <td class="p-4 font-bold text-white">1ª Generación</td>
+                                <td class="p-4 font-mono text-cyan-400">1940 – 1956</td>
+                                <td class="p-4">Tubos de vacío termiónicos</td>
+                                <td class="p-4 font-mono">~ 5 KIPS</td>
+                                <td class="p-4"><span
+                                        class="px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-900">Crítica
+                                        (Calor Extremo)</span></td>
+                                <td class="p-4 text-gray-400">Inicio del procesamiento lógico electrónico masivo.</td>
+                            </tr>
+                            <tr class="hover:bg-cyan-950/10 transition-all duration-150">
+                                <td class="p-4 font-bold text-white">2ª Generación</td>
+                                <td class="p-4 font-mono text-cyan-400">1956 – 1964</td>
+                                <td class="p-4">Transistores discretos</td>
+                                <td class="p-4 font-mono">~ 100 KIPS</td>
+                                <td class="p-4"><span
+                                        class="px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-900">Media
+                                        (Calor Moderado)</span></td>
+                                <td class="p-4 text-gray-400">Miniaturización inicial y desarrollo de COBOL/FORTRAN.
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-cyan-950/10 transition-all duration-150">
+                                <td class="p-4 font-bold text-white">3ª Generación</td>
+                                <td class="p-4 font-mono text-cyan-400">1965 – 1971</td>
+                                <td class="p-4">Circuitos Integrados (ICs)</td>
+                                <td class="p-4 font-mono">~ 1 MIPS</td>
+                                <td class="p-4"><span
+                                        class="px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-900">Media
+                                        (Calor Moderado)</span></td>
+                                <td class="p-4 text-gray-400">Surgimiento de Multiprogramación y el IBM System/360.</td>
+                            </tr>
+                            <tr class="hover:bg-cyan-950/10 transition-all duration-150">
+                                <td class="p-4 font-bold text-white">4ª Generación</td>
+                                <td class="p-4 font-mono text-cyan-400">1972 – 1982</td>
+                                <td class="p-4">Microprocesadores (VLSI)</td>
+                                <td class="p-4 font-mono">~ 100 MIPS</td>
+                                <td class="p-4"><span
+                                        class="px-2 py-0.5 rounded bg-green-950 text-green-400 border border-green-900">Baja
+                                        (Eficiente)</span></td>
+                                <td class="p-4 text-gray-400">Nacimiento de la computadora de escritorio doméstica y de
+                                    oficina.</td>
+                            </tr>
+                            <tr class="hover:bg-cyan-950/10 transition-all duration-150">
+                                <td class="p-4 font-bold text-white">5ª Generación</td>
+                                class="p-4 font-mono text-cyan-400">1983 – 2019</td>
+                                <td class="p-4 font-mono text-cyan-400">1983 – 2019</td>
+                                <td class="p-4">Internet, Dispositivos Móviles, ULSI</td>
+                                <td class="p-4 font-mono">~ 10 GFLOPS</td>
+                                <td class="p-4"><span
+                                        class="px-2 py-0.5 rounded bg-green-950 text-green-400 border border-green-900">Baja
+                                        (Eficiente)</span></td>
+                                <td class="p-4 text-gray-400">Conectividad ubicua inalámbrica y globalización de TI.
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-cyan-950/10 transition-all duration-150">
+                                <td class="p-4 font-bold text-white">6ª Generación</td>
+                                <td class="p-4 font-mono text-cyan-400">2019 – Presente</td>
+                                <td class="p-4">IA, Co-Procesamiento (CPU/GPU/NPU)</td>
+                                <td class="p-4 font-mono">> 100 TFLOPS</td>
+                                <td class="p-4"><span
+                                        class="px-2 py-0.5 rounded bg-green-950 text-green-400 border border-green-900">Baja
+                                        (Optimización IA)</span></td>
+                                <td class="p-4 text-gray-400">Sistemas neuronales, nube distribuida y Edge computing.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER GENERAL -->
+    <footer class="bg-gray-950 border-t border-gray-900 py-6 mt-12">
+        <div
+            class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center sm:text-left flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="text-xs text-gray-500">
+                &copy; 2026 Laboratorio Holográfico de Computación. Propósitos Educativos Multimedia.
+            </div>
+            <div class="flex gap-4 text-xs font-semibold text-gray-400">
+                <a href="#threejs-container" class="hover:text-cyan-400 transition-colors">Volver arriba</a>
+                <span>&bull;</span>
+                <a href="#simuladores-seccion" class="hover:text-cyan-400 transition-colors">Consola de Simulación</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL GENERAL / DIAGNÓSTICO INTERACTIVO -->
+    <div id="holo-modal"
+        class="fixed inset-0 bg-gray-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div
+            class="bg-gray-900 border border-cyan-500/30 rounded-2xl w-full max-w-2xl overflow-hidden relative shadow-2xl shadow-cyan-950/30">
+            <!-- Scanline en Modal -->
+            <div class="hologram-scan absolute inset-0 pointer-events-none z-10"></div>
+
+            <!-- Cabecera de Modal -->
+            <div class="border-b border-gray-800 p-4 flex justify-between items-center bg-gray-950 relative z-20">
+                <div class="flex items-center gap-2">
+                    <i id="modal-icon" class="fa-solid fa-brain text-cyan-400 text-lg"></i>
+                    <h3 id="modal-title" class="text-lg font-bold text-white">Análisis Diagnóstico</h3>
+                </div>
+                <button onclick="closeModal()"
+                    class="h-8 w-8 rounded-lg bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-white flex items-center justify-center transition-all">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Contenido del Modal -->
+            <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto no-scrollbar relative z-20">
+                <div id="modal-body" class="text-sm text-gray-300 leading-relaxed space-y-4">
+                    <!-- Inyectado dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Pie de Modal -->
+            <div class="border-t border-gray-800 p-4 bg-gray-950 text-right relative z-20">
+                <button onclick="closeModal()"
+                    class="bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs uppercase tracking-wider py-2 px-5 rounded-lg transition-all">
+                    Cerrar Diagnóstico
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LIGHTBOX PARA IMÁGENES -->
+    <div id="image-lightbox"
+        class="fixed inset-0 z-[100] bg-gray-950/95 backdrop-blur-md hidden flex items-center justify-center p-4 transition-all duration-300 opacity-0"
+        onclick="closeLightbox()">
+        <button
+            class="absolute top-6 right-6 text-white bg-gray-900 hover:bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center transition-all z-50 shadow-lg border border-gray-700">
+            <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+        <img id="lightbox-img" src=""
+            class="max-w-full max-h-[90vh] object-contain rounded-xl shadow-[0_0_50px_rgba(6,182,212,0.3)] border border-cyan-500/30 scale-95 transition-transform duration-300"
+            onclick="event.stopPropagation()">
+    </div>
+
+    <!-- Scripts Científicos de Visualización -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- BASE DE DATOS DE LAS GENERACIONES ---
+        const generaciones = [
+            {
+                tag: "1ª Generación",
+                title: "Tubos de Vacío",
+                period: "1940 – 1956",
+                number: "01/06",
+                description: "Tecnología basada en tubos de vacío termiónicos que posibilitó el primer procesamiento digital electrónico a gran escala. Las máquinas eran enormes, costosas y consumían una cantidad de energía gigantesca.",
+                scaleLabel: "Habitaciones Completas",
+                scaleVal: 15,
+                thermalLabel: "Crítica (Extremo Calor)",
+                thermalVal: 95,
+                connectLabel: "Nula (Hardware Aislado)",
+                connectVal: 5,
+                pro: "Habilitó el primer cálculo digital electrónico digital (ENIAC, Colossus).",
+                con: "Fragilidad mecánica severa de los bulbos de vidrio y alto consumo de kW.",
+                deep: `
+                    <div class="space-y-4">
+                        <p class="text-cyan-400 font-bold uppercase tracking-wider text-xs">Informe Técnico</p>
+                        <p>Los <strong>tubos de vacío</strong> (o válvulas termiónicas) permitían controlar el flujo de electrones a través del vacío para realizar operaciones de conmutación lógica digital elemental. Reemplazaron a los relés mecánicos lentos de los precursores.</p>
+                        <div class="p-3 bg-gray-950 border border-gray-800 rounded-lg">
+                            <span class="text-xs font-bold text-orange-400">DESVENTAJAS CLAVE:</span>
+                            <ul class="text-xs list-disc pl-4 space-y-1 text-gray-400 mt-1">
+                                <li>Emitían luz y calor extremo de manera continua, actuando como bombillas de alta potencia.</li>
+                                <li>Sufrían averías físicas constantes (se fundían los filamentos térmicos).</li>
+                                <li>Hará falta enfriamiento mecánico masivo por turbinas para que la máquina no colapse.</li>
+                            </ul>
+                        </div>
+                        <p>Las entradas se programaban de forma cruda mediante <strong>tarjetas perforadas mecánicas</strong> y el cableado de tableros físicos. No existían los sistemas operativos ni los lenguajes avanzados de programación.</p>
+                    </div>
+                `
+            },
+            {
+                tag: "2ª Generación",
+                title: "El Transistor",
+                period: "1956 – 1964",
+                number: "02/06",
+                description: "El advenimiento del estado sólido gracias a transistores de germanio y silicio sustituyó a los tubos. Se logró una dramática reducción del tamaño, costo de mantenimiento y temperatura de trabajo.",
+                scaleLabel: "Armarios Compactos",
+                scaleVal: 35,
+                thermalLabel: "Media (Calor Moderado)",
+                thermalVal: 60,
+                connectLabel: "Baja (Cables directos)",
+                connectVal: 15,
+                pro: "Gran confiabilidad física del silicio y menor mantenimiento operativo.",
+                con: "Las conexiones lógicas se hacían aún cableando componentes individuales discretos.",
+                deep: `
+                    <div class="space-y-4">
+                        <p class="text-cyan-400 font-bold uppercase tracking-wider text-xs">Informe Técnico</p>
+                        <p>El <strong>transistor</strong> actúa como un interruptor o amplificador de estado sólido sin partes móviles ni filamentos de calentamiento. Este simple cambio estructural revolucionó el campo físico del hardware.</p>
+                        <div class="p-3 bg-gray-950 border border-gray-800 rounded-lg">
+                            <span class="text-xs font-bold text-green-400">PUNTOS DE SUPERIORIDAD:</span>
+                            <ul class="text-xs list-disc pl-4 space-y-1 text-gray-400 mt-1">
+                                <li>Encendido inmediato sin necesidad de precalentamiento.</li>
+                                <li>Disipación de calor reducida a una fracción ínfima en comparación al tubo.</li>
+                                <li>Tamaño volumétrico hasta 100 veces menor que un tubo de vacío estándar de la época.</li>
+                            </ul>
+                        </div>
+                        <p>Nacen lenguajes lógicos de alto nivel como COBOL y FORTRAN, que permiten programar sin tocar directamente el binario físico del computador. Aparecen los primeros mainframes de uso comercial empresarial.</p>
+                    </div>
+                `
+            },
+            {
+                tag: "3ª Generación",
+                title: "Circuitos Integrados",
+                period: "1965 – 1971",
+                number: "03/06",
+                description: "Nace el chip de silicio. Mediante técnicas fotolitográficas primigenias se logró empaquetar miles de transistores en una sola lámina semiconductora microscópica (oblea).",
+                scaleLabel: "Mini-computadoras",
+                scaleVal: 50,
+                thermalLabel: "Media (Control Térmico)",
+                thermalVal: 45,
+                connectLabel: "Baja (Terminales)",
+                connectVal: 30,
+                pro: "Ejecución de multiprogramación (varias tareas a la vez) y sistemas operativos.",
+                con: "Limitación de diseño por técnicas iniciales de fotolitografía a escala micrométrica.",
+                deep: `
+                    <div class="space-y-4">
+                        <p class="text-cyan-400 font-bold uppercase tracking-wider text-xs">Informe Técnico</p>
+                        <p>Un <strong>circuito integrado (chip)</strong> empaqueta transistores, diodos y resistencias directamente interconectados sobre una oblea semiconductora de silicio, eliminando la necesidad de soldaduras físicas de cables individuales.</p>
+                        <p>El hito más representativo fue la familia de mainframes de <strong>IBM System/360</strong>, que estandarizó las arquitecturas de computadores y sentó las bases de los sistemas operativos modernos con soporte de multiprogramación.</p>
+                        <div class="p-3 bg-gray-950 border border-gray-800 rounded-lg">
+                            <span class="text-xs font-bold text-cyan-400">AVANCE OPERATIVO:</span>
+                            <p class="text-xs text-gray-400 mt-1">
+                                Permitió que múltiples terminales de usuarios compartieran el tiempo de procesamiento de una máquina central de forma concurrente, disminuyendo radicalmente los costos de procesamiento corporativo.
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                tag: "4ª Generación",
+                title: "Los Microprocesadores",
+                period: "1972 – 1982",
+                number: "04/06",
+                description: "La integración a muy gran escala (LSI y VLSI) permitió colocar la unidad de control y la unidad aritmético-lógica entera en un único y diminuto microprocesador central de silicio.",
+                scaleLabel: "Escritorio (PC)",
+                scaleVal: 70,
+                thermalLabel: "Baja (Estable)",
+                thermalVal: 30,
+                connectLabel: "Media (Modems básicos)",
+                connectVal: 45,
+                pro: "Nacimiento y auge de la Computadora Personal (PC) en hogares y oficinas.",
+                con: "Limitados por procesamientos mononúcleo y bajas velocidades de bus de datos.",
+                deep: `
+                    <div class="space-y-4">
+                        <p class="text-cyan-400 font-bold uppercase tracking-wider text-xs">Informe Técnico</p>
+                        <p>El microprocesador unificó las funciones de cálculo lógico de manera integrada. Esto condujo a la democratización inmediata de la computación gracias a la viabilidad de la producción masiva de bajo costo.</p>
+                        <div class="p-3 bg-gray-950 border border-gray-800 rounded-lg">
+                            <span class="text-xs font-bold text-indigo-400">HITOS CLAVE:</span>
+                            <ul class="text-xs list-disc pl-4 space-y-1 text-gray-400 mt-1">
+                                <li>Lanzamiento del procesador Intel 4004 (primer microprocesador de chip único).</li>
+                                <li>Surgimiento de las interfaces gráficas (GUI) intuitivas con ventanas, ratón e iconos.</li>
+                                <li>Computadoras legendarias como Apple II, Commodore 64 y el IBM PC.</li>
+                            </ul>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                tag: "5ª Generación",
+                title: "Conectividad y Movilidad",
+                period: "1983 – 2019",
+                number: "05/06",
+                description: "Revolución impulsada por la conectividad a Internet de banda ancha, redes móviles (LTE, Wi-Fi) y computadores ultra portátiles como laptops y smartphones de alta densidad fotolitográfica.",
+                scaleLabel: "Portátil (Bolsillo)",
+                scaleVal: 88,
+                thermalLabel: "Baja (Pasiva)",
+                thermalVal: 20,
+                connectLabel: "Alta (Global)",
+                connectVal: 85,
+                pro: "Acceso ilimitado a la información global y el nacimiento del comercio electrónico.",
+                con: "Estancamiento en la ganancia de velocidad de reloj por limitaciones térmicas del silicio.",
+                deep: `
+                    <div class="space-y-4">
+                        <p class="text-cyan-400 font-bold uppercase tracking-wider text-xs">Informe Técnico</p>
+                        <p>La quinta generación transformó las computadoras en dispositivos de comunicación constante. El silicio alcanzó escalas de nanómetros gracias a la integración a ultra gran escala (ULSI).</p>
+                        <p>El uso masivo de Internet, la nube para el almacenamiento dinámico y el desarrollo de arquitecturas móviles (ARM) hicieron que el ordenador dependiera menos del espacio de la red de cables locales física.</p>
+                        <div class="p-3 bg-gray-950 border border-gray-800 rounded-lg">
+                            <span class="text-xs font-bold text-yellow-500">MÁXIMO ENFOQUE:</span>
+                            <p class="text-xs text-gray-400 mt-1">
+                                La movilidad como estilo de vida. El smartphone se consolida como el computador de mayor adopción en la historia de la civilización humana.
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                tag: "6ª Generación",
+                title: "La Era Inteligente",
+                period: "2019 – Presente",
+                number: "06/06",
+                description: "Era definida por la Inteligencia Artificial ubicua, arquitecturas híbridas de procesamiento (CPU/GPU/NPU) que aceleran redes neuronales y computación cuántica experimental.",
+                scaleLabel: "Chips Ubicuos (IoT)",
+                scaleVal: 98,
+                thermalLabel: "Altamente Eficiente",
+                thermalVal: 15,
+                connectLabel: "Extrema (Red Neuronal)",
+                connectVal: 98,
+                pro: "Cálculos cognitivos automáticos en milisegundos y computación distribuida en el borde.",
+                con: "Alta dependencia energética global de enormes granjas de datos de entrenamiento IA.",
+                deep: `
+                    <div class="space-y-4">
+                        <p class="text-cyan-400 font-bold uppercase tracking-wider text-xs">Informe Técnico</p>
+                        <p>La computación moderna ya no se basa solo en ejecutar instrucciones lineales. Se apoya en aceleradores lógicos específicos:</p>
+                        
+                        <div class="space-y-2">
+                            <div class="p-2.5 bg-gray-950 border-l-2 border-blue-500 rounded text-xs">
+                                <span class="font-bold text-blue-400">CPU (Unidad Central de Procesamiento):</span>
+                                <p class="text-gray-400 text-[11px] mt-0.5">Especialista secuencial de propósito general que coordina las tareas estructurales generales y la entrada/salida del sistema operativo.</p>
+                            </div>
+                            <div class="p-2.5 bg-gray-950 border-l-2 border-green-500 rounded text-xs">
+                                <span class="font-bold text-green-400">GPU (Unidad de Procesamiento Gráfico):</span>
+                                <p class="text-gray-400 text-[11px] mt-0.5">Motor de cálculo paralelo masivo con miles de núcleos simplificados, ideal para procesamiento de imágenes, motores 3D y entrenamiento inicial de IA.</p>
+                            </div>
+                            <div class="p-2.5 bg-gray-950 border-l-2 border-purple-500 rounded text-xs">
+                                <span class="font-bold text-purple-400">NPU (Unidad de Procesamiento Neuronal):</span>
+                                <p class="text-gray-400 text-[11px] mt-0.5">Cerebro de silicio ultrarrápido diseñado específicamente para operaciones matemáticas matriciales y de tensores, ejecutando modelos de inferencia profunda con consumos ínfimos.</p>
+                            </div>
+                        </div>
+                        <p>Los paradigmas de <strong>Cloud computing</strong> y <strong>Edge computing</strong> cooperan distribuyendo el procesamiento de datos del usuario final para una respuesta de inteligencia computacional instantánea.</p>
+                    </div>
+                `
+            }
+        ];
+
+        // --- GLOSARIO DE COMPONENTES INTERACTIVOS ---
+        const glosario = {
+            tubo_vacio: {
+                title: "Tubo de Vacío Termiónico",
+                desc: "Primer conmutador digital electrónico. Consiste en un bulbo de vidrio que contiene electrodos. Al calentar un filamento, se emiten electrones que viajan por el vacío. Eran lentos, frágiles y emitían inmensas cantidades de calor.",
+                img: "imagenes/tubos_vacio.png"
+            },
+            tarjeta_perforada: {
+                title: "Tarjeta Perforada Mecánica",
+                desc: "Planchas de cartulina con agujeros en posiciones predeterminadas que codificaban instrucciones o datos binarios. Se utilizaban para introducir programas y datos en computadoras de primera generación.",
+                img: "imagenes/tarjeta_perforada.png"
+            },
+            transistor: {
+                title: "Transistor de Estado Sólido",
+                desc: "Componente semiconductor de silicio o germanio que regula el flujo de corriente sin partes móviles ni filamentos de calor. Marcó el fin de la primera generación, reduciendo el consumo eléctrico de forma monumental.",
+                img: "imagenes/transistor.png"
+            },
+            circuito_integrado: {
+                title: "Circuito Integrado (Chip)",
+                desc: "Pequeña placa de material semiconductor (silicio) que contiene miles de componentes electrónicos microscópicos grabados mediante fotolitografía. Eliminó la necesidad de soldar transistores individuales.",
+                img: "imagenes/circuito_integrado.png"
+            },
+            microprocesador: {
+                title: "Microprocesador Unificado",
+                desc: "Unidad central de procesamiento (CPU) completa fabricada sobre un único chip de silicio mediante tecnología de integración a gran escala (VLSI). Dio origen a las computadoras personales modernas.",
+                img: "imagenes/microprocesador.png"
+            },
+            mainframe: {
+                title: "Mainframe Comercial",
+                desc: "Gran computadora central diseñada para el procesamiento masivo de datos de alta velocidad en corporaciones y el gobierno. Legendarios en la segunda y tercera generación por su fiabilidad técnica masiva.",
+                img: "imagenes/mainframe.png"
+            },
+            pc_antiguo: {
+                title: "Computadora Personal Clásica",
+                desc: "Microcomputador de escritorio accesible para individuos y pequeñas empresas. Introdujo el uso de monitores integrados, teclados físicos y las interfaces gráficas con sistemas operativos accesibles.",
+                img: "imagenes/pc_clasico.png"
+            },
+            smartphone: {
+                title: "Smartphone Moderno",
+                desc: "Computador de bolsillo de alto rendimiento que integra comunicaciones celulares, pantallas táctiles capacitivas de alta resolución, posicionamiento GPS y chips semiconductores que operan a escalas nanométricas.",
+                img: "imagenes/smarthphone.png"
+            },
+            wifi_lte: {
+                title: "Redes Wi-Fi y Tecnologías LTE",
+                desc: "Estándares de conectividad de datos inalámbrica aérea. Permitieron a las computadoras de quinta generación desvincularse por completo de los cables físicos para acceder a redes descentralizadas globales.",
+                img: "imagenes/wifi.png"
+            },
+            cloud_computing: {
+                title: "Computación en la Nube",
+                desc: "Infraestructura de servidores masivos accesibles a través de Internet que ejecutan almacenamiento distribuido y procesamiento de datos centralizado, quitándole la carga de trabajo directo a los terminales.",
+                img: "imagenes/cloud_computing.png"
+            },
+            iot: {
+                title: "Internet de las Cosas (IoT)",
+                desc: "Red de objetos físicos cotidianos equipados con chips de procesamiento inteligente, sensores y conectividad web para recopilar e intercambiar datos de forma autónoma con sistemas Edge o la Nube.",
+                img: "imagenes/iot.png"
+            },
+            computacion_cuantica: {
+                title: "Computación Cuántica Experimental",
+                desc: "Paradigma computacional revolucionario que utiliza cubits basados en leyes de la física cuántica (superposición y entrelazamiento). Resuelve cálculos matemáticos inalcanzables para procesadores de silicio clásicos.",
+                img: "imagenes/cuantico.png"
+            }
+        };
+
+        // --- VARIABLES DE ESTADO GLOBAL ---
+        let currentGenIndex = 0;
+        let isAutoTourRunning = false;
+        let autoTourTimer = null;
+
+        // --- MOTOR DE VISUALIZACIÓN THREE.JS ---
+        let scene, camera, renderer, currentMeshGroup;
+        let particlesSystem;
+
+        function initThreeJS() {
+            const container = document.getElementById('threejs-container');
+            if (!container) return;
+
+            // Escena
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x030712, 0.05);
+
+            // Cámara
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 3, 7);
+
+            // Renderizador
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Controles de Órbita Básicos
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxDistance = 15;
+            controls.minDistance = 3;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.5;
+
+            // Luces
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0x06b6d4, 2, 50);
+            pointLight.position.set(5, 5, 5);
+            scene.add(pointLight);
+
+            const purpleLight = new THREE.PointLight(0xa855f7, 2, 50);
+            purpleLight.position.set(-5, -5, -5);
+            scene.add(purpleLight);
+
+            // Suelo Grid Holográfico
+            const gridHelper = new THREE.GridHelper(20, 20, 0x06b6d4, 0x1f2937);
+            gridHelper.position.y = -1.5;
+            scene.add(gridHelper);
+
+            // Crear grupo de objetos holográficos actuales
+            currentMeshGroup = new THREE.Group();
+            scene.add(currentMeshGroup);
+
+            // Crear Partículas Neón Flotantes de Fondo
+            createNeonParticles();
+
+            // Cargar modelo inicial
+            updateHologramModel(0);
+
+            // Loop de Animación
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // Rotaciones adicionales sutiles de las mallas holográficas
+                if (currentMeshGroup) {
+                    currentMeshGroup.rotation.y += 0.005;
+                }
+
+                // Animación de partículas de fondo
+                if (particlesSystem) {
+                    particlesSystem.rotation.y += 0.001;
+                    particlesSystem.rotation.x += 0.0005;
+                }
+
+                controls.update();
+                renderer.render(scene, camera);
+
+                // Actualizar HUD de Ángulo en Pantalla
+                document.getElementById('cam-azimuth').innerText = Math.round(controls.getAzimuthalAngle() * (180 / Math.PI)) + '°';
+            }
+            animate();
+
+            // Evento de redimensionamiento
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('threejs-container');
+            if (!container || !camera || !renderer) return;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // --- SISTEMA DE PARTÍCULAS DE NEÓN ---
+        function createNeonParticles() {
+            const particleCount = 200;
+            const geometry = new THREE.BufferGeometry();
+            const positions = [];
+            const colors = [];
+
+            const colorOptions = [new THREE.Color(0x06b6d4), new THREE.Color(0xa855f7)];
+
+            for (let i = 0; i < particleCount; i++) {
+                positions.push((Math.random() - 0.5) * 15);
+                positions.push((Math.random() - 0.5) * 10 + 2);
+                positions.push((Math.random() - 0.5) * 15);
+
+                const color = colorOptions[Math.floor(Math.random() * colorOptions.length)];
+                colors.push(color.r, color.g, color.b);
+            }
+
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+            // Crear textura procedural circular para partículas suaves
+            const canvas = document.createElement('canvas');
+            canvas.width = 16;
+            canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+            grad.addColorStop(0, 'rgba(255,255,255,1)');
+            grad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 16, 16);
+
+            const texture = new THREE.CanvasTexture(canvas);
+
+            const material = new THREE.PointsMaterial({
+                size: 0.15,
+                vertexColors: true,
+                map: texture,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+
+            particlesSystem = new THREE.Points(geometry, material);
+            scene.add(particlesSystem);
+        }
+
+        // --- CREACIÓN DINÁMICA DE MODELOS HOLOGRÁFICOS ---
+        function updateHologramModel(index) {
+            if (!currentMeshGroup || !currentMeshGroup.children) return;
+
+            // Limpiar modelos anteriores de forma segura
+            while (currentMeshGroup.children.length > 0) {
+                const obj = currentMeshGroup.children[0];
+                currentMeshGroup.remove(obj);
+            }
+
+            // Crear materiales neón luminosos
+            const cyanMaterial = new THREE.MeshBasicMaterial({
+                color: 0x06b6d4,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            const purpleMaterial = new THREE.MeshBasicMaterial({
+                color: 0xa855f7,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            const goldMaterial = new THREE.MeshBasicMaterial({
+                color: 0xfacc15,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            // Generar geometría basada en el índice de generación
+            switch (index) {
+                case 0: // GEN 1: Tubo de vacío
+                    const glassTubeGeo = new THREE.CylinderGeometry(0.8, 0.8, 2.5, 8);
+                    const glassTube = new THREE.Mesh(glassTubeGeo, cyanMaterial);
+                    currentMeshGroup.add(glassTube);
+
+                    // Filamento interior incandescente
+                    const filamentGeo = new THREE.CylinderGeometry(0.1, 0.1, 1.8, 6);
+                    const filament = new THREE.Mesh(filamentGeo, new THREE.MeshBasicMaterial({ color: 0xf97316 }));
+                    currentMeshGroup.add(filament);
+                    break;
+
+                case 1: // GEN 2: El Transistor de tres puntas
+                    const bodyGeo = new THREE.CylinderGeometry(0.7, 0.7, 1, 8);
+                    const body = new THREE.Mesh(bodyGeo, purpleMaterial);
+                    body.position.y = 0.5;
+                    currentMeshGroup.add(body);
+
+                    // Patas lógicas
+                    for (let i = -1; i <= 1; i++) {
+                        const legGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 4);
+                        const leg = new THREE.Mesh(legGeo, cyanMaterial);
+                        leg.position.set(i * 0.4, -0.6, 0);
+                        currentMeshGroup.add(leg);
+                    }
+                    break;
+
+                case 2: // GEN 3: Circuito Integrado (Chip Plano)
+                    const pcbGeo = new THREE.BoxGeometry(2, 0.2, 1.2);
+                    const pcb = new THREE.Mesh(pcbGeo, cyanMaterial);
+                    currentMeshGroup.add(pcb);
+
+                    // Pines del chip
+                    for (let x = -0.8; x <= 0.8; x += 0.4) {
+                        const pinLGeo = new THREE.BoxGeometry(0.1, 0.4, 0.1);
+                        const pinL = new THREE.Mesh(pinLGeo, goldMaterial);
+                        pinL.position.set(x, -0.2, 0.65);
+                        currentMeshGroup.add(pinL);
+
+                        const pinR = pinL.clone();
+                        pinR.position.z = -0.65;
+                        currentMeshGroup.add(pinR);
+                    }
+                    break;
+
+                case 3: // GEN 4: Microprocesador Cuadrado VLSI
+                    const dieGeo = new THREE.BoxGeometry(1.6, 0.15, 1.6);
+                    const die = new THREE.Mesh(dieGeo, goldMaterial);
+                    currentMeshGroup.add(die);
+
+                    const coreProcessorGeo = new THREE.BoxGeometry(0.7, 0.1, 0.7);
+                    const coreProcessor = new THREE.Mesh(coreProcessorGeo, cyanMaterial);
+                    coreProcessor.position.y = 0.12;
+                    currentMeshGroup.add(coreProcessor);
+
+                    // Pines perimetrales estilo cuadrícula
+                    const borderGeo = new THREE.BoxGeometry(1.8, 0.05, 1.8);
+                    const borderFrame = new THREE.Mesh(borderGeo, purpleMaterial);
+                    currentMeshGroup.add(borderFrame);
+                    break;
+
+                case 4: // GEN 5: Conectividad y Globo de Red Global
+                    const earthGeo = new THREE.SphereGeometry(1.1, 12, 12);
+                    const earth = new THREE.Mesh(earthGeo, cyanMaterial);
+                    currentMeshGroup.add(earth);
+
+                    // Anillo orbital satelital representativo
+                    const ringGeo = new THREE.RingGeometry(1.6, 1.7, 24);
+                    const ring = new THREE.Mesh(ringGeo, purpleMaterial);
+                    ring.rotation.x = Math.PI / 2.5;
+                    currentMeshGroup.add(ring);
+                    break;
+
+                case 5: // GEN 6: Inteligencia Artificial / Red Neuronal
+                    const centerBrainGeo = new THREE.IcosahedronGeometry(0.8, 1);
+                    const centerBrain = new THREE.Mesh(centerBrainGeo, purpleMaterial);
+                    currentMeshGroup.add(centerBrain);
+
+                    // Nodos flotantes conectados mediante órbitas
+                    for (let i = 0; i < 6; i++) {
+                        const nodeGeo = new THREE.SphereGeometry(0.15, 4, 4);
+                        const node = new THREE.Mesh(nodeGeo, cyanMaterial);
+                        const angle = (i / 6) * Math.PI * 2;
+                        node.position.set(Math.cos(angle) * 1.5, Math.sin(angle * 2) * 0.5, Math.sin(angle) * 1.5);
+                        currentMeshGroup.add(node);
+                    }
+                    break;
+            }
+        }
+
+        // --- MOTOR DE CONTROL DE NAVEGACIÓN ---
+        function renderTimelineDots() {
+            const container = document.getElementById('timeline-dots');
+            if (!container) return;
+            container.innerHTML = '';
+
+            generaciones.forEach((_, index) => {
+                const dot = document.createElement('button');
+                dot.className = `h-3 w-3 rounded-full border border-cyan-500/50 transition-all duration-300 ${index === currentGenIndex ? 'bg-cyan-400 w-6 shadow-sm shadow-cyan-400' : 'bg-transparent'}`;
+                dot.onclick = () => selectGeneration(index);
+                dot.title = `Ir a ${generaciones[index].title}`;
+                container.appendChild(dot);
+            });
+        }
+
+        function selectGeneration(index) {
+            currentGenIndex = index;
+            renderTimelineDots();
+            updateUIForCurrentGen();
+            updateHologramModel(index);
+        }
+
+        function changeGeneration(direction) {
+            let nextIndex = currentGenIndex + direction;
+            if (nextIndex >= generaciones.length) nextIndex = 0;
+            if (nextIndex < 0) nextIndex = generaciones.length - 1;
+            selectGeneration(nextIndex);
+        }
+
+        function updateUIForCurrentGen() {
+            const gen = generaciones[currentGenIndex];
+
+            document.getElementById('gen-tag').innerText = gen.tag;
+            document.getElementById('gen-title').innerText = gen.title;
+            document.getElementById('gen-period').innerText = gen.period;
+            document.getElementById('gen-number').innerText = gen.number;
+            document.getElementById('gen-description').innerText = gen.description;
+
+            // Métricas
+            document.getElementById('metric-scale-lbl').innerText = gen.scaleLabel;
+            document.getElementById('metric-scale-bar').style.width = gen.scaleVal + '%';
+
+            document.getElementById('metric-thermal-lbl').innerText = gen.thermalLabel;
+            document.getElementById('metric-thermal-bar').style.width = gen.thermalVal + '%';
+
+            document.getElementById('metric-connect-lbl').innerText = gen.connectLabel;
+            document.getElementById('metric-connect-bar').style.width = gen.connectVal + '%';
+
+            // Pros / Contras
+            document.getElementById('gen-pro').innerText = gen.pro;
+            document.getElementById('gen-con').innerText = gen.con;
+        }
+
+        // --- SISTEMA AUTO TOUR (RECORRIDO AUTOMÁTICO) ---
+        function toggleAutoTour() {
+            const btn = document.getElementById('btn-play');
+            const indicator = document.getElementById('tour-indicator');
+
+            if (isAutoTourRunning) {
+                // Pausar
+                isAutoTourRunning = false;
+                clearInterval(autoTourTimer);
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> Auto-recorrido';
+                indicator.classList.add('hidden');
+            } else {
+                // Iniciar
+                isAutoTourRunning = true;
+                btn.innerHTML = '<i class="fa-solid fa-pause"></i> Pausar';
+                indicator.classList.remove('hidden');
+
+                autoTourTimer = setInterval(() => {
+                    changeGeneration(1);
+                }, 7000); // Avanzar cada 7 segundos
+            }
+        }
+
+        function resetTour() {
+            if (isAutoTourRunning) {
+                toggleAutoTour();
+            }
+            selectGeneration(0);
+        }
+
+        // --- SONIDOS PROCEDURALES DE SIMULACIÓN HOLOGRÁFICA (Tone.js similar) ---
+        function triggerHoloSound() {
+            // Emite pitido de ciencia ficción usando la API nativa de AudioContext
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const audioCtx = new AudioContext();
+
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                oscillator.type = 'sine';
+                // Cambiar tono según generación actual
+                oscillator.frequency.setValueAtTime(440 + (currentGenIndex * 120), audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.4);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.4);
+            } catch (e) {
+                console.log("AudioContext bloqueado o no disponible.");
+            }
+        }
+
+        // --- SISTEMA DE DIÁLOGOS DE ANÁLISIS ---
+        function openDeepAnalysis() {
+            const gen = generaciones[currentGenIndex];
+            const modal = document.getElementById('holo-modal');
+
+            document.getElementById('modal-icon').className = "fa-solid fa-folder-open text-cyan-400 text-lg animate-pulse";
+            document.getElementById('modal-title').innerText = ` ${gen.title} (${gen.period})`;
+            document.getElementById('modal-body').innerHTML = gen.deep;
+
+            modal.classList.remove('hidden');
+            triggerHoloSound();
+        }
+
+        function openComponentDetail(key) {
+            const item = glosario[key];
+            if (!item) return;
+
+            const glosarioKeys = Object.keys(glosario);
+            const currentIndex = glosarioKeys.indexOf(key);
+            const prevKey = glosarioKeys[(currentIndex - 1 + glosarioKeys.length) % glosarioKeys.length];
+            const nextKey = glosarioKeys[(currentIndex + 1) % glosarioKeys.length];
+
+            const modal = document.getElementById('holo-modal');
+            document.getElementById('modal-icon').className = "fa-solid fa-satellite-dish text-cyan-400 text-lg animate-pulse";
+            document.getElementById('modal-title').innerText = item.title;
+
+            document.getElementById('modal-body').innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <button onclick="openComponentDetail('${prevKey}')" class="h-10 w-10 bg-gray-900 hover:bg-gray-800 border border-cyan-500/30 text-cyan-400 rounded-lg flex items-center justify-center transition-all z-20 shadow-lg shadow-cyan-900/20">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <div class="text-xs font-mono text-cyan-500 tracking-widest">${currentIndex + 1} / ${glosarioKeys.length}</div>
+                        <button onclick="openComponentDetail('${nextKey}')" class="h-10 w-10 bg-gray-900 hover:bg-gray-800 border border-cyan-500/30 text-cyan-400 rounded-lg flex items-center justify-center transition-all z-20 shadow-lg shadow-cyan-900/20">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="w-full h-40 relative rounded-xl overflow-hidden bg-gray-900 border border-cyan-500/30 flex items-center justify-center group cursor-pointer" onclick="openLightbox('${item.img}')" title="Haz clic para ver la imagen completa">
+                        <img src="${item.img}" alt="${item.title}" class="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-screen group-hover:scale-105 group-hover:opacity-100 group-hover:mix-blend-normal transition-all duration-500">
+                        <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/20 to-transparent pointer-events-none group-hover:opacity-0 transition-opacity duration-300"></div>
+                        <div class="relative z-10 text-3xl text-cyan-400 opacity-50 group-hover:opacity-0 transition-opacity duration-300"><i class="fa-solid fa-expand"></i></div>
+                    </div>
+                    <div class="p-4 bg-gray-950 border border-cyan-500/20 rounded-xl flex items-center gap-4">
+                        <div class="text-3xl text-cyan-400"><i class="fa-solid fa-circle-check"></i></div>
+                        <div>
+                            <div class="text-xs font-mono text-cyan-500">ESTADO DEL DIAGNÓSTICO</div>
+                            <div class="text-sm font-bold text-white">Modelo 3D Virtual Desplegado</div>
+                        </div>
+                    </div>
+                    <p class="text-gray-300 leading-relaxed text-sm">${item.desc}</p>
+                    <div class="pt-2 border-t border-gray-800 text-xs text-cyan-400/80 italic">
+                        *Este componente ha sido modelado para visualización mediante realidad aumentada sin cámara web.
+                    </div>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            triggerHoloSound();
+        }
+
+        function closeModal() {
+            document.getElementById('holo-modal').classList.add('hidden');
+        }
+
+        // --- SISTEMA DE LIGHTBOX PARA IMÁGENES ---
+        function openLightbox(src) {
+            const lightbox = document.getElementById('image-lightbox');
+            const img = document.getElementById('lightbox-img');
+            img.src = src;
+            lightbox.classList.remove('hidden');
+            // Timeout para permitir la transición CSS
+            setTimeout(() => {
+                lightbox.classList.remove('opacity-0');
+                img.classList.remove('scale-95');
+                img.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('image-lightbox');
+            const img = document.getElementById('lightbox-img');
+            lightbox.classList.add('opacity-0');
+            img.classList.remove('scale-100');
+            img.classList.add('scale-95');
+            setTimeout(() => {
+                lightbox.classList.add('hidden');
+                img.src = "";
+            }, 300);
+        }
+
+        // --- INTERACCIONES DE CONSOLA DE SIMULACIÓN ---
+        function switchSim(simKey) {
+            // Pestañas
+            const tabMini = document.getElementById('tab-miniaturization');
+            const tabThermal = document.getElementById('tab-thermal');
+            const tabFlow = document.getElementById('tab-flow');
+
+            // Paneles
+            const simMini = document.getElementById('sim-miniaturization');
+            const simThermal = document.getElementById('sim-thermal');
+            const simFlow = document.getElementById('sim-flow');
+
+            // Ocultar todos
+            simMini.classList.add('hidden');
+            simThermal.classList.add('hidden');
+            simFlow.classList.add('hidden');
+
+            tabMini.className = "px-3 py-1.5 rounded-md font-bold text-gray-400 hover:text-white transition-all";
+            tabThermal.className = "px-3 py-1.5 rounded-md font-bold text-gray-400 hover:text-white transition-all";
+            tabFlow.className = "px-3 py-1.5 rounded-md font-bold text-gray-400 hover:text-white transition-all";
+
+            // Mostrar el seleccionado
+            if (simKey === 'miniaturization') {
+                simMini.classList.remove('hidden');
+                tabMini.className = "px-3 py-1.5 rounded-md font-bold text-cyan-400 bg-gray-950 border border-gray-800 transition-all";
+            } else if (simKey === 'thermal') {
+                simThermal.classList.remove('hidden');
+                tabThermal.className = "px-3 py-1.5 rounded-md font-bold text-orange-400 bg-gray-950 border border-gray-800 transition-all";
+            } else if (simKey === 'flow') {
+                simFlow.classList.remove('hidden');
+                tabFlow.className = "px-3 py-1.5 rounded-md font-bold text-indigo-400 bg-gray-950 border border-gray-800 transition-all";
+            }
+            triggerHoloSound();
+        }
+
+        // --- SIMULADOR DE ESCALAS ---
+        function updateScaleSim(val) {
+            const year = parseInt(val);
+            const itemName = document.getElementById('scale-item-name');
+            const itemSize = document.getElementById('scale-item-size');
+            const itemDesc = document.getElementById('scale-item-desc');
+            const box = document.getElementById('scale-box');
+            const boxTxt = document.getElementById('scale-box-text');
+
+            if (year < 1956) {
+                itemName.innerText = "Tubo de Vacío Termiónico";
+                itemSize.innerText = "~ 12 cm de altura";
+                itemDesc.innerText = "Se requerían salas enteras y enormes gabinetes para albergar apenas unos miles de tubos lógicos cableados manualmente.";
+                box.style.width = "100%";
+                boxTxt.innerText = "Sala Completa (~ 150 m²)";
+            } else if (year < 1965) {
+                itemName.innerText = "Transistor de Germanio Discreto";
+                itemSize.innerText = "~ 1.5 cm";
+                itemDesc.innerText = "La escala de montaje descendió drásticamente de habitaciones a armarios autónomos, mejorando de inmediato la estabilidad global del hardware.";
+                box.style.width = "65%";
+                boxTxt.innerText = "Armario / Rack Corporativo";
+            } else if (year < 1972) {
+                itemName.innerText = "Oblea de Circuito Integrado";
+                itemSize.innerText = "~ 5 mm";
+                itemDesc.innerText = "Múltiples compuertas lógicas fotograbadas por lotes sobre silicio semiconductor. La escala se vuelve miniaturizada.";
+                box.style.width = "35%";
+                boxTxt.innerText = "Chasis de Escritorio Central";
+            } else if (year < 1983) {
+                itemName.innerText = "Microprocesador VLSI (Intel 8086)";
+                itemSize.innerText = "~ 3 mm (Ancho del núcleo)";
+                itemDesc.innerText = "El procesador entero se consolida en un solo chip. Las computadoras se vuelven lo suficientemente pequeñas como para reposar sobre escritorios domésticos.";
+                box.style.width = "15%";
+                boxTxt.innerText = "Chip de un solo encapsulado";
+            } else if (year < 2019) {
+                itemName.innerText = "Transistor Integrado FinFET";
+                itemSize.innerText = "~ 14 nanómetros";
+                itemDesc.innerText = "Tecnología de canal tridimensional ultra densa en chips de smartphones modernos para una velocidad informática extrema sin cables.";
+                box.style.width = "4%";
+                boxTxt.innerText = "Microscópico";
+            } else {
+                itemName.innerText = "Transistor de Nanoflojas (Litografía 3nm)";
+                itemSize.innerText = "~ 3 nanómetros";
+                itemDesc.innerText = "Litografía cuántica extrema de última generación donde los transistores operan casi a escala molecular, empacando miles de millones en un chip inteligente.";
+                box.style.width = "1%";
+                boxTxt.innerText = "Atómico (Molecular)";
+            }
+        }
+
+        // --- SIMULADOR TÉRMICO ---
+        function updateThermalSim(val) {
+            const load = parseInt(val);
+            const tempVal = document.getElementById('thermal-val-temp');
+            const powerVal = document.getElementById('thermal-val-power');
+            const coolingVal = document.getElementById('thermal-val-cooling');
+
+            // Relación según la generación actual seleccionada
+            const baseMultiplier = (6 - currentGenIndex); // Generaciones más viejas calientan mucho más
+
+            const calcTemp = Math.round(20 + (load * 0.5 * baseMultiplier));
+            const calcPower = Math.round((load * 2 * baseMultiplier));
+
+            tempVal.innerText = `${calcTemp}°C`;
+            powerVal.innerText = currentGenIndex === 0 ? `${calcPower} kW` : `${calcPower} W`;
+
+            if (calcTemp > 75) {
+                coolingVal.innerText = "Refrigeración Líquida Crítica / Turbina";
+                coolingVal.className = "text-sm font-bold text-red-400 my-2 uppercase animate-pulse";
+            } else if (calcTemp > 45) {
+                coolingVal.innerText = "Disipador Activo con Ventilador";
+                coolingVal.className = "text-sm font-bold text-yellow-400 my-2 uppercase";
+            } else {
+                coolingVal.innerText = "Enfriamiento Pasivo Ultra Eficiente";
+                coolingVal.className = "text-sm font-bold text-green-400 my-2 uppercase";
+            }
+        }
+
+        // --- ANIMACIÓN DE FLUJO DE DATOS INTELIGENTES (CPU/GPU/NPU) ---
+        function triggerDataFlowAnimation() {
+            const nodeClient = document.getElementById('node-client');
+            const nodeProcs = document.getElementById('node-procs');
+            const nodeCloud = document.getElementById('node-cloud');
+            const flowStatus = document.getElementById('flow-status');
+
+            // Reset
+            nodeClient.className = "bg-gray-950 border border-gray-800 p-3 rounded-lg text-center z-10 w-full sm:w-1/4 transition-all duration-300";
+            nodeProcs.className = "bg-gray-950 border border-gray-800 p-3 rounded-lg text-center z-10 w-full sm:w-1/3 transition-all duration-300";
+            nodeCloud.className = "bg-gray-950 border border-gray-800 p-3 rounded-lg text-center z-10 w-full sm:w-1/4 transition-all duration-300";
+
+            // Paso 1: Usuario lanza solicitud
+            flowStatus.innerHTML = "<span class='text-cyan-400'><i class='fa-solid fa-spinner animate-spin'></i> Paso 1: Dispositivo móvil (Edge) emite solicitud cognitiva inteligente...</span>";
+            nodeClient.className += " border-cyan-500 scale-105 shadow-md shadow-cyan-950/20";
+            triggerHoloSound();
+
+            setTimeout(() => {
+                // Paso 2: Co-procesador Local evalúa división de trabajo
+                flowStatus.innerHTML = "<span class='text-purple-400'><i class='fa-solid fa-spinner animate-spin'></i> Paso 2: Evaluando procesamiento local. CPU coordina, NPU ejecuta red tensorial local...</span>";
+                nodeClient.className = "bg-gray-950 border border-gray-800 p-3 rounded-lg text-center z-10 w-full sm:w-1/4 transition-all duration-300";
+                nodeProcs.className += " border-purple-500 scale-105 shadow-md shadow-purple-950/20";
+                triggerHoloSound();
+
+                setTimeout(() => {
+                    // Paso 3: Llamado remoto a Nube para modelos neuronales gigantes
+                    flowStatus.innerHTML = "<span class='text-indigo-400'><i class='fa-solid fa-spinner animate-spin'></i> Paso 3: Escalado a Nube (Cloud Computing). GPU masivas procesando el modelo de lenguaje...</span>";
+                    nodeProcs.className = "bg-gray-950 border border-gray-800 p-3 rounded-lg text-center z-10 w-full sm:w-1/3 transition-all duration-300";
+                    nodeCloud.className += " border-indigo-500 scale-105 shadow-md shadow-indigo-950/20";
+                    triggerHoloSound();
+
+                    setTimeout(() => {
+                        // Fin del flujo: Retorno de datos
+                        flowStatus.innerHTML = "<span class='text-green-400 font-bold'><i class='fa-solid fa-circle-check'></i> ¡Flujo Completado con Éxito! Respuesta inteligente desplegada en 120ms.</span>";
+                        nodeCloud.className = "bg-gray-950 border border-gray-800 p-3 rounded-lg text-center z-10 w-full sm:w-1/4 transition-all duration-300";
+                        triggerHoloSound();
+                    }, 2000);
+
+                }, 2000);
+
+            }, 2000);
+        }
+
+        // --- SISTEMAS DE SOPORTE DIRECTO DE EJES ---
+        function openMiniaturizationSim() {
+            switchSim('miniaturization');
+            document.getElementById('simuladores-seccion').scrollIntoView({ behavior: 'smooth' });
+        }
+        function openThermalSim() {
+            switchSim('thermal');
+            document.getElementById('simuladores-seccion').scrollIntoView({ behavior: 'smooth' });
+        }
+        function openDataFlowSim() {
+            switchSim('flow');
+            document.getElementById('simuladores-seccion').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // --- EVENTO DE INICIO COMPLETO ---
+        window.onload = function () {
+            // 1. Cargar la escena 3D y crear el grupo de mallas holográficas
+            initThreeJS();
+
+            // 2. Ahora inicializar la base de la interfaz y seleccionar la primera generación de forma segura
+            selectGeneration(0);
+        }
+    </script>
+</body>
+
+</html>
