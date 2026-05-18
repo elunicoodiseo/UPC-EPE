@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anatomía Interna de la CPU - Simulación AR Educativa</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --cpu-bg: rgba(20, 30, 48, 0.8);
+            --cpu-border: #00d2ff;
+            --text-color: #e0e0e0;
+            --component-bg: rgba(40, 50, 70, 0.9);
+            --component-border: #3a7bd5;
+            --component-hover: #00d2ff;
+            --active-color: #00ff88;
+            --bus-color: #00d2ff;
+            --bus-active: #ff007c;
+            --uc-color: #ff9a9e;
+            --alu-color: #a18cd1;
+            --reg-color: #fbc2eb;
+            --mem-color: #8fd3f4;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            text-align: center;
+            padding: 15px;
+            background: linear-gradient(90deg, #141e30 0%, #243b55 100%);
+            border-bottom: 2px solid var(--cpu-border);
+            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.2);
+            z-index: 10;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            color: #fff;
+            text-shadow: 0 0 10px var(--cpu-border);
+            margin-bottom: 5px;
+        }
+
+        header p {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Paneles Laterales */
+        .panel {
+            width: 300px;
+            background: rgba(15, 20, 35, 0.95);
+            border-right: 1px solid #333;
+            border-left: 1px solid #333;
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            color: var(--cpu-border);
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        /* Escena Principal */
+        .scene {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(circle at center, #1a2538 0%, var(--bg-color) 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+            overflow: hidden;
+        }
+
+        /* Contenedor de simulación (Pseudo 3D) */
+        .simulation-area {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            transform-style: preserve-3d;
+            transform: rotateX(15deg) rotateY(0deg);
+            transition: transform 0.5s;
+        }
+
+        .cpu-box {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            height: 500px;
+            background: var(--cpu-bg);
+            border: 2px solid var(--cpu-border);
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.2), inset 0 0 20px rgba(0, 0, 0, 0.8);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto auto;
+            gap: 20px;
+            padding: 30px;
+            z-index: 2;
+        }
+
+        .cpu-label {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: bold;
+            color: var(--cpu-border);
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px var(--cpu-border);
+        }
+
+        /* Componentes */
+        .component {
+            background: var(--component-bg);
+            border: 1px solid var(--component-border);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 80px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .component:hover {
+            border-color: var(--component-hover);
+            box-shadow: 0 0 15px var(--component-hover);
+            transform: translateY(-2px);
+        }
+
+        .component.active {
+            border-color: var(--active-color);
+            box-shadow: 0 0 20px var(--active-color);
+            animation: pulse 1s infinite alternate;
+        }
+
+        .component svg {
+            width: 30px;
+            height: 30px;
+            margin-bottom: 5px;
+            fill: #ccc;
+        }
+
+        .component-name {
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .component-val {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-top: 5px;
+            background: #111;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        /* Posicionamiento específico dentro de la CPU */
+        .uc {
+            grid-column: 1 / -1;
+            border-color: var(--uc-color);
+        }
+
+        .alu {
+            grid-column: 1 / 2;
+            grid-row: 2 / 4;
+            border-color: var(--alu-color);
+        }
+
+        .registers-block {
+            grid-column: 2 / 3;
+            grid-row: 2 / 3;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .bus-interface {
+            grid-column: 2 / 3;
+            grid-row: 3 / 4;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .reg-small {
+            min-height: 50px;
+            padding: 5px;
+            font-size: 0.8rem;
+        }
+
+        /* Memoria */
+        .memory-box {
+            position: absolute;
+            right: -200px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 150px;
+            height: 300px;
+            background: rgba(20, 40, 30, 0.8);
+            border: 2px solid var(--mem-color);
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 2;
+        }
+
+        .mem-cell {
+            background: #111;
+            border: 1px solid #444;
+            padding: 5px;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .mem-cell.active {
+            border-color: var(--active-color);
+            color: var(--active-color);
+        }
+
+        /* Buses (SVG Lines) */
+        #buses-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .bus-line {
+            fill: none;
+            stroke: var(--bus-color);
+            stroke-width: 2;
+            stroke-dasharray: 5, 5;
+            opacity: 0.3;
+            transition: all 0.3s;
+        }
+
+        .bus-line.active {
+            stroke: var(--active-color);
+            stroke-width: 3;
+            opacity: 1;
+            animation: dash 1s linear infinite;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -20;
+            }
+        }
+
+        @keyframes pulse {
+            from {
+                box-shadow: 0 0 10px var(--active-color);
+            }
+
+            to {
+                box-shadow: 0 0 25px var(--active-color);
+            }
+        }
+
+        /* Controles */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        button,
+        select {
+            background: #2a3b5c;
+            color: #fff;
+            border: 1px solid #4a6b9c;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+            flex: 1;
+            text-align: center;
+        }
+
+        button:hover {
+            background: #3a5b8c;
+        }
+
+        button:disabled {
+            background: #1a2b3c;
+            color: #555;
+            cursor: not-allowed;
+        }
+
+        select {
+            flex: 100%;
+        }
+
+        /* Timeline */
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .timeline-step {
+            padding: 8px;
+            background: #111;
+            border-left: 3px solid #444;
+            font-size: 0.85rem;
+            color: #888;
+            transition: all 0.3s;
+        }
+
+        .timeline-step.active {
+            background: rgba(0, 255, 136, 0.1);
+            border-left-color: var(--active-color);
+            color: #fff;
+        }
+
+        /* Info Popup */
+        .info-content {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            color: #ccc;
+        }
+
+        .info-content h3 {
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .info-content img {
+            max-width: 100%;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        /* Registros Panel */
+        .reg-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .reg-table th,
+        .reg-table td {
+            border: 1px solid #444;
+            padding: 5px;
+            text-align: left;
+        }
+
+        .reg-table th {
+            background: #1a2538;
+        }
+
+        .reg-table td {
+            font-family: monospace;
+        }
+
+        .floating-data {
+            position: absolute;
+            background: rgba(0, 255, 136, 0.8);
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.5s ease;
+            z-index: 100;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Anatomía Interna de la CPU</h1>
+        <p>Explora cómo una instrucción entra, se procesa y sale del procesador</p>
+    </header>
+
+    <div class="main-container">
+        <!-- Panel Izquierdo: Estado e Información -->
+        <div class="panel">
+            <div class="panel-title">Estado de la CPU</div>
+            <table class="reg-table" id="reg-table">
+                <tr>
+                    <th>Registro</th>
+                    <th>Valor</th>
+                </tr>
+                <tr>
+                    <td>PC</td>
+                    <td id="val-pc">0x0040</td>
+                </tr>
+                <tr>
+                    <td>IR</td>
+                    <td id="val-ir">-</td>
+                </tr>
+                <tr>
+                    <td>MAR</td>
+                    <td id="val-mar">-</td>
+                </tr>
+                <tr>
+                    <td>MDR</td>
+                    <td id="val-mdr">-</td>
+                </tr>
+                <tr>
+                    <td>ACC</td>
+                    <td id="val-acc">0</td>
+                </tr>
+                <tr>
+                    <td>A</td>
+                    <td id="val-a">5</td>
+                </tr>
+                <tr>
+                    <td>B</td>
+                    <td id="val-b">3</td>
+                </tr>
+                <tr>
+                    <td>FLAGS</td>
+                    <td id="val-flags">Z=0,N=0,C=0,V=0</td>
+                </tr>
+            </table>
+
+            <div class="panel-title" style="margin-top: 15px;">Información del Componente</div>
+            <div class="info-content" id="info-panel">
+                <p>Haz clic en un componente de la escena para ver su explicación detallada.</p>
+            </div>
+        </div>
+
+        <!-- Escena Principal AR -->
+        <div class="scene">
+            <div class="simulation-area" id="sim-area">
+
+                <svg id="buses-svg">
+                    <!-- Conexiones estáticas para animar -->
+                    <path class="bus-line" id="bus-pc-mar" d="M 450 250 L 520 380" />
+                    <path class="bus-line" id="bus-mar-mem" d="M 520 380 L 700 300" />
+                    <path class="bus-line" id="bus-mem-mdr" d="M 700 300 L 580 380" />
+                    <path class="bus-line" id="bus-mdr-ir" d="M 580 380 L 520 250" />
+                    <path class="bus-line" id="bus-ir-uc" d="M 520 250 L 400 150" />
+                    <path class="bus-line" id="bus-uc-alu" d="M 400 150 L 250 350" />
+                    <path class="bus-line" id="bus-reg-alu" d="M 450 300 L 250 350" />
+                    <path class="bus-line" id="bus-alu-acc" d="M 250 350 L 450 350" />
+                </svg>
+
+                <div class="cpu-box">
+                    <div class="cpu-label">Procesador Central (CPU)</div>
+
+                    <div class="component uc" id="comp-uc" onclick="showInfo('uc')">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M11,7V11H7V13H11V17H13V13H17V11H13V7H11Z" />
+                        </svg>
+                        <div class="component-name">Unidad de Control (UC)</div>
+                    </div>
+
+                    <div class="component alu" id="comp-alu" onclick="showInfo('alu')">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M7,2H17A2,2 0 0,1 19,4V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V4A2,2 0 0,1 7,2M7,4V8H17V4H7M7,10V12H9V10H7M11,10V12H13V10H11M15,10V12H17V10H15M7,14V16H9V14H7M11,14V16H13V14H11M15,14V16H17V14H15M7,18V20H9V18H7M11,18V20H13V18H11M15,18V20H17V18H15Z" />
+                        </svg>
+                        <div class="component-name">ALU (ULA)</div>
+                        <div class="component-val" id="alu-op">Operación</div>
+                    </div>
+
+                    <div class="registers-block">
+                        <div class="component reg-small" id="comp-pc" onclick="showInfo('pc')">
+                            <div class="component-name">PC</div>
+                            <div class="component-val" id="disp-pc">0x0040</div>
+                        </div>
+                        <div class="component reg-small" id="comp-ir" onclick="showInfo('ir')">
+                            <div class="component-name">IR</div>
+                            <div class="component-val" id="disp-ir">-</div>
+                        </div>
+                        <div class="component reg-small" id="comp-acc" onclick="showInfo('acc')">
+                            <div class="component-name">ACC</div>
+                            <div class="component-val" id="disp-acc">0</div>
+                        </div>
+                        <div class="component reg-small" id="comp-flags" onclick="showInfo('flags')">
+                            <div class="component-name">FLAGS</div>
+                            <div class="component-val" id="disp-flags">Z=0</div>
+                        </div>
+                    </div>
+
+                    <div class="bus-interface">
+                        <div class="component reg-small" id="comp-mar" onclick="showInfo('mar')">
+                            <div class="component-name">MAR</div>
+                            <div class="component-val" id="disp-mar">-</div>
+                        </div>
+                        <div class="component reg-small" id="comp-mdr" onclick="showInfo('mdr')">
+                            <div class="component-name">MDR</div>
+                            <div class="component-val" id="disp-mdr">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="memory-box" id="comp-mem" onclick="showInfo('mem')">
+                    <div style="text-align: center; font-weight: bold; margin-bottom: 5px; color: var(--mem-color)">
+                        Memoria Principal</div>
+                    <div class="mem-cell" id="mem-0040"><span>0x0040:</span> <span>ADD A, B</span></div>
+                    <div class="mem-cell" id="mem-0044"><span>0x0044:</span> <span>STORE A</span></div>
+                    <div class="mem-cell" id="mem-1000"><span>0x1000:</span> <span>5</span></div>
+                    <div class="mem-cell" id="mem-1004"><span>0x1004:</span> <span>3</span></div>
+                </div>
+
+                <div id="data-packet" class="floating-data">Dato</div>
+            </div>
+        </div>
+
+        <!-- Panel Derecho: Controles y Línea de tiempo -->
+        <div class="panel">
+            <div class="panel-title">Controles de Simulación</div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">
+                <select id="op-select" onchange="updateInputs()">
+                    <option value="ADD">ADD - Sumar</option>
+                    <option value="SUB">SUB - Restar</option>
+                    <option value="MUL">MUL - Multiplicar</option>
+                    <option value="DIV">DIV - Dividir</option>
+                    <option value="CMP">CMP - Comparar</option>
+                    <option value="LOAD">LOAD - Cargar en ACC</option>
+                    <option value="STORE">STORE - Guardar ACC en Memoria</option>
+                    <option value="CLEAR">CLEAR - Limpiar ACC</option>
+                </select>
+                <div style="display: flex; gap: 8px;" id="operands-container">
+                    <input type="number" id="input-a" placeholder="A"
+                        style="flex:1; padding: 5px; border-radius:3px; border:1px solid #4a6b9c; background:#2a3b5c; color:#fff;"
+                        value="5">
+                    <input type="number" id="input-b" placeholder="B"
+                        style="flex:1; padding: 5px; border-radius:3px; border:1px solid #4a6b9c; background:#2a3b5c; color:#fff;"
+                        value="3">
+                </div>
+                <button onclick="applyInstruction()"
+                    style="background: var(--active-color); color: #000; font-weight: bold; padding: 8px;">Ejecutar
+                    instrucción</button>
+            </div>
+
+            <div style="margin-bottom: 10px; background: #111; padding: 5px; text-align: center; font-family: monospace; color: var(--cpu-border); border: 1px solid #444;"
+                id="instruction-translation">
+                ADD 5, 3
+            </div>
+
+            <div style="margin-bottom: 10px; background: rgba(0,255,136,0.1); padding: 10px; text-align: center; font-weight: bold; color: var(--active-color); border: 1px solid var(--active-color); border-radius: 5px; display: none;"
+                id="final-result-box">
+                Resultado: -
+            </div>
+
+            <div class="controls">
+                <button id="btn-play" onclick="startSimulation()">▶ Auto</button>
+                <button id="btn-pause" onclick="pauseSimulation()">⏸ Pausar</button>
+                <button id="btn-prev" onclick="previousStep()">⏮ Ant</button>
+                <button id="btn-next" onclick="nextStep()">Siguiente ⏭</button>
+                <button id="btn-reset" onclick="resetSimulation()" style="flex: 100%;">↺ Reiniciar</button>
+            </div>
+
+            <div class="panel-title" style="margin-top: 15px;">Ciclo de Instrucción</div>
+            <div class="timeline" id="timeline">
+                <!-- Se llena dinámicamente -->
+            </div>
+
+            <div style="margin-top: 20px; font-size: 0.85rem; color: #aaa;">
+                <p id="step-description">Selecciona una instrucción y presiona Siguiente o Iniciar simulación
+                    automática.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Datos de Información de componentes
+        const componentInfo = {
+            uc: {
+                name: "Unidad de Control, UC",
+                def: "La Unidad de Control es el centro de mando de la CPU.",
+                func: "Coordina el trabajo de todos los componentes. Busca la instrucción, la decodifica y genera señales de control.",
+                analogy: "Funciona como el director de orquesta, porque indica cuándo y cómo debe actuar cada componente.",
+                cycle: "Activa principalmente en la fase Decode para interpretar la instrucción."
+            },
+            alu: {
+                name: "Unidad Aritmético-Lógica, ALU",
+                def: "El componente encargado de realizar operaciones matemáticas y lógicas.",
+                func: "Realiza sumas, restas, comparaciones y operaciones lógicas.",
+                analogy: "Funciona como la calculadora interna del procesador.",
+                cycle: "Activa en la fase Execute."
+            },
+            pc: {
+                name: "Contador de Programa, PC",
+                def: "Almacena la dirección de memoria de la próxima instrucción.",
+                func: "Se actualiza automáticamente tras buscar una instrucción para apuntar a la siguiente (por ejemplo, avanza de la dirección 0x0040 a la 0x0044).",
+                analogy: "Funciona como un marcador de lectura que indica por dónde va el programa.",
+                cycle: "Proporciona la dirección inicial en la fase Fetch."
+            },
+            ir: {
+                name: "Registro de Instrucción, IR",
+                def: "Guarda temporalmente la instrucción traída desde la memoria.",
+                func: "Almacena el código para que la Unidad de Control lo pueda decodificar.",
+                analogy: "Es como una hoja de indicaciones que la CPU lee antes de actuar.",
+                cycle: "Recibe el dato al final de Fetch, se usa en Decode."
+            },
+            mar: {
+                name: "Registro de Dirección de Memoria, MAR",
+                def: "Almacena la dirección de memoria donde la CPU quiere leer o escribir.",
+                func: "Sirve de puente de direcciones entre la CPU y la memoria.",
+                analogy: "Funciona como la dirección de una casa antes de enviar un paquete.",
+                cycle: "Recibe la dirección del PC durante Fetch."
+            },
+            mdr: {
+                name: "Registro de Datos de Memoria, MDR",
+                def: "Almacena temporalmente el dato que entra o sale de la memoria.",
+                func: "Buffer para datos leídos o por escribir en memoria.",
+                analogy: "Funciona como una bandeja de entrada y salida para los datos.",
+                cycle: "Recibe la instrucción desde la memoria durante Fetch."
+            },
+            acc: {
+                name: "Acumulador, ACC",
+                def: "Registro especial que guarda resultados temporales de las operaciones de la ALU.",
+                func: "Almacena el resultado inmediato de sumas, restas, etc.",
+                analogy: "Funciona como una libreta donde la calculadora interna guarda el resultado.",
+                cycle: "Recibe el resultado en la fase Store/Output."
+            },
+            flags: {
+                name: "Registro de Estado, FLAGS",
+                def: "Almacena bits que describen el resultado de la última operación.",
+                func: "Indica si el resultado fue cero (Z), negativo (N), acarreo (C) o desbordamiento (V).",
+                analogy: "Son como luces de advertencia tras una operación.",
+                cycle: "Se actualiza al final de la fase Execute."
+            },
+            mem: {
+                name: "Memoria Principal",
+                def: "Almacenamiento externo a la CPU donde residen programas y datos.",
+                func: "Provee instrucciones y guarda resultados. Los valores como 0x0040 y 0x0044 son direcciones de memoria en formato hexadecimal (base 16), comúnmente usado en informática para indicar ubicaciones exactas.",
+                analogy: "Es como un archivero. Las direcciones como '0x0040' son las etiquetas con el número de cada cajón.",
+                cycle: "Se accede en Fetch y opcionalmente en Store."
+            }
+        };
+
+        // Estado de la Simulación
+        let state = {
+            PC: "0x0040",
+            IR: "-",
+            MAR: "-",
+            MDR: "-",
+            ACC: 0,
+            A: 5,
+            B: 3,
+            FLAGS: { Z: 0, N: 0, C: 0, V: 0 },
+            instruction: "ADD 5, 3",
+            appliedOp: "ADD",
+            stepIndex: -1,
+            autoPlaying: false,
+            timer: null
+        };
+
+        let steps = [];
+
+        function showInfo(compId) {
+            const info = componentInfo[compId];
+            if (!info) return;
+            const panel = document.getElementById('info-panel');
+            panel.innerHTML = `
+                <h3>${info.name}</h3>
+                <p><strong>Definición:</strong> ${info.def}</p><br>
+                <p><strong>Función:</strong> ${info.func}</p><br>
+                <p><strong>Ciclo:</strong> ${info.cycle}</p><br>
+                <p><em>Analogía: ${info.analogy}</em></p>
+            `;
+
+            // Highlight solo el clickeado
+            document.querySelectorAll('.component, .memory-box').forEach(el => el.classList.remove('active'));
+            document.getElementById('comp-' + compId).classList.add('active');
+        }
+
+        function updateDisplays() {
+            document.getElementById('val-pc').innerText = state.PC;
+            document.getElementById('disp-pc').innerText = state.PC;
+
+            document.getElementById('val-ir').innerText = state.IR;
+            document.getElementById('disp-ir').innerText = state.IR;
+
+            document.getElementById('val-mar').innerText = state.MAR;
+            document.getElementById('disp-mar').innerText = state.MAR;
+
+            document.getElementById('val-mdr').innerText = state.MDR;
+            document.getElementById('disp-mdr').innerText = state.MDR;
+
+            document.getElementById('val-acc').innerText = state.ACC;
+            document.getElementById('disp-acc').innerText = state.ACC;
+
+            document.getElementById('val-a').innerText = state.A;
+            document.getElementById('val-b').innerText = state.B;
+
+            const flagStr = `Z=${state.FLAGS.Z}, N=${state.FLAGS.N}, C=${state.FLAGS.C}, V=${state.FLAGS.V}`;
+            document.getElementById('val-flags').innerText = flagStr;
+            document.getElementById('disp-flags').innerText = `Z=${state.FLAGS.Z}`;
+        }
+
+        function clearActiveElements() {
+            document.querySelectorAll('.component, .memory-box, .bus-line, .timeline-step, .mem-cell').forEach(el => {
+                el.classList.remove('active');
+            });
+        }
+
+        function setStep(index) {
+            if (index < 0 || index >= steps.length) return;
+            state.stepIndex = index;
+            clearActiveElements();
+
+            const step = steps[index];
+            document.getElementById('step-description').innerText = step.desc;
+            document.getElementById(step.id).classList.add('active');
+
+            // Mostrar explicación destacada en el panel izquierdo
+            const panel = document.getElementById('info-panel');
+            panel.innerHTML = `
+                <h3 style="color: var(--active-color); font-size: 1.1rem; border-bottom: 1px solid #444; padding-bottom: 5px;">Paso Actual: ${step.label}</h3>
+                <p style="font-size: 1rem; line-height: 1.5; margin-top: 15px; color: #fff;">${step.desc}</p>
+            `;
+
+            step.active.forEach(id => {
+                const el = document.getElementById(id) || document.getElementById('comp-' + id);
+                if (el) el.classList.add('active');
+            });
+
+            step.action();
+        }
+
+        function nextStep() {
+            if (state.stepIndex < steps.length - 1) {
+                setStep(state.stepIndex + 1);
+            } else {
+                pauseSimulation();
+                document.getElementById('step-description').innerText = "Simulación completada. Reinicia para volver a ver.";
+            }
+        }
+
+        function previousStep() {
+            if (state.stepIndex > 0) {
+                // Para simplificar, resetear y avanzar rápido al paso anterior (almacenar estados históricos sería mejor)
+                const target = state.stepIndex - 1;
+                resetStateInternals();
+                for (let i = 0; i <= target; i++) {
+                    state.stepIndex = i;
+                    steps[i].action();
+                }
+                setStep(target);
+            }
+        }
+
+        function startSimulation() {
+            if (state.stepIndex >= steps.length - 1) {
+                resetSimulation();
+            }
+            state.autoPlaying = true;
+            document.getElementById('btn-play').disabled = true;
+            document.getElementById('btn-pause').disabled = false;
+
+            if (state.stepIndex === -1) nextStep();
+
+            state.timer = setInterval(() => {
+                if (state.stepIndex < steps.length - 1) {
+                    nextStep();
+                } else {
+                    pauseSimulation();
+                }
+            }, 2500); // 2.5s por paso
+        }
+
+        function pauseSimulation() {
+            state.autoPlaying = false;
+            clearInterval(state.timer);
+            document.getElementById('btn-play').disabled = false;
+            document.getElementById('btn-pause').disabled = true;
+        }
+
+        function updateInputs() {
+            const op = document.getElementById('op-select').value;
+            const inputA = document.getElementById('input-a');
+            const inputB = document.getElementById('input-b');
+            inputA.style.display = 'block';
+            inputB.style.display = 'block';
+
+            if (op === 'CLEAR') {
+                inputA.style.display = 'none';
+                inputB.style.display = 'none';
+            } else if (op === 'LOAD' || op === 'STORE') {
+                inputB.style.display = 'none';
+            }
+        }
+
+        function applyInstruction() {
+            const op = document.getElementById('op-select').value;
+            const inputA = document.getElementById('input-a').value;
+            const inputB = document.getElementById('input-b').value;
+
+            if (op !== 'CLEAR' && inputA === '') { alert("Por favor ingresa un número en A."); return; }
+            if (!['LOAD', 'STORE', 'CLEAR'].includes(op) && inputB === '') { alert("Por favor ingresa un número en B."); return; }
+            if (op === 'DIV' && parseInt(inputB) === 0) { alert("No se puede dividir entre cero."); return; }
+
+            let translation = op;
+            if (op === 'CLEAR') { }
+            else if (op === 'LOAD' || op === 'STORE') { translation += ` ${inputA}`; }
+            else { translation += ` ${inputA}, ${inputB}`; }
+
+            document.getElementById('instruction-translation').innerText = translation;
+
+            state.appliedOp = op;
+            state.A = parseInt(inputA) || 0;
+            state.B = parseInt(inputB) || 0;
+            state.instruction = translation;
+
+            buildSteps(op);
+            resetSimulation();
+        }
+
+        function buildSteps(op) {
+            steps = [
+                {
+                    id: "step-fetch-1", label: "1. Fetch: PC → MAR",
+                    desc: `1. FETCH: El PC envía la dirección de la próxima instrucción (${state.PC}) al MAR.`,
+                    active: ["pc", "mar", "bus-pc-mar"],
+                    action: () => {
+                        state.MAR = state.PC;
+                        updateDisplays();
+                        animatePacket('comp-pc', 'comp-mar', state.PC);
+                    }
+                },
+                {
+                    id: "step-fetch-2", label: "2. Fetch: Memoria → MDR → IR",
+                    desc: `2. FETCH: MAR pide dato a Memoria. Memoria envía '${state.instruction}' al MDR y pasa al IR. PC incrementa.`,
+                    active: ["mar", "mem", "mdr", "ir", "bus-mar-mem", "bus-mem-mdr", "bus-mdr-ir"],
+                    action: () => {
+                        document.getElementById('mem-0040').classList.add('active');
+                        state.MDR = state.instruction;
+                        state.IR = state.instruction;
+                        state.PC = "0x0044";
+                        updateDisplays();
+                        setTimeout(() => animatePacket('comp-mem', 'comp-mdr', state.instruction), 100);
+                        setTimeout(() => animatePacket('comp-mdr', 'comp-ir', state.instruction), 600);
+                    }
+                },
+                {
+                    id: "step-decode", label: "3. Decode: UC decodifica IR",
+                    desc: `3. DECODE: La UC lee el IR y decodifica que es la operación ${op}.`,
+                    active: ["ir", "uc", "bus-ir-uc"],
+                    action: () => {
+                        document.getElementById('mem-0040').classList.remove('active');
+                        updateDisplays();
+                        animatePacket('comp-ir', 'comp-uc', 'Decodificando...');
+                    }
+                }
+            ];
+
+            if (['ADD', 'SUB', 'MUL', 'DIV', 'CMP'].includes(op)) {
+                steps.push({
+                    id: "step-execute", label: "4. Execute: ALU procesa A y B",
+                    desc: `4. EXECUTE: La UC ordena a la ALU realizar ${op} con ${state.A} y ${state.B}.`,
+                    active: ["uc", "alu", "bus-uc-alu", "bus-reg-alu"],
+                    action: () => {
+                        document.getElementById('alu-op').innerText = `Procesando: ${op} ${state.A}, ${state.B}`;
+                        animatePacket('comp-uc', 'comp-alu', 'Señal de Control');
+                    }
+                });
+                steps.push({
+                    id: "step-store", label: "5. Store/Output: ALU → ACC/FLAGS",
+                    desc: `5. STORE: El resultado actualiza el ACC y/o los FLAGS.`,
+                    active: ["alu", "acc", "flags", "bus-alu-acc"],
+                    action: () => {
+                        let res = 0;
+                        if (op === 'ADD') res = state.A + state.B;
+                        if (op === 'SUB' || op === 'CMP') res = state.A - state.B;
+                        if (op === 'MUL') res = state.A * state.B;
+                        if (op === 'DIV') res = Math.floor(state.A / state.B);
+
+                        if (op !== 'CMP') state.ACC = res;
+
+                        state.FLAGS.Z = res === 0 ? 1 : 0;
+                        state.FLAGS.N = res < 0 ? 1 : 0;
+
+                        document.getElementById('alu-op').innerText = op === 'CMP' ? `CMP: Z=${state.FLAGS.Z}` : `Resultado: ${res}`;
+                        updateDisplays();
+                        animatePacket('comp-alu', 'comp-acc', res);
+
+                        const resultBox = document.getElementById('final-result-box');
+                        resultBox.style.display = 'block';
+                        resultBox.innerText = op === 'CMP' ? `¡Completado! FLAGS actualizados (Z=${state.FLAGS.Z})` : `¡Resultado Final: ${res}!`;
+                    }
+                });
+            } else if (op === 'LOAD') {
+                steps.push({
+                    id: "step-execute", label: "4. Execute: Cargar A en ACC",
+                    desc: `4. EXECUTE: El valor ${state.A} se carga directamente en el ACC.`,
+                    active: ["uc", "acc", "bus-uc-alu", "bus-alu-acc"],
+                    action: () => {
+                        state.ACC = state.A;
+                        updateDisplays();
+                        animatePacket('comp-uc', 'comp-acc', state.A);
+
+                        const resultBox = document.getElementById('final-result-box');
+                        resultBox.style.display = 'block';
+                        resultBox.innerText = `¡Completado! ACC cargado con ${state.A}`;
+                    }
+                });
+            } else if (op === 'STORE') {
+                steps.push({
+                    id: "step-execute", label: "4. Execute: ACC → Memoria",
+                    desc: `4. EXECUTE/STORE: El valor del ACC (${state.ACC}) se guarda en la memoria en la dirección ${state.A}.`,
+                    active: ["uc", "acc", "mar", "mdr", "mem", "bus-alu-acc", "bus-mdr-ir", "bus-mar-mem"],
+                    action: () => {
+                        state.MAR = state.A;
+                        state.MDR = state.ACC;
+                        updateDisplays();
+                        animatePacket('comp-acc', 'comp-mem', state.ACC);
+
+                        const resultBox = document.getElementById('final-result-box');
+                        resultBox.style.display = 'block';
+                        resultBox.innerText = `¡Completado! Memoria[${state.A}] = ${state.ACC}`;
+                    }
+                });
+            } else if (op === 'CLEAR') {
+                steps.push({
+                    id: "step-execute", label: "4. Execute: Limpiar ACC",
+                    desc: `4. EXECUTE: El Acumulador se reinicia a 0.`,
+                    active: ["uc", "acc", "bus-uc-alu", "bus-alu-acc"],
+                    action: () => {
+                        state.ACC = 0;
+                        updateDisplays();
+                        animatePacket('comp-uc', 'comp-acc', 'CLEAR');
+
+                        const resultBox = document.getElementById('final-result-box');
+                        resultBox.style.display = 'block';
+                        resultBox.innerText = `¡Completado! ACC limpiado a 0`;
+                    }
+                });
+            }
+
+            const timeline = document.getElementById('timeline');
+            timeline.innerHTML = '';
+            steps.forEach(s => {
+                const div = document.createElement('div');
+                div.className = 'timeline-step';
+                div.id = s.id;
+                div.innerText = s.label;
+                timeline.appendChild(div);
+            });
+        }
+
+        function resetStateInternals() {
+            state.PC = "0x0040";
+            state.IR = "-";
+            state.MAR = "-";
+            state.MDR = "-";
+            // No resetear ACC y FLAGS para poder concatenar operaciones (ej. LOAD luego ADD)
+            document.getElementById('alu-op').innerText = "Operación";
+            document.getElementById('final-result-box').style.display = 'none';
+            updateDisplays();
+        }
+
+        function resetSimulation() {
+            pauseSimulation();
+            state.stepIndex = -1;
+            resetStateInternals();
+            clearActiveElements();
+            document.getElementById('step-description').innerText = "Haz clic en 'Siguiente' o 'Auto' para ver el ciclo.";
+        }
+
+        // Animación de paquete de datos (Pseudo AR)
+        function animatePacket(fromId, toId, text) {
+            const fromEl = document.getElementById(fromId);
+            const toEl = document.getElementById(toId);
+            const packet = document.getElementById('data-packet');
+
+            if (!fromEl || !toEl || !packet) return;
+
+            const fromRect = fromEl.getBoundingClientRect();
+            const toRect = toEl.getBoundingClientRect();
+            const simRect = document.getElementById('sim-area').getBoundingClientRect();
+
+            const startX = fromRect.left - simRect.left + fromRect.width / 2;
+            const startY = fromRect.top - simRect.top + fromRect.height / 2;
+
+            const endX = toRect.left - simRect.left + toRect.width / 2;
+            const endY = toRect.top - simRect.top + toRect.height / 2;
+
+            packet.innerText = text;
+            packet.style.transition = 'none';
+            packet.style.opacity = '1';
+            packet.style.left = startX + 'px';
+            packet.style.top = startY + 'px';
+
+            setTimeout(() => {
+                packet.style.transition = 'all 0.5s ease-in-out';
+                packet.style.left = endX + 'px';
+                packet.style.top = endY + 'px';
+
+                setTimeout(() => {
+                    packet.style.opacity = '0';
+                }, 500);
+            }, 50);
+        }
+
+        // Init
+        buildSteps('ADD');
+        updateDisplays();
+        document.getElementById('btn-pause').disabled = true;
+
+    </script>
+</body>
+
+</html>
