@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPU AR Explorer - Plataforma Educativa</title>
+    <title>CPU Explorer - Plataforma Educativa</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter & JetBrains Mono para código/nomenclaturas -->
@@ -508,18 +508,27 @@
     </main>
 
     <!-- MODAL PARA EXPLICACIÓN DE FAMILIAS DE CPU -->
-    <div id="family-modal" class="fixed inset-0 z-[100] flex items-center justify-center hidden bg-slate-900/80 backdrop-blur-sm transition-opacity duration-300 opacity-0">
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 w-11/12 max-w-md rounded-2xl shadow-2xl overflow-hidden relative transform scale-95 transition-transform duration-300" id="family-modal-content">
+    <div id="family-modal"
+        class="fixed inset-0 z-[100] flex items-center justify-center hidden bg-slate-900/80 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 w-11/12 max-w-md rounded-2xl shadow-2xl overflow-hidden relative transform scale-95 transition-transform duration-300"
+            id="family-modal-content">
             <!-- Botón Cerrar -->
-            <button onclick="closeFamilyModal()" class="absolute top-3 right-3 text-white bg-black/50 hover:bg-red-500 hover:text-white p-2 rounded-full transition z-10">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            <button onclick="closeFamilyModal()"
+                class="absolute top-3 right-3 text-white bg-black/50 hover:bg-red-500 hover:text-white p-2 rounded-full transition z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
             </button>
-            
+
             <!-- Imagen y Cabecera -->
             <div class="h-48 w-full relative bg-slate-800 flex items-center justify-center">
-                <img id="family-modal-img" src="" alt="Representación" class="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-overlay">
+                <img id="family-modal-img" src="" alt="Representación"
+                    class="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-overlay">
                 <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
-                <h3 id="family-modal-title" class="relative z-10 text-xl font-black text-white px-6 text-center drop-shadow-md uppercase tracking-wide"></h3>
+                <h3 id="family-modal-title"
+                    class="relative z-10 text-xl font-black text-white px-6 text-center drop-shadow-md uppercase tracking-wide">
+                </h3>
             </div>
 
             <!-- Contenido y Controles -->
@@ -527,14 +536,23 @@
                 <p id="family-modal-desc" class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6"></p>
 
                 <div class="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 pt-4">
-                    <button onclick="prevFamily()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-cyan-500 hover:text-white dark:hover:bg-cyan-600 dark:text-slate-300 text-slate-700 rounded-md text-xs font-bold transition flex items-center gap-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    <button onclick="prevFamily()"
+                        class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-cyan-500 hover:text-white dark:hover:bg-cyan-600 dark:text-slate-300 text-slate-700 rounded-md text-xs font-bold transition flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
                         Anterior
                     </button>
-                    <div class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded" id="family-modal-counter">1 / 4</div>
-                    <button onclick="nextFamily()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-cyan-500 hover:text-white dark:hover:bg-cyan-600 dark:text-slate-300 text-slate-700 rounded-md text-xs font-bold transition flex items-center gap-1">
+                    <div class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded"
+                        id="family-modal-counter">1 / 4</div>
+                    <button onclick="nextFamily()"
+                        class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-cyan-500 hover:text-white dark:hover:bg-cyan-600 dark:text-slate-300 text-slate-700 rounded-md text-xs font-bold transition flex items-center gap-1">
                         Siguiente
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -552,8 +570,10 @@
                 La tecnología de visualización simula un panel AR holográfico que ayuda a los estudiantes a memorizar
                 jerarquías de rendimiento sin confusiones con GPU.
             </p>
-            <div class="text-xs font-mono text-cyan-500/60">
-                © 2026 CPU AR Explorer. No requiere conexión externa para su uso.
+            <div class="footer-inner">
+                <p class="footer-copy" style="font-size: 12px; color: white; text-align: center;">© 2026 — Experiencia
+                    Técnica Interactiva. Fines educativos - Luis Torrejón Arias.
+                </p>
             </div>
         </div>
     </footer>
@@ -1168,12 +1188,12 @@
             intel: {
                 modelName: "Intel Core i9-14900K",
                 parts: [
-                    { 
-                        txt: "Intel Core", 
-                        desc: "Marca insignia principal de consumo para laptops y equipos de sobremesa, reemplazando las líneas antiguas o básicas de entrada." 
+                    {
+                        txt: "Intel Core",
+                        desc: "Marca insignia principal de consumo para laptops y equipos de sobremesa, reemplazando las líneas antiguas o básicas de entrada."
                     },
-                    { 
-                        txt: "i9", 
+                    {
+                        txt: "i9",
                         desc: "Nivel de rendimiento / segmentación. 'i9' indica el tope de gama extremo, ideal para creadores de contenido exigentes y cómputo de alta intensidad.",
                         options: [
                             { val: "i3", desc: "Gama de entrada (Tareas básicas y ofimática)" },
@@ -1182,8 +1202,8 @@
                             { val: "i9", desc: "Tope de gama extremo (Máxima potencia y multitarea masiva)" }
                         ]
                     },
-                    { 
-                        txt: "-14", 
+                    {
+                        txt: "-14",
                         desc: "Generación del procesador. '14' corresponde a la decimocuarta familia de núcleos x86 (Raptor Lake Refresh).",
                         options: [
                             { val: "12", desc: "12ª Generación (Alder Lake - Híbrida)" },
@@ -1192,12 +1212,12 @@
                             { val: "Ultra", desc: "Nueva nomenclatura Core Ultra (Series 1 y 2 con NPU para IA)" }
                         ]
                     },
-                    { 
-                        txt: "900", 
-                        desc: "Identificador SKU / Nivel relativo de rendimiento. Cuanto mayor sea este valor dentro de la misma gama (ej. 900 vs 700), mayor frecuencia y núcleos tiene el silicio." 
+                    {
+                        txt: "900",
+                        desc: "Identificador SKU / Nivel relativo de rendimiento. Cuanto mayor sea este valor dentro de la misma gama (ej. 900 vs 700), mayor frecuencia y núcleos tiene el silicio."
                     },
-                    { 
-                        txt: "K", 
+                    {
+                        txt: "K",
                         desc: "Sufijo de características especiales. 'K' indica multiplicador de reloj desbloqueado, lo que permite realizar Overclocking manual.",
                         options: [
                             { val: "K", desc: "Desbloqueado para Overclock (Alto rendimiento Desktop)" },
@@ -1215,12 +1235,12 @@
             amd: {
                 modelName: "AMD Ryzen 7 7800X3D",
                 parts: [
-                    { 
-                        txt: "Ryzen", 
-                        desc: "Familia comercial de procesadores de consumo basada en la arquitectura de núcleos Zen de alto rendimiento." 
+                    {
+                        txt: "Ryzen",
+                        desc: "Familia comercial de procesadores de consumo basada en la arquitectura de núcleos Zen de alto rendimiento."
                     },
-                    { 
-                        txt: "7", 
+                    {
+                        txt: "7",
                         desc: "Gama o segmento de rendimiento. El nivel '7' está diseñado para entusiastas de juegos y creadores avanzados (8 núcleos/16 hilos).",
                         options: [
                             { val: "3", desc: "Gama de entrada (Navegación y multimedia básica)" },
@@ -1229,8 +1249,8 @@
                             { val: "9", desc: "Tope de gama (Creación profesional y renderizado 3D pesado)" }
                         ]
                     },
-                    { 
-                        txt: " 7", 
+                    {
+                        txt: " 7",
                         desc: "Generación o serie del silicio. El '7' indica que pertenece a la serie 7000 (núcleos de microarquitectura Zen 4).",
                         options: [
                             { val: "5000", desc: "Serie basada en Zen 3 (Plataforma AM4, memoria DDR4)" },
@@ -1239,12 +1259,12 @@
                             { val: "9000", desc: "Nueva serie basada en Zen 5" }
                         ]
                     },
-                    { 
-                        txt: "800", 
-                        desc: "Dígitos de rendimiento relativo (SKU) del modelo dentro de su familia específica de productos." 
+                    {
+                        txt: "800",
+                        desc: "Dígitos de rendimiento relativo (SKU) del modelo dentro de su familia específica de productos."
                     },
-                    { 
-                        txt: "X3D", 
+                    {
+                        txt: "X3D",
                         desc: "Sufijo tecnológico. Indica caché apilada verticalmente de forma tridimensional (3D V-Cache), optimizado para juegos de computadora.",
                         options: [
                             { val: "X", desc: "Mayor frecuencia base y turbo (Alto rendimiento puro)" },
@@ -1260,12 +1280,12 @@
             apple: {
                 modelName: "Apple M3 Max",
                 parts: [
-                    { 
-                        txt: "Apple", 
-                        desc: "La corporación que diseña el SoC completo en silicios personalizados (Fabless)." 
+                    {
+                        txt: "Apple",
+                        desc: "La corporación que diseña el SoC completo en silicios personalizados (Fabless)."
                     },
-                    { 
-                        txt: "M3", 
+                    {
+                        txt: "M3",
                         desc: "La generación del microprocesador. 'M' indica la serie para Mac/iPad y '3' es la tercera generación de esta arquitectura con transistores de 3nm.",
                         options: [
                             { val: "M1", desc: "Primera generación revolucionaria (5nm) que inició la transición a Apple Silicon" },
@@ -1274,8 +1294,8 @@
                             { val: "M4", desc: "Cuarta generación enfocada en máxima eficiencia y Neural Engine avanzado" }
                         ]
                     },
-                    { 
-                        txt: "Max", 
+                    {
+                        txt: "Max",
                         desc: "La variante de escalabilidad de ancho de banda. Duplica el bus y núcleos gráficos de la versión M3 Pro para un rendimiento profesional masivo.",
                         options: [
                             { val: "(Base)", desc: "Sin sufijo. Consumo general, ultra delgado, gran eficiencia de batería" },
@@ -1289,12 +1309,12 @@
             qualcomm: {
                 modelName: "Snapdragon X Elite",
                 parts: [
-                    { 
-                        txt: "Snapdragon", 
-                        desc: "La plataforma de arquitectura de sistema en chip (SoC) móvil histórica de Qualcomm." 
+                    {
+                        txt: "Snapdragon",
+                        desc: "La plataforma de arquitectura de sistema en chip (SoC) móvil histórica de Qualcomm."
                     },
-                    { 
-                        txt: "X", 
+                    {
+                        txt: "X",
                         desc: "Línea diseñada específicamente para cómputo de escritorio y laptops ARM con alto rendimiento de energía.",
                         options: [
                             { val: "Series 4", desc: "Gama de entrada para smartphones (Económicos y eficientes)" },
@@ -1303,8 +1323,8 @@
                             { val: "Series X", desc: "Gama computacional de alto rendimiento para PCs y Laptops Windows ARM" }
                         ]
                     },
-                    { 
-                        txt: "Elite", 
+                    {
+                        txt: "Elite",
                         desc: "Variante premium con el mayor clúster de núcleos Oryon optimizados a alta frecuencia.",
                         options: [
                             { val: "Plus", desc: "Rendimiento altísimo con un balance superior de batería para ultrabooks ligeras" },
@@ -1341,10 +1361,10 @@
 
                     // Actualizar el detalle didáctico principal
                     document.getElementById('nom-part-title').innerText = `${part.txt.trim()} — Explicación`;
-                    
+
                     // Inyectar la descripción principal
                     let extraHTML = '';
-                    
+
                     // Si esta parte de la nomenclatura tiene "opciones" o variantes, las mostramos en lista
                     if (part.options && part.options.length > 0) {
                         extraHTML = `
@@ -1365,7 +1385,7 @@
                             </div>
                         `;
                     }
-                    
+
                     document.getElementById('nom-part-desc').innerHTML = `<p class="leading-relaxed">${part.desc}</p>${extraHTML}`;
                 };
                 box.appendChild(span);
@@ -1475,9 +1495,9 @@
             // Diccionario semántico: devuelve una imagen representativa y explicación en base al nombre de la familia
             let img = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Intel_Core_i7-4770K_CPU_2.jpg/800px-Intel_Core_i7-4770K_CPU_2.jpg";
             let desc = "Esta familia de procesadores cubre un segmento específico del mercado general, equilibrando potencia y capacidades para uso estándar.";
-            
+
             const nameL = familyName.toLowerCase();
-            
+
             if (nameL.includes('servidor') || nameL.includes('epyc') || nameL.includes('xeon') || nameL.includes('neoverse') || nameL.includes('power')) {
                 img = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Wikimedia_Foundation_Servers-8055_35.jpg/800px-Wikimedia_Foundation_Servers-8055_35.jpg";
                 desc = "Procesadores corporativos diseñados para centros de datos y servidores masivos. Soportan memoria de corrección de errores (ECC), cantidades masivas de núcleos y trabajo ininterrumpido 24/7 bajo cargas extremas.";
@@ -1501,13 +1521,13 @@
         function openFamilyModal(companyId, index) {
             currentFamilyCompanyId = companyId;
             currentFamilyIndex = index;
-            
+
             renderFamilyModal();
-            
+
             const modal = document.getElementById('family-modal');
             const content = document.getElementById('family-modal-content');
             modal.classList.remove('hidden');
-            
+
             // Trigger animation
             setTimeout(() => {
                 modal.classList.remove('opacity-0');
@@ -1520,7 +1540,7 @@
             const content = document.getElementById('family-modal-content');
             modal.classList.add('opacity-0');
             content.classList.add('scale-95');
-            
+
             setTimeout(() => {
                 modal.classList.add('hidden');
             }, 300);
@@ -1543,7 +1563,7 @@
         function renderFamilyModal() {
             const company = companies.find(c => c.id === currentFamilyCompanyId);
             if (!company) return;
-            
+
             const familyName = company.cpuFamilies[currentFamilyIndex];
             const info = getFamilyInfo(familyName);
 
