@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPU AR Explorer - Plataforma Educativa</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono para código/nomenclaturas -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    boxShadow: {
+                        'neon-cyan': '0 0 15px rgba(6, 182, 212, 0.4)',
+                        'neon-purple': '0 0 15px rgba(168, 85, 247, 0.4)',
+                        'neon-emerald': '0 0 15px rgba(16, 185, 129, 0.4)',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- STYLE: Efectos holográficos, animaciones y rejillas de AR -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Rejilla de fondo tecnológico estilo Sci-Fi */
+        .tech-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(6, 182, 212, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
+        }
+
+        .dark .tech-grid {
+            background-image: linear-gradient(to right, rgba(6, 182, 212, 0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(6, 182, 212, 0.1) 1px, transparent 1px);
+        }
+
+        /* Efecto de línea de escaneo holográfica (Scanline) */
+        .scanline {
+            background: linear-gradient(to bottom,
+                    rgba(255, 255, 255, 0),
+                    rgba(6, 182, 212, 0.15) 50%,
+                    rgba(255, 255, 255, 0));
+            animation: scan 6s linear infinite;
+        }
+
+        @keyframes scan {
+            0% {
+                transform: translateY(-100%);
+            }
+
+            100% {
+                transform: translateY(100%);
+            }
+        }
+
+        /* Animación de flotación estilo holograma 3D */
+        .float-ar {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-10px) rotate(1deg);
+            }
+        }
+
+        /* Animación de pulsación para el modo AR activo */
+        @keyframes active-pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 15px rgba(6, 182, 212, 0.5), inset 0 0 10px rgba(6, 182, 212, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 25px rgba(6, 182, 212, 0.8), inset 0 0 15px rgba(6, 182, 212, 0.4);
+            }
+        }
+
+        .active-chip {
+            animation: active-pulse 2s infinite;
+            border-color: #06b6d4 !important;
+        }
+
+        /* Scroll personalizado estilo holograma */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.1);
+        }
+
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #06b6d4;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen relative overflow-x-hidden tech-grid transition-all duration-300">
+
+    <!-- Capa de escaneo Sci-Fi global -->
+    <div class="pointer-events-none fixed inset-0 z-50 overflow-hidden">
+        <div class="w-full h-full scanline opacity-30"></div>
+    </div>
+
+    <!-- HEADER DE LA PÁGINA -->
+    <header
+        class="border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md sticky top-0 z-40 transition-colors">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <!-- Icono de Chip HUD -->
+                <div class="p-2 bg-cyan-500/10 rounded-xl border border-cyan-500/30 text-cyan-500 animate-pulse">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 5h10a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2zM9 9h6v6H9V9z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1
+                        class="text-xl md:text-2xl font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
+                        CPU <span class="text-cyan-500 font-bold">AR</span> Explorer
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Explorador de Arquitecturas y Fabricantes de Unidades Centrales de Procesamiento
+                    </p>
+                </div>
+            </div>
+
+            <!-- Controles Globales -->
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Botón de recorrido automático -->
+                <button id="btn-tour" onclick="startTour()"
+                    class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white text-xs font-bold rounded-lg shadow-neon-cyan flex items-center gap-2 transition-all duration-300 transform active:scale-95">
+                    <span class="relative flex h-2 w-2">
+                        <span
+                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                    </span>
+                    INICIAR RECORRIDO AUTO
+                </button>
+
+                <!-- Toggle Modo Oscuro/Claro -->
+                <button onclick="toggleDarkMode()"
+                    class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                    title="Cambiar Tema">
+                    <svg id="theme-icon-sun" class="h-5 w-5 hidden dark:block" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m2.122-10.607l-.707-.707m12.728 12.728l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+                    </svg>
+                    <svg id="theme-icon-moon" class="h-5 w-5 block dark:hidden" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CUERPO PRINCIPAL -->
+    <main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- COLUMNA IZQUIERDA: AR TABLETOP Y FILTROS (8 columnas) -->
+        <section class="lg:col-span-8 space-y-6">
+
+            <!-- PANEL DE FILTRADO Y HERRAMIENTAS DE AR -->
+            <div
+                class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm transition-colors">
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-cyan-500 flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-cyan-500 inline-block animate-ping"></span>
+                            Filtros de Segmento de Uso
+                        </span>
+                        <button onclick="clearFilter()"
+                            class="text-xs text-slate-500 dark:text-slate-400 hover:text-cyan-500 transition underline">
+                            Limpiar Filtros
+                        </button>
+                    </div>
+                    <!-- Chips de Filtrado Adaptables -->
+                    <div class="flex flex-wrap gap-2" id="filter-container">
+                        <!-- Generado dinámicamente con JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ESCENA DE REALIDAD AUMENTADA VIRTUAL (Holograma de Mesa Interactiva) -->
+            <div
+                class="relative bg-gradient-to-b from-slate-900 to-slate-950 border border-cyan-500/30 rounded-3xl p-6 shadow-2xl overflow-hidden min-h-[480px] flex flex-col justify-between">
+                <!-- Efectos Ambientales Holográficos -->
+                <div
+                    class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.15)_0%,transparent_75%)] pointer-events-none">
+                </div>
+                <div
+                    class="absolute top-4 left-4 text-xs font-mono text-cyan-500 bg-slate-900/80 border border-cyan-500/20 px-2.5 py-1 rounded backdrop-blur">
+                    SYS.LOC: [LATENCY 0.12ms] | FEED: CPU_AR_MATRIX
+                </div>
+                <div class="absolute top-4 right-4 text-xs font-mono text-cyan-500/50">
+                    STATUS: ONLINE
+                </div>
+
+                <!-- Capa Intermedia de Conexiones de Datos (Canvas detrás de las tarjetas) -->
+                <div class="absolute inset-0 z-0">
+                    <svg id="svg-connections" class="w-full h-full opacity-60 pointer-events-none">
+                        <!-- Líneas dinámicas generadas mediante JS -->
+                    </svg>
+                </div>
+
+                <!-- REJILLA CENTRAL DE CHIPS DIGITALES (Mesa de Realidad Aumentada) -->
+                <div class="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6 my-auto pt-10 pb-6"
+                    id="ar-grid">
+                    <!-- Cards holográficas de CPU se generarán aquí -->
+                </div>
+
+                <!-- HUD BAR / FOOTER DE LA MESA -->
+                <div
+                    class="relative z-10 border-t border-cyan-500/20 pt-4 flex flex-col md:flex-row items-center justify-between text-xs font-mono text-cyan-400/80 gap-3">
+                    <div class="flex items-center gap-2">
+                        <span class="inline-block w-2.5 h-2.5 bg-cyan-500 rounded-full animate-ping"></span>
+                        <span>Interactúa: Haz clic en cualquier silicio para desplegar información avanzada de la
+                            CPU.</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span>V-AR VERSION 2.6</span>
+                        <span id="tour-step-indicator"
+                            class="hidden text-purple-400 font-bold bg-purple-500/10 px-2 py-0.5 border border-purple-500/30 rounded">RECORRIDO
+                            EN CURSO...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COMPARADOR AVANZADO -->
+            <div id="comparador"
+                class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm transition-all">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-cyan-500" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Comparador de Enfoque y Arquitectura de CPUs
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">PROCESADOR /
+                            DISEÑADOR A</label>
+                        <select id="compare-select-1" onchange="updateComparison()"
+                            class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:outline-none focus:border-cyan-500 dark:text-white">
+                            <!-- JS populate -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">PROCESADOR /
+                            DISEÑADOR B</label>
+                        <select id="compare-select-2" onchange="updateComparison()"
+                            class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:outline-none focus:border-cyan-500 dark:text-white">
+                            <!-- JS populate -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tabla/Bloque comparativo -->
+                <div class="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden"
+                    id="compare-results">
+                    <!-- Dinámico con JS -->
+                </div>
+            </div>
+
+            <!-- TIMELINE GENERAL: HITOS HISTÓRICOS DE ESTAS CPU -->
+            <div
+                class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm transition-all">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-cyan-500" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Evolución Histórica y Logros de CPU
+                </h3>
+                <div class="relative pl-6 border-l-2 border-cyan-500/20 space-y-6">
+                    <!-- Item -->
+                    <div class="relative">
+                        <span
+                            class="absolute -left-[31px] top-1.5 bg-cyan-500 w-4 h-4 rounded-full border-4 border-white dark:border-slate-950"></span>
+                        <div class="text-xs font-bold text-cyan-500 mb-0.5">1971 — El Amanecer del Microprocesador
+                            Comercial</div>
+                        <h4 class="text-sm font-semibold text-slate-800 dark:text-slate-200">Intel lanza el 4004</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">El primer microprocesador x86/monolítico
+                            del mundo, sentando las bases tecnológicas de la informática moderna.</p>
+                    </div>
+                    <!-- Item -->
+                    <div class="relative">
+                        <span
+                            class="absolute -left-[31px] top-1.5 bg-cyan-500 w-4 h-4 rounded-full border-4 border-white dark:border-slate-950"></span>
+                        <div class="text-xs font-bold text-cyan-500 mb-0.5">1985 — Nace la Eficiencia Energética</div>
+                        <h4 class="text-sm font-semibold text-slate-800 dark:text-slate-200">Acorn Computers (ARM)
+                            presenta el chip ARM1</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Nace la arquitectura RISC reducida de
+                            consumo eficiente, base de casi todos los chips móviles modernos.</p>
+                    </div>
+                    <!-- Item -->
+                    <div class="relative">
+                        <span
+                            class="absolute -left-[31px] top-1.5 bg-cyan-500 w-4 h-4 rounded-full border-4 border-white dark:border-slate-950"></span>
+                        <div class="text-xs font-bold text-cyan-500 mb-0.5">2003 — La Era de los 64 Bits en Escritorio
+                        </div>
+                        <h4 class="text-sm font-semibold text-slate-800 dark:text-slate-200">AMD presenta Athlon 64</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Implementación de la extensión AMD64
+                            (x86-64), superando por primera vez a Intel en diseño tecnológico comercial de consumo
+                            masivo.</p>
+                    </div>
+                    <!-- Item -->
+                    <div class="relative">
+                        <span
+                            class="absolute -left-[31px] top-1.5 bg-cyan-500 w-4 h-4 rounded-full border-4 border-white dark:border-slate-950"></span>
+                        <div class="text-xs font-bold text-cyan-500 mb-0.5">2020 — La Revolución ARM en Computación
+                            Personal</div>
+                        <h4 class="text-sm font-semibold text-slate-800 dark:text-slate-200">Apple Silicon lanza la
+                            serie M1</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Demostración definitiva de que SoC basados
+                            en arquitectura ARM pueden igualar y superar el rendimiento x86 con una fracción del consumo
+                            eléctrico.</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- COLUMNA DERECHA: PANEL DE DETALLE HUD Y NOMENCLATURAS (4 columnas) -->
+        <section class="lg:col-span-4 space-y-6">
+
+            <!-- PANEL LATERAL DINÁMICO (FICHA DE PROCESADOR) -->
+            <div id="side-panel"
+                class="bg-white dark:bg-slate-900 border border-cyan-500/20 rounded-3xl p-6 shadow-xl relative overflow-hidden transition-colors min-h-[500px]">
+                <!-- Efecto visual de fondo -->
+                <div class="absolute -right-12 -top-12 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl"></div>
+
+                <div id="panel-content-placeholder"
+                    class="h-full flex flex-col items-center justify-center text-center py-16">
+                    <div class="text-cyan-500/40 mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto animate-bounce" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-slate-200">Terminal de AR Lista</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 max-w-xs mt-2">
+                        Selecciona cualquier silicio de CPU en la mesa digital para inyectar su telemetría e información
+                        técnica.
+                    </p>
+                </div>
+
+                <!-- Contenedor de datos dinámicos (Se desoculta al seleccionar) -->
+                <div id="panel-data" class="hidden space-y-5">
+                    <!-- Cabecera de Ficha -->
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <span id="panel-badge"
+                                class="text-[10px] font-bold tracking-widest text-cyan-500 uppercase px-2 py-0.5 bg-cyan-500/10 border border-cyan-500/20 rounded-md"></span>
+                            <h2 id="panel-title" class="text-2xl font-black mt-1 text-slate-900 dark:text-white"></h2>
+                            <p id="panel-arch" class="text-xs font-mono text-slate-500 dark:text-slate-400 mt-0.5"></p>
+                        </div>
+                        <div id="panel-icon-placeholder" class="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                            <!-- SVG de la empresa -->
+                        </div>
+                    </div>
+
+                    <hr class="border-slate-100 dark:border-slate-800" />
+
+                    <!-- Historia enfocada en CPU -->
+                    <div>
+                        <h4 class="text-xs font-bold text-cyan-500 uppercase tracking-wider mb-1">Contexto e Historia
+                            CPU</h4>
+                        <p id="panel-history"
+                            class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify"></p>
+                    </div>
+
+                    <!-- Tipo de CPU que Diseña/Fabrica -->
+                    <div>
+                        <h4 class="text-xs font-bold text-cyan-500 uppercase tracking-wider mb-1">Paradigma de Diseño
+                        </h4>
+                        <p id="panel-design-type" class="text-xs text-slate-600 dark:text-slate-300"></p>
+                    </div>
+
+                    <!-- Familias Principales de CPU -->
+                    <div>
+                        <h4 class="text-xs font-bold text-cyan-500 uppercase tracking-wider mb-1.5">Familias de CPU</h4>
+                        <div id="panel-families" class="flex flex-wrap gap-1.5">
+                            <!-- Inyección dinámica -->
+                        </div>
+                    </div>
+
+                    <!-- Comparación Simple de Usos (Barras radiales o de porcentaje) -->
+                    <div>
+                        <h4 class="text-xs font-bold text-cyan-500 uppercase tracking-wider mb-2">Presencia de Uso en
+                            Sistemas</h4>
+                        <div id="panel-uses-bars" class="space-y-2">
+                            <!-- Barras dinámicas -->
+                        </div>
+                    </div>
+
+                    <!-- Ejemplos Reales de Modelos de CPU -->
+                    <div>
+                        <h4 class="text-xs font-bold text-cyan-500 uppercase tracking-wider mb-1.5">Ejemplos de
+                            Procesadores Reales</h4>
+                        <ul id="panel-examples" class="space-y-1 list-none">
+                            <!-- Inyección dinámica -->
+                        </ul>
+                    </div>
+
+                    <!-- Nota Importante de exclusividad CPU -->
+                    <div
+                        class="p-2.5 bg-amber-500/10 rounded-lg border border-amber-500/20 text-[11px] text-amber-600 dark:text-amber-400">
+                        <span class="font-bold">⚠️ Foco en CPU:</span> Si esta empresa diseña gráficos integrados (GPU),
+                        aclaramos que esta página se limita al núcleo de procesamiento central (CPU) y su arquitectura
+                        lógica.
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN EDUCATIVA: NOMENCLATURA DE CPU INTERACTIVA -->
+            <div
+                class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm transition-colors">
+                <div class="flex items-center gap-2 mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-cyan-500" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Desglose de Nomenclatura</h3>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                    Selecciona una CPU modelo para entender qué significan las letras y números comerciales que le
+                    asignan los fabricantes.
+                </p>
+
+                <div class="space-y-4">
+                    <!-- Selector de Modelo a Explicar -->
+                    <div class="flex gap-2">
+                        <button onclick="selectNomenclature('intel')" id="btn-nom-intel"
+                            class="nom-btn flex-1 py-1.5 px-2 bg-cyan-500/10 border border-cyan-500 text-cyan-500 rounded-md text-xs font-bold transition">Intel</button>
+                        <button onclick="selectNomenclature('amd')" id="btn-nom-amd"
+                            class="nom-btn flex-1 py-1.5 px-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-md text-xs font-bold transition">AMD</button>
+                        <button onclick="selectNomenclature('apple')" id="btn-nom-apple"
+                            class="nom-btn flex-1 py-1.5 px-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-md text-xs font-bold transition">Apple</button>
+                        <button onclick="selectNomenclature('qualcomm')" id="btn-nom-qualcomm"
+                            class="nom-btn flex-1 py-1.5 px-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-md text-xs font-bold transition">Qualcomm</button>
+                    </div>
+
+                    <!-- Representación Gráfica del Nombre Desglosado -->
+                    <div
+                        class="bg-slate-950 text-white rounded-xl p-4 font-mono text-center border border-slate-800 relative shadow-inner overflow-x-auto">
+                        <div class="flex justify-center gap-1 text-sm md:text-base font-bold whitespace-nowrap"
+                            id="nomenclature-interactive-box">
+                            <!-- Se genera con JS -->
+                        </div>
+                    </div>
+
+                    <!-- Detalle del Bloque Seleccionado o Instrucción -->
+                    <div
+                        class="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl">
+                        <div id="nom-part-title" class="text-xs font-bold text-cyan-500 uppercase tracking-widest mb-1">
+                            Haz clic en los bloques arriba
+                        </div>
+                        <div id="nom-part-desc" class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Selecciona cualquier segmento del modelo de procesador para ver el significado educativo de
+                            esa parte de la nomenclatura.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- MODAL PARA EXPLICACIÓN DE FAMILIAS DE CPU -->
+    <div id="family-modal" class="fixed inset-0 z-[100] flex items-center justify-center hidden bg-slate-900/80 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 w-11/12 max-w-md rounded-2xl shadow-2xl overflow-hidden relative transform scale-95 transition-transform duration-300" id="family-modal-content">
+            <!-- Botón Cerrar -->
+            <button onclick="closeFamilyModal()" class="absolute top-3 right-3 text-white bg-black/50 hover:bg-red-500 hover:text-white p-2 rounded-full transition z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            
+            <!-- Imagen y Cabecera -->
+            <div class="h-48 w-full relative bg-slate-800 flex items-center justify-center">
+                <img id="family-modal-img" src="" alt="Representación" class="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-overlay">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+                <h3 id="family-modal-title" class="relative z-10 text-xl font-black text-white px-6 text-center drop-shadow-md uppercase tracking-wide"></h3>
+            </div>
+
+            <!-- Contenido y Controles -->
+            <div class="p-6">
+                <p id="family-modal-desc" class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6"></p>
+
+                <div class="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 pt-4">
+                    <button onclick="prevFamily()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-cyan-500 hover:text-white dark:hover:bg-cyan-600 dark:text-slate-300 text-slate-700 rounded-md text-xs font-bold transition flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                        Anterior
+                    </button>
+                    <div class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded" id="family-modal-counter">1 / 4</div>
+                    <button onclick="nextFamily()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-cyan-500 hover:text-white dark:hover:bg-cyan-600 dark:text-slate-300 text-slate-700 rounded-md text-xs font-bold transition flex items-center gap-1">
+                        Siguiente
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER EDUCATIVO -->
+    <footer
+        class="border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-950/50 backdrop-blur-md mt-12 py-8 transition-colors">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-3">
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                Diseñado exclusivamente para fines académicos de Ingeniería de Sistemas y Arquitectura de Computadoras.
+            </p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                La tecnología de visualización simula un panel AR holográfico que ayuda a los estudiantes a memorizar
+                jerarquías de rendimiento sin confusiones con GPU.
+            </p>
+            <div class="text-xs font-mono text-cyan-500/60">
+                © 2026 CPU AR Explorer. No requiere conexión externa para su uso.
+            </div>
+        </div>
+    </footer>
+
+    <!-- SCRIPT DE LOGICA GENERAL -->
+    <script>
+
+        // Base de datos robusta de las 8 empresas
+        const companies = [
+            {
+                id: "intel",
+                name: "Intel",
+                category: "Fabricante Integrado (IDM)",
+                architecture: "x86 / x86-64 / IA-32",
+                history: "Fundada en 1968 por Robert Noyce y Gordon Moore. Es el mayor fabricante mundial de CPU basadas en la arquitectura x86. Inventó la dinastía del microprocesador moderno con el 4004 y lideró la industria por décadas gracias a su manufactura integrada y su fuerte presencia en computadoras personales y centros de datos globales.",
+                designType: "Tradicionalmente monolítico, actualmente migrando a arquitecturas desagregadas con Tiles (Chiplets) usando empaquetado Foveros 3D.",
+                cpuFamilies: ["Core (i3/i5/i7/i9)", "Core Ultra", "Xeon (Servidores)", "Pentium & Celeron (Entrada)", "Atom (Bajo Consumo)"],
+                nomenclatures: [
+                    "i3, i5, i7 e i9 indican nivel de rendimiento dentro de la misma arquitectura.",
+                    "Los primeros dos dígitos indican la generación (ej: 14 es decimocuarta generación).",
+                    "Sufijos: K (Multiplicador Desbloqueado), F (Sin gráficos integrados), H/HX (Alto rendimiento móvil), U (Ultra bajo consumo)."
+                ],
+                cpuExamples: [
+                    "Intel Core i9-14900K (Desktop insignia)",
+                    "Intel Core Ultra 7 155H (Nueva era IA móvil)",
+                    "Intel Xeon Platinum 8490H (Datacenter premium)"
+                ],
+                uses: {
+                    "Laptop": 95,
+                    "PC de escritorio": 95,
+                    "Servidor": 80,
+                    "Celular": 0,
+                    "Tablet": 10,
+                    "Sistema embebido": 60,
+                    "Bajo consumo": 50,
+                    "Centro de datos": 80,
+                    "Mainframe": 0,
+                    "Microcontroladores": 15
+                },
+                accentColor: "cyan"
+            },
+            {
+                id: "amd",
+                name: "AMD",
+                category: "Diseñadora de Semiconductores (Fabless)",
+                architecture: "x86-64 / x86 / ARM (Rostro menor)",
+                history: "Fundada en 1969 por Jerry Sanders. Históricamente el eterno competidor de Intel en x86. En 2003 reinventó los 64 bits de escritorio y servidores con AMD64, y resurgió triunfalmente en 2017 con su arquitectura modular Zen. Hoy lidera la transición industrial hacia el diseño de chiplets interconectados de alto rendimiento físico.",
+                designType: "Chiplets modulares multi-die (CCD interconectados por Infinity Fabric a un controlador I/O), con variantes 3D V-Cache.",
+                cpuFamilies: ["Ryzen (3, 5, 7, 9)", "Ryzen Threadripper (HEDT)", "EPYC (Servidores)", "Athlon (Gama Entrada)"],
+                nomenclatures: [
+                    "Ryzen 3, 5, 7, 9 definen gamas desde entrada hasta rendimiento entusiasta.",
+                    "Primer número (ej: 7800) indica generación o serie (Serie 7000 de núcleos Zen 4).",
+                    "Sufijos: X (Frecuencias elevadas), 3D (Caché apilada verticalmente para juegos), G (APU con gráficos integrados robustos), U (Eficiente para laptops)."
+                ],
+                cpuExamples: [
+                    "AMD Ryzen 7 7800X3D (Líder en Gaming de Desktop)",
+                    "AMD Ryzen 9 7950X (Computación multihilo masiva)",
+                    "AMD EPYC 9654 (96 núcleos x86 para servidores)"
+                ],
+                uses: {
+                    "Laptop": 85,
+                    "PC de escritorio": 90,
+                    "Servidor": 75,
+                    "Celular": 0,
+                    "Tablet": 5,
+                    "Sistema embebido": 50,
+                    "Bajo consumo": 45,
+                    "Centro de datos": 75,
+                    "Mainframe": 0,
+                    "Microcontroladores": 5
+                },
+                accentColor: "emerald"
+            },
+            {
+                id: "apple",
+                name: "Apple Silicon",
+                category: "Diseñadora de SoC Propios (Fabless)",
+                architecture: "ARM64",
+                history: "Tras décadas de usar procesadores PowerPC de IBM y Core de Intel, Apple asombró al mundo en 2020 al migrar sus Mac a chips de diseño propio basados en ARM. Apple Silicon consolida la CPU, GPU (como componente de SoC secundario), aceleradores neuronales y memoria unificada en un solo silicio de altísimo rendimiento por vatio.",
+                designType: "SoC altamente integrado (System-on-Chip) monolítico o interconectado mediante UltraFusion (M Ultra).",
+                cpuFamilies: ["M1, M2, M3, M4 (Gama de Consumo)", "Pro (Rendimiento Creativo)", "Max (Máximo Ancho de Banda)", "Ultra (Fusión de dos chips Max)"],
+                nomenclatures: [
+                    "Letra M y número (ej: M3) indican generación de la arquitectura del procesador.",
+                    "Extensiones Pro, Max y Ultra reflejan escalabilidad de núcleos de CPU y memoria, manteniendo la misma generación base."
+                ],
+                cpuExamples: [
+                    "Apple M3 Max (Usado en MacBook Pro de alto rendimiento)",
+                    "Apple M2 Ultra (Usado en Mac Studio para servidores creativos)",
+                    "Apple M4 (Nueva generación enfocada en IA y iPad Pro)"
+                ],
+                uses: {
+                    "Laptop": 90,
+                    "PC de escritorio": 80,
+                    "Servidor": 10,
+                    "Celular": 0, // Nota: A-series para celulares se separa de Apple Silicon Mac/iPad
+                    "Tablet": 90,
+                    "Sistema embebido": 10,
+                    "Bajo consumo": 95,
+                    "Centro de datos": 10,
+                    "Mainframe": 0,
+                    "Microcontroladores": 0
+                },
+                accentColor: "indigo"
+            },
+            {
+                id: "qualcomm",
+                name: "Qualcomm Snapdragon",
+                category: "Diseñador Fabless de SoCs",
+                architecture: "ARM / ARM64",
+                history: "Fundada en 1985. Líder global en telecomunicaciones y SoC móviles. Desarrolla la icónica plataforma Snapdragon con CPU basada en arquitectura ARM. En 2024 revolucionó la informática móvil de PC con el procesador Oryon (Snapdragon X Elite), rompiendo récords de autonomía en Windows.",
+                designType: "SoC móvil y de computación personal ultra integrado, combinando núcleos de CPU altamente optimizados de diseño propio con módems celulares integrados.",
+                cpuFamilies: ["Snapdragon X (Laptops Windows en ARM)", "Snapdragon 8 Series (Premium Móvil)", "Snapdragon 7/6 Series (Gama Media)", "Snapdragon 4 (Gama Baja)"],
+                nomenclatures: [
+                    "Snapdragon X Elite indica la variante de mayor potencia para computación convencional.",
+                    "En celulares, el número indica la gama (ej: Snapdragon 8) y la generación se indica con 'Gen X' (ej: Gen 3)."
+                ],
+                cpuExamples: [
+                    "Snapdragon X Elite X1E-84-100 (Laptop premium)",
+                    "Snapdragon 8 Gen 3 (Móviles insignia de 2024)",
+                    "Snapdragon Wear 5100 (Smartwatches de bajo consumo)"
+                ],
+                uses: {
+                    "Laptop": 80,
+                    "PC de escritorio": 15,
+                    "Servidor": 10,
+                    "Celular": 98,
+                    "Tablet": 85,
+                    "Sistema embebido": 70,
+                    "Bajo consumo": 95,
+                    "Centro de datos": 5,
+                    "Mainframe": 0,
+                    "Microcontroladores": 20
+                },
+                accentColor: "red"
+            },
+            {
+                id: "mediatek",
+                name: "MediaTek",
+                category: "Diseñadora de Semiconductores Fabless",
+                architecture: "ARM / ARM64",
+                history: "Establecida en Taiwán en 1997. Se ha convertido en el mayor proveedor mundial de SoCs de teléfonos móviles por volumen de envíos. MediaTek destaca por ofrecer un altísimo rendimiento en sus gamas insignia Dimensity, compitiendo de tú a tú con Qualcomm en la arquitectura ARM.",
+                designType: "SoCs móviles monolíticos de alta eficiencia que utilizan combinaciones avanzadas de clústeres de núcleos Cortex de ARM.",
+                cpuFamilies: ["Dimensity (Gama Alta e Insignia con 5G)", "Helio (Gama media y económica G/P/A)", "Kompanio (Chromebooks y Tablets)", "Filogic (Routers e IoT de alta gama)"],
+                nomenclatures: [
+                    "Dimensity 9000+ indica rendimiento absoluto premium con núcleos Cortex-X.",
+                    "Helio G (ej: G99) indica SoC de enfoque gaming de coste controlado.",
+                    "Los cuatro dígitos de Dimensity suelen escalar según el año y la revisión de núcleos ARM."
+                ],
+                cpuExamples: [
+                    "MediaTek Dimensity 9300 (SoC sin núcleos de bajo consumo, puro alto rendimiento)",
+                    "MediaTek Dimensity 8300-Ultra (Gama media alta eficiente)",
+                    "MediaTek Kompanio 1200 (Computación ligera)"
+                ],
+                uses: {
+                    "Laptop": 30,
+                    "PC de escritorio": 5,
+                    "Servidor": 0,
+                    "Celular": 99,
+                    "Tablet": 80,
+                    "Sistema embebido": 75,
+                    "Bajo consumo": 90,
+                    "Centro de datos": 0,
+                    "Mainframe": 0,
+                    "Microcontroladores": 40
+                },
+                accentColor: "orange"
+            },
+            {
+                id: "ibm",
+                name: "IBM",
+                category: "Diseño y Arquitectura de Sistemas Críticos",
+                architecture: "POWER (RISC) / z/Architecture (CISC para Mainframe)",
+                history: "International Business Machines es un gigante histórico de la computación. Aunque vendió su división x86 a Lenovo en 2005, IBM continúa diseñando las CPU más confiables y seguras del mundo, los chips POWER y las unidades de mainframe de la serie z, diseñados para soportar las transacciones financieras globales.",
+                designType: "Chips monolíticos super-escalares masivos con cantidades colosales de memoria caché interna (L3/L4) y redundancia física a prueba de fallos.",
+                cpuFamilies: ["POWER Series (POWER9, POWER10)", "z/Architecture Processors (z15, z16 Telum)"],
+                nomenclatures: [
+                    "POWER seguido de un número indica la iteración de la arquitectura RISC de IBM.",
+                    "Telum es la nomenclatura de su último chip empresarial con acelerador IA integrado en el mismo silicio."
+                ],
+                cpuExamples: [
+                    "IBM POWER10 (Procesador corporativo para servidores masivos)",
+                    "IBM Telum Processor (Chip insignia de mainframe z16 a 5.2 GHz)"
+                ],
+                uses: {
+                    "Laptop": 0,
+                    "PC de escritorio": 0,
+                    "Servidor": 95,
+                    "Celular": 0,
+                    "Tablet": 0,
+                    "Sistema embebido": 10,
+                    "Bajo consumo": 5,
+                    "Centro de datos": 98,
+                    "Mainframe": 100,
+                    "Microcontroladores": 0
+                },
+                accentColor: "blue"
+            },
+            {
+                id: "arm",
+                name: "ARM",
+                category: "Arquitectura e IP Core Provider",
+                architecture: "ARM (RISC)",
+                history: "Nacida en el Reino Unido. ARM es un caso único en la tecnología: no fabrica chips físicos. Diseña el set de instrucciones (ISA) y los planos lógicos de los núcleos (IP Cores). Otras empresas compran estas licencias (como Apple, Qualcomm o MediaTek) y construyen sus propios SoCs sobre esta base matemática impecable de bajo consumo.",
+                designType: "Arquitectura RISC eficiente, escalable en topologías Big.LITTLE (núcleos de rendimiento y eficiencia combinados).",
+                cpuFamilies: ["Cortex-A (Aplicaciones/Móviles)", "Cortex-X (Rendimiento Extremo)", "Cortex-M (Microcontroladores embebidos)", "Neoverse (Servidores y Cloud masivo)"],
+                nomenclatures: [
+                    "Cortex-X: El núcleo de máximo rendimiento para picos de trabajo.",
+                    "Cortex-A: El núcleo para uso general en smartphones (ej: Cortex-A720).",
+                    "Cortex-M: Microcontroladores ultrabaratos y de ínfimo consumo."
+                ],
+                cpuExamples: [
+                    "ARM Cortex-X4 (Plano de núcleo móvil de alta potencia)",
+                    "ARM Neoverse V2 (Diseño para supercomputadoras)",
+                    "ARM Cortex-M0+ (Embebido en millones de dispositivos IoT)"
+                ],
+                uses: {
+                    "Laptop": 85,
+                    "PC de escritorio": 35,
+                    "Servidor": 70,
+                    "Celular": 100,
+                    "Tablet": 100,
+                    "Sistema embebido": 100,
+                    "Bajo consumo": 100,
+                    "Centro de datos": 70,
+                    "Mainframe": 0,
+                    "Microcontroladores": 100
+                },
+                accentColor: "purple"
+            },
+            {
+                id: "via",
+                name: "VIA Technologies",
+                category: "Diseñadora de Procesadores de Bajo Consumo",
+                architecture: "x86 / x86-64",
+                history: "VIA Technologies es un histórico fabricante taiwanés que posee una de las escasas licencias x86 del mundo (además de Intel y AMD). Históricamente compró Cyrix y Centaur para crear procesadores x86 ultra compactos y de bajo consumo térmico. Hoy diseña procesadores embebidos y colabora con Zhaoxin en China.",
+                designType: "Núcleos x86 simplificados orientados a sistemas empotrados donde la disipación térmica activa no es factible.",
+                cpuFamilies: ["VIA C3 / C7 (Sistemas clásicos)", "VIA Eden (Enfoque Industrial Sin Ventiladores)", "VIA Nano (Lucha contra Intel Atom)", "Zhaoxin KaiXian (Consorcio x86 de escritorio moderno)"],
+                nomenclatures: [
+                    "C3, C7 y Eden indican las iteraciones clásicas de VIA orientadas a la eficiencia.",
+                    "Las series Nano incrementan el procesamiento super-escalar sin perder el margen de bajo coste energético."
+                ],
+                cpuExamples: [
+                    "VIA Nano X2 (Doble núcleo de ultra bajo consumo)",
+                    "VIA Eden X4 (Procesador quad-core industrial de refrigeración pasiva)",
+                    "Zhaoxin KaiXian KX-6000 (CPU x86 de 8 núcleos para computadoras gubernamentales)"
+                ],
+                uses: {
+                    "Laptop": 15,
+                    "PC de escritorio": 20,
+                    "Servidor": 5,
+                    "Celular": 0,
+                    "Tablet": 10,
+                    "Sistema embebido": 95,
+                    "Bajo consumo": 90,
+                    "Centro de datos": 5,
+                    "Mainframe": 0,
+                    "Microcontroladores": 25
+                },
+                accentColor: "yellow"
+            }
+        ];
+
+        let activeCompanyId = null;
+        let selectedFilter = null;
+        let tourActive = false;
+        let tourIndex = 0;
+        let tourInterval = null;
+
+        // Estilos de acento por ID
+        const themeStyles = {
+            intel: { bg: 'border-cyan-500/30 text-cyan-400 bg-cyan-950/20 hover:border-cyan-400', glow: 'shadow-neon-cyan', pulseColor: '#06b6d4' },
+            amd: { bg: 'border-emerald-500/30 text-emerald-400 bg-emerald-950/20 hover:border-emerald-400', glow: 'shadow-neon-emerald', pulseColor: '#10b981' },
+            apple: { bg: 'border-indigo-500/30 text-indigo-400 bg-indigo-950/20 hover:border-indigo-400', glow: 'shadow-neon-purple', pulseColor: '#6366f1' },
+            qualcomm: { bg: 'border-red-500/30 text-red-400 bg-red-950/20 hover:border-red-400', glow: 'shadow-neon-red', pulseColor: '#ef4444' },
+            mediatek: { bg: 'border-orange-500/30 text-orange-400 bg-orange-950/20 hover:border-orange-400', glow: 'shadow-neon-orange', pulseColor: '#f97316' },
+            ibm: { bg: 'border-blue-500/30 text-blue-400 bg-blue-950/20 hover:border-blue-400', glow: 'shadow-neon-blue', pulseColor: '#3b82f6' },
+            arm: { bg: 'border-purple-500/30 text-purple-400 bg-purple-950/20 hover:border-purple-400', glow: 'shadow-neon-purple', pulseColor: '#a855f7' },
+            via: { bg: 'border-yellow-500/30 text-yellow-400 bg-yellow-950/20 hover:border-yellow-400', glow: 'shadow-neon-yellow', pulseColor: '#eab308' }
+        };
+
+        // Iconos SVG personalizados para simular chips holográficos
+        // Iconos SVG personalizados para simular chips holográficos
+        const chipSVGs = {
+            intel: `<img src="imagenes/Intel_logo_2023.svg" class="w-12 h-12 object-contain" style="filter: brightness(0) invert(1) drop-shadow(0 0 8px #06b6d4);" alt="Intel Logo"/>`,
+            amd: `<img src="imagenes/AMD_Logo.svg" class="w-12 h-12 object-contain" style="filter: brightness(0) invert(1) drop-shadow(0 0 8px #10b981);" alt="AMD Logo"/>`,
+            apple: `<img src="imagenes/Apple_logo_black.svg" class="w-12 h-12 object-contain" style="filter: brightness(0) invert(1) drop-shadow(0 0 8px #6366f1);" alt="Apple Logo"/>`,
+            qualcomm: `<img src="imagenes/snapdragon.png" class="w-12 h-12 object-contain" style="filter: brightness(0) invert(1) drop-shadow(0 0 8px #ef4444);" alt="Qualcomm Logo"/>`,
+            mediatek: `<img src="imagenes/MediaTek_Logo_wiki.svg" class="w-12 h-12 object-contain" style="filter: brightness(0) invert(1) drop-shadow(0 0 8px #f97316);" alt="MediaTek Logo"/>`,
+            ibm: `<img src="imagenes/IBM_logo.svg" class="w-12 h-12 object-contain" style="filter: brightness(0) invert(1) drop-shadow(0 0 8px #3b82f6);" alt="IBM Logo"/>`,
+            arm: `<img src="imagenes/ARM LOGO - 2025 INK_RGB.svg" class="w-12 h-12 object-contain" style="filter: brightness(0) invert(1) drop-shadow(0 0 8px #a855f7);" alt="ARM Logo"/>`,
+            via: `<img src="imagenes/VIA_neues_Logo.svg" class="w-12 h-12 object-contain" style="filter: brightness(0) invert(1) drop-shadow(0 0 8px #eab308);" alt="VIA Logo"/>`
+        };
+
+
+        // Lista única de todos los filtros de uso disponibles
+        const allFilters = [
+            "Laptop", "PC de escritorio", "Servidor", "Celular", "Tablet",
+            "Sistema embebido", "Bajo consumo", "Centro de datos", "Mainframe", "Microcontroladores"
+        ];
+
+        // Inicializar sitio al cargar ventana
+        window.onload = function () {
+            renderFilters();
+            renderARChips();
+            populateComparisonSelects();
+            updateComparison();
+            selectNomenclature('intel');
+        };
+
+        // Renderizar botones de filtro por segmento
+        function renderFilters() {
+            const container = document.getElementById('filter-container');
+            container.innerHTML = '';
+
+            allFilters.forEach(filter => {
+                const button = document.createElement('button');
+                button.className = `filter-btn px-3 py-1.5 rounded-lg border text-xs font-semibold transition duration-200 cursor-pointer 
+                    bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-cyan-500 hover:text-cyan-500`;
+                button.innerText = filter;
+                button.onclick = () => toggleFilter(filter, button);
+                container.appendChild(button);
+            });
+        }
+
+        // Renderizar los "Chips de Silicio" en la mesa digitalizadora (AR Tabletop)
+        function renderARChips() {
+            const grid = document.getElementById('ar-grid');
+            grid.innerHTML = '';
+
+            companies.forEach(company => {
+                const style = themeStyles[company.id];
+                const card = document.createElement('div');
+                card.id = `chip-${company.id}`;
+                card.className = `ar-card relative cursor-pointer border rounded-2xl p-4 flex flex-col items-center justify-center gap-2 text-center transition-all duration-300 float-ar ${style.bg} hover:${style.glow} hover:scale-105 select-none z-10`;
+
+                card.onclick = () => {
+                    if (tourActive) stopTour(); // Detener tour si el usuario toma control
+                    selectCompany(company.id);
+                };
+
+                // Agregar el icono gráfico y nombre
+                card.innerHTML = `
+                    <div class="mb-1">${chipSVGs[company.id]}</div>
+                    <div class="text-xs font-mono tracking-widest text-slate-400 font-bold uppercase">${company.name}</div>
+                    <div class="text-[9px] font-mono text-cyan-500/80 px-1.5 py-0.5 rounded border border-cyan-500/20 bg-cyan-500/5 max-w-full truncate">${company.architecture}</div>
+                    <!-- Efecto haz de luz para modo AR -->
+                    <div class="absolute -bottom-2 w-12 h-1 bg-cyan-500/40 rounded-full blur-sm opacity-0 active-light transition duration-300"></div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+
+        // Gestión de filtros de uso
+        function toggleFilter(filterName, clickedButton) {
+            // Si el filtro ya estaba activo, limpiarlo
+            if (selectedFilter === filterName) {
+                clearFilter();
+                return;
+            }
+
+            selectedFilter = filterName;
+
+            // Actualizar estilo visual de los botones de filtro
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-cyan-500', 'text-white', 'border-cyan-500', 'dark:bg-cyan-500');
+                btn.classList.add('bg-white', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300', 'border-slate-200', 'dark:border-slate-700');
+            });
+
+            clickedButton.classList.remove('bg-white', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300', 'border-slate-200');
+            clickedButton.classList.add('bg-cyan-500', 'text-white', 'border-cyan-500', 'dark:bg-cyan-500');
+
+            // Filtrar y resaltar los chips de silicio que corresponden al uso
+            highlightChipsByFilter(filterName);
+        }
+
+        function clearFilter() {
+            selectedFilter = null;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-cyan-500', 'text-white', 'border-cyan-500', 'dark:bg-cyan-500');
+                btn.classList.add('bg-white', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300', 'border-slate-200', 'dark:border-slate-700');
+            });
+
+            // Reestablecer opacidad y remover animaciones de advertencia
+            companies.forEach(company => {
+                const card = document.getElementById(`chip-${company.id}`);
+                if (card) {
+                    card.style.opacity = '1';
+                    card.classList.remove('active-chip');
+                    const light = card.querySelector('.active-light');
+                    if (light) light.style.opacity = '0';
+                }
+            });
+
+            // Borrar líneas del SVG
+            document.getElementById('svg-connections').innerHTML = '';
+        }
+
+        // Iluminación táctica de chips según el filtro
+        function highlightChipsByFilter(filterName) {
+            const svgContainer = document.getElementById('svg-connections');
+            svgContainer.innerHTML = '';
+            const rectContainer = svgContainer.getBoundingClientRect();
+
+            let targetCoords = [];
+
+            companies.forEach(company => {
+                const card = document.getElementById(`chip-${company.id}`);
+                const score = company.uses[filterName] || 0;
+
+                if (score > 40) { // Si tiene presencia fuerte
+                    card.style.opacity = '1';
+                    card.classList.add('active-chip');
+                    const light = card.querySelector('.active-light');
+                    if (light) light.style.opacity = '1';
+
+                    // Obtener coordenadas relativas para trazar rayos holográficos
+                    const rect = card.getBoundingClientRect();
+                    const x = (rect.left + rect.width / 2) - rectContainer.left;
+                    const y = (rect.top + rect.height / 2) - rectContainer.top;
+                    targetCoords.push({ x, y, color: themeStyles[company.id].pulseColor });
+                } else {
+                    card.style.opacity = '0.25';
+                    card.classList.remove('active-chip');
+                    const light = card.querySelector('.active-light');
+                    if (light) light.style.opacity = '0';
+                }
+            });
+
+            // Dibujar una rejilla/líneas de vectores de conexión AR simuladas
+            for (let i = 0; i < targetCoords.length; i++) {
+                for (let j = i + 1; j < targetCoords.length; j++) {
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', targetCoords[i].x);
+                    line.setAttribute('y1', targetCoords[i].y);
+                    line.setAttribute('x2', targetCoords[j].x);
+                    line.setAttribute('y2', targetCoords[j].y);
+                    line.setAttribute('stroke', targetCoords[i].color);
+                    line.setAttribute('stroke-width', '1.5');
+                    line.setAttribute('stroke-dasharray', '5 5');
+                    line.setAttribute('class', 'animate-pulse');
+                    line.setAttribute('opacity', '0.4');
+                    svgContainer.appendChild(line);
+                }
+            }
+        }
+
+        // Selección de empresa para desplegar en el Panel Lateral
+        function selectCompany(id) {
+            const company = companies.find(c => c.id === id);
+            if (!company) return;
+
+            activeCompanyId = id;
+
+            // Quitar clase activa previa en la rejilla de chips
+            companies.forEach(c => {
+                const card = document.getElementById(`chip-${c.id}`);
+                if (card) {
+                    card.classList.remove('active-chip');
+                    const light = card.querySelector('.active-light');
+                    if (light) light.style.opacity = '0';
+                }
+            });
+
+            // Resaltar el chip seleccionado
+            const activeCard = document.getElementById(`chip-${id}`);
+            if (activeCard) {
+                activeCard.classList.add('active-chip');
+                const light = activeCard.querySelector('.active-light');
+                if (light) light.style.opacity = '1';
+                activeCard.style.opacity = '1';
+            }
+
+            // Ocultar placeholder del panel lateral y mostrar estructura
+            document.getElementById('panel-content-placeholder').classList.add('hidden');
+            const dataContainer = document.getElementById('panel-data');
+            dataContainer.classList.remove('hidden');
+
+            // Actualizar datos de la ficha técnica
+            document.getElementById('panel-badge').innerText = company.category;
+            document.getElementById('panel-title').innerText = company.name;
+            document.getElementById('panel-arch').innerText = `Arquitectura: ${company.architecture}`;
+            document.getElementById('panel-icon-placeholder').innerHTML = chipSVGs[id];
+            document.getElementById('panel-history').innerText = company.history;
+            document.getElementById('panel-design-type').innerText = company.designType;
+
+            // Inyectar familias
+            const familiesContainer = document.getElementById('panel-families');
+            familiesContainer.innerHTML = '';
+            company.cpuFamilies.forEach((fam, index) => {
+                const badge = document.createElement('span');
+                badge.className = "text-xs px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md text-slate-700 dark:text-slate-300 font-bold cursor-pointer hover:bg-cyan-500 hover:text-white hover:border-cyan-500 transition-all shadow-sm active:scale-95 flex items-center gap-1";
+                badge.innerHTML = `<span>${fam}</span><svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>`;
+                badge.onclick = () => openFamilyModal(company.id, index);
+                familiesContainer.appendChild(badge);
+            });
+
+            // Inyectar ejemplos reales de CPU
+            const examplesContainer = document.getElementById('panel-examples');
+            examplesContainer.innerHTML = '';
+            company.cpuExamples.forEach(ex => {
+                const li = document.createElement('li');
+                li.className = "text-xs font-mono py-1 border-b border-dashed border-slate-200 dark:border-slate-800 flex items-center gap-1.5 text-slate-700 dark:text-slate-300";
+                li.innerHTML = `
+                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+                    <span>${ex}</span>
+                `;
+                examplesContainer.appendChild(li);
+            });
+
+            // Inyectar barras de nivel de presencia para sistemas de uso
+            const barsContainer = document.getElementById('panel-uses-bars');
+            barsContainer.innerHTML = '';
+
+            // Filtrar y ordenar los usos que más representan para no saturar con 0%
+            const sortedUses = Object.entries(company.uses)
+                .filter(([_, value]) => value > 0)
+                .sort((a, b) => b[1] - a[1]);
+
+            sortedUses.forEach(([key, value]) => {
+                const container = document.createElement('div');
+                container.className = "space-y-0.5";
+                container.innerHTML = `
+                    <div class="flex justify-between text-[10px] font-mono">
+                        <span class="text-slate-500 dark:text-slate-400 capitalize">${key}</span>
+                        <span class="text-cyan-400 font-bold">${value}%</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div class="h-full bg-cyan-500 rounded-full transition-all duration-500" style="width: ${value}%"></div>
+                    </div>
+                `;
+                barsContainer.appendChild(container);
+            });
+        }
+
+
+        // Rellenar selectores de comparación
+        function populateComparisonSelects() {
+            const sel1 = document.getElementById('compare-select-1');
+            const sel2 = document.getElementById('compare-select-2');
+            sel1.innerHTML = '';
+            sel2.innerHTML = '';
+
+            companies.forEach((comp, idx) => {
+                const opt1 = document.createElement('option');
+                opt1.value = comp.id;
+                opt1.innerText = `${comp.name} (${comp.architecture})`;
+                if (idx === 0) opt1.selected = true; // Intel por defecto
+                sel1.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = comp.id;
+                opt2.innerText = `${comp.name} (${comp.architecture})`;
+                if (idx === 1) opt2.selected = true; // AMD por defecto
+                sel2.appendChild(opt2);
+            });
+        }
+
+        // Actualizar tabla comparativa según selecciones
+        function updateComparison() {
+            const id1 = document.getElementById('compare-select-1').value;
+            const id2 = document.getElementById('compare-select-2').value;
+
+            const c1 = companies.find(c => c.id === id1);
+            const c2 = companies.find(c => c.id === id2);
+
+            if (!c1 || !c2) return;
+
+            const table = document.getElementById('compare-results');
+            table.innerHTML = `
+                <div class="grid grid-cols-3 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-xs font-bold font-mono text-slate-500 dark:text-slate-400">
+                    <div class="p-3">CRITERIO / MÉTRICA</div>
+                    <div class="p-3 text-cyan-500 border-l border-slate-200 dark:border-slate-700">${c1.name.toUpperCase()}</div>
+                    <div class="p-3 text-emerald-500 border-l border-slate-200 dark:border-slate-700">${c2.name.toUpperCase()}</div>
+                </div>
+                <!-- Filas -->
+                <div class="grid grid-cols-3 border-b border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300">
+                    <div class="p-3 font-semibold bg-slate-50/50 dark:bg-slate-900/50">Modelo de Negocio</div>
+                    <div class="p-3 border-l border-slate-200 dark:border-slate-800 leading-relaxed">${c1.category}</div>
+                    <div class="p-3 border-l border-slate-200 dark:border-slate-800 leading-relaxed">${c2.category}</div>
+                </div>
+                <div class="grid grid-cols-3 border-b border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300">
+                    <div class="p-3 font-semibold bg-slate-50/50 dark:bg-slate-900/50">ISA / Set de Instrucciones</div>
+                    <div class="p-3 border-l border-slate-200 dark:border-slate-800 font-mono">${c1.architecture}</div>
+                    <div class="p-3 border-l border-slate-200 dark:border-slate-800 font-mono">${c2.architecture}</div>
+                </div>
+                <div class="grid grid-cols-3 border-b border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300">
+                    <div class="p-3 font-semibold bg-slate-50/50 dark:bg-slate-900/50">Filosofía de Arquitectura</div>
+                    <div class="p-3 border-l border-slate-200 dark:border-slate-800 leading-relaxed">${c1.designType}</div>
+                    <div class="p-3 border-l border-slate-200 dark:border-slate-800 leading-relaxed">${c2.designType}</div>
+                </div>
+                <div class="grid grid-cols-3 border-b border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300">
+                    <div class="p-3 font-semibold bg-slate-50/50 dark:bg-slate-900/50">Familias Principales</div>
+                    <div class="p-3 border-l border-slate-200 dark:border-slate-800">${c1.cpuFamilies.join(', ')}</div>
+                    <div class="p-3 border-l border-slate-200 dark:border-slate-800">${c2.cpuFamilies.join(', ')}</div>
+                </div>
+                <div class="grid grid-cols-3 text-xs text-slate-700 dark:text-slate-300">
+                    <div class="p-3 font-semibold bg-slate-50/50 dark:bg-slate-900/50">Mercado Fuerte</div>
+                    <div class="p-3 border-l border-slate-200 dark:border-slate-800 font-mono text-[10px] text-cyan-400">
+                        ${Object.keys(c1.uses).filter(k => c1.uses[k] >= 80).join(' / ')}
+                    </div>
+                    <div class="p-3 border-l border-slate-200 dark:border-slate-800 font-mono text-[10px] text-emerald-400">
+                        ${Object.keys(c2.uses).filter(k => c2.uses[k] >= 80).join(' / ')}
+                    </div>
+                </div>
+            `;
+        }
+
+
+        // Esquemas de nomenclaturas comerciales de procesadores populares
+        const nomenclaturesData = {
+            intel: {
+                modelName: "Intel Core i9-14900K",
+                parts: [
+                    { 
+                        txt: "Intel Core", 
+                        desc: "Marca insignia principal de consumo para laptops y equipos de sobremesa, reemplazando las líneas antiguas o básicas de entrada." 
+                    },
+                    { 
+                        txt: "i9", 
+                        desc: "Nivel de rendimiento / segmentación. 'i9' indica el tope de gama extremo, ideal para creadores de contenido exigentes y cómputo de alta intensidad.",
+                        options: [
+                            { val: "i3", desc: "Gama de entrada (Tareas básicas y ofimática)" },
+                            { val: "i5", desc: "Gama media (Equilibrio precio/rendimiento y gaming)" },
+                            { val: "i7", desc: "Gama alta (Gaming avanzado y creación de contenido)" },
+                            { val: "i9", desc: "Tope de gama extremo (Máxima potencia y multitarea masiva)" }
+                        ]
+                    },
+                    { 
+                        txt: "-14", 
+                        desc: "Generación del procesador. '14' corresponde a la decimocuarta familia de núcleos x86 (Raptor Lake Refresh).",
+                        options: [
+                            { val: "12", desc: "12ª Generación (Alder Lake - Híbrida)" },
+                            { val: "13", desc: "13ª Generación (Raptor Lake)" },
+                            { val: "14", desc: "14ª Generación (Raptor Lake Refresh)" },
+                            { val: "Ultra", desc: "Nueva nomenclatura Core Ultra (Series 1 y 2 con NPU para IA)" }
+                        ]
+                    },
+                    { 
+                        txt: "900", 
+                        desc: "Identificador SKU / Nivel relativo de rendimiento. Cuanto mayor sea este valor dentro de la misma gama (ej. 900 vs 700), mayor frecuencia y núcleos tiene el silicio." 
+                    },
+                    { 
+                        txt: "K", 
+                        desc: "Sufijo de características especiales. 'K' indica multiplicador de reloj desbloqueado, lo que permite realizar Overclocking manual.",
+                        options: [
+                            { val: "K", desc: "Desbloqueado para Overclock (Alto rendimiento Desktop)" },
+                            { val: "KF", desc: "Desbloqueado, pero sin gráficos integrados" },
+                            { val: "F", desc: "Sin gráficos integrados (Requiere tarjeta de video)" },
+                            { val: "T", desc: "Bajo consumo energético para Desktop (35W)" },
+                            { val: "HX", desc: "Máximo rendimiento para laptops (Nivel de Desktop)" },
+                            { val: "H", desc: "Alto rendimiento estándar para laptops" },
+                            { val: "P", desc: "Rendimiento intermedio para laptops delgadas (28W)" },
+                            { val: "U", desc: "Ultra bajo consumo para laptops ultraligeras (15W)" }
+                        ]
+                    }
+                ]
+            },
+            amd: {
+                modelName: "AMD Ryzen 7 7800X3D",
+                parts: [
+                    { 
+                        txt: "Ryzen", 
+                        desc: "Familia comercial de procesadores de consumo basada en la arquitectura de núcleos Zen de alto rendimiento." 
+                    },
+                    { 
+                        txt: "7", 
+                        desc: "Gama o segmento de rendimiento. El nivel '7' está diseñado para entusiastas de juegos y creadores avanzados (8 núcleos/16 hilos).",
+                        options: [
+                            { val: "3", desc: "Gama de entrada (Navegación y multimedia básica)" },
+                            { val: "5", desc: "Gama media (El estándar dorado para gaming y trabajo)" },
+                            { val: "7", desc: "Gama alta (Entusiastas, streaming y productividad masiva)" },
+                            { val: "9", desc: "Tope de gama (Creación profesional y renderizado 3D pesado)" }
+                        ]
+                    },
+                    { 
+                        txt: " 7", 
+                        desc: "Generación o serie del silicio. El '7' indica que pertenece a la serie 7000 (núcleos de microarquitectura Zen 4).",
+                        options: [
+                            { val: "5000", desc: "Serie basada en Zen 3 (Plataforma AM4, memoria DDR4)" },
+                            { val: "7000", desc: "Serie basada en Zen 4 (Plataforma AM5, memoria DDR5)" },
+                            { val: "8000", desc: "Serie basada en Zen 4 con motor de IA integrado (APUs)" },
+                            { val: "9000", desc: "Nueva serie basada en Zen 5" }
+                        ]
+                    },
+                    { 
+                        txt: "800", 
+                        desc: "Dígitos de rendimiento relativo (SKU) del modelo dentro de su familia específica de productos." 
+                    },
+                    { 
+                        txt: "X3D", 
+                        desc: "Sufijo tecnológico. Indica caché apilada verticalmente de forma tridimensional (3D V-Cache), optimizado para juegos de computadora.",
+                        options: [
+                            { val: "X", desc: "Mayor frecuencia base y turbo (Alto rendimiento puro)" },
+                            { val: "X3D", desc: "Caché 3D V-Cache masiva (Rendimiento extremo en videojuegos)" },
+                            { val: "G", desc: "Incluye potentes gráficos integrados Radeon (APU para jugar sin tarjeta gráfica dedicada)" },
+                            { val: "HX", desc: "Rendimiento extremo y frecuencias top para laptops gaming" },
+                            { val: "HS", desc: "Alto rendimiento optimizado térmicamente para laptops delgadas" },
+                            { val: "U", desc: "Bajo consumo para laptops ultraligeras y buena batería" }
+                        ]
+                    }
+                ]
+            },
+            apple: {
+                modelName: "Apple M3 Max",
+                parts: [
+                    { 
+                        txt: "Apple", 
+                        desc: "La corporación que diseña el SoC completo en silicios personalizados (Fabless)." 
+                    },
+                    { 
+                        txt: "M3", 
+                        desc: "La generación del microprocesador. 'M' indica la serie para Mac/iPad y '3' es la tercera generación de esta arquitectura con transistores de 3nm.",
+                        options: [
+                            { val: "M1", desc: "Primera generación revolucionaria (5nm) que inició la transición a Apple Silicon" },
+                            { val: "M2", desc: "Segunda generación (5nm mejorados) con mayor ancho de banda de memoria" },
+                            { val: "M3", desc: "Tercera generación (3nm) con trazado de rayos por hardware" },
+                            { val: "M4", desc: "Cuarta generación enfocada en máxima eficiencia y Neural Engine avanzado" }
+                        ]
+                    },
+                    { 
+                        txt: "Max", 
+                        desc: "La variante de escalabilidad de ancho de banda. Duplica el bus y núcleos gráficos de la versión M3 Pro para un rendimiento profesional masivo.",
+                        options: [
+                            { val: "(Base)", desc: "Sin sufijo. Consumo general, ultra delgado, gran eficiencia de batería" },
+                            { val: "Pro", desc: "Más núcleos de CPU/GPU y soporte para más monitores externos (Uso creativo)" },
+                            { val: "Max", desc: "Doble ancho de banda de memoria y enormes núcleos de GPU para edición de video masivo o 3D" },
+                            { val: "Ultra", desc: "Dos chips Max fusionados internamente (UltraFusion) para uso masivo en servidores y estudios" }
+                        ]
+                    }
+                ]
+            },
+            qualcomm: {
+                modelName: "Snapdragon X Elite",
+                parts: [
+                    { 
+                        txt: "Snapdragon", 
+                        desc: "La plataforma de arquitectura de sistema en chip (SoC) móvil histórica de Qualcomm." 
+                    },
+                    { 
+                        txt: "X", 
+                        desc: "Línea diseñada específicamente para cómputo de escritorio y laptops ARM con alto rendimiento de energía.",
+                        options: [
+                            { val: "Series 4", desc: "Gama de entrada para smartphones (Económicos y eficientes)" },
+                            { val: "Series 6 / 7", desc: "Gama media y media-alta para smartphones (Equilibrio de rendimiento y coste)" },
+                            { val: "Series 8", desc: "Gama insignia/Premium para smartphones topes de gama" },
+                            { val: "Series X", desc: "Gama computacional de alto rendimiento para PCs y Laptops Windows ARM" }
+                        ]
+                    },
+                    { 
+                        txt: "Elite", 
+                        desc: "Variante premium con el mayor clúster de núcleos Oryon optimizados a alta frecuencia.",
+                        options: [
+                            { val: "Plus", desc: "Rendimiento altísimo con un balance superior de batería para ultrabooks ligeras" },
+                            { val: "Elite", desc: "La variante tope de gama con todos los núcleos Oryon habilitados y turbo máximo" }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        // Renderizar partes interactivas de nomenclaturas
+        function selectNomenclature(key) {
+            // Actualizar estilo de los botones activos
+            document.querySelectorAll('.nom-btn').forEach(btn => {
+                btn.className = "nom-btn flex-1 py-1.5 px-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-md text-xs font-bold transition";
+            });
+            const activeBtn = document.getElementById(`btn-nom-${key}`);
+            if (activeBtn) {
+                activeBtn.className = "nom-btn flex-1 py-1.5 px-2 bg-cyan-500/10 border border-cyan-500 text-cyan-500 rounded-md text-xs font-bold transition";
+            }
+
+            const data = nomenclaturesData[key];
+            const box = document.getElementById('nomenclature-interactive-box');
+            box.innerHTML = '';
+
+            data.parts.forEach((part, index) => {
+                const span = document.createElement('span');
+                span.className = `cursor-pointer px-1.5 py-1 rounded transition duration-200 bg-slate-900 border border-slate-800 hover:border-cyan-500 hover:text-cyan-400 select-none`;
+                span.innerText = part.txt;
+                span.onclick = () => {
+                    // Remover resaltado de los demás
+                    box.querySelectorAll('span').forEach(s => s.classList.remove('border-cyan-500', 'text-cyan-400'));
+                    span.classList.add('border-cyan-500', 'text-cyan-400');
+
+                    // Actualizar el detalle didáctico principal
+                    document.getElementById('nom-part-title').innerText = `${part.txt.trim()} — Explicación`;
+                    
+                    // Inyectar la descripción principal
+                    let extraHTML = '';
+                    
+                    // Si esta parte de la nomenclatura tiene "opciones" o variantes, las mostramos en lista
+                    if (part.options && part.options.length > 0) {
+                        extraHTML = `
+                            <div class="mt-4 space-y-2 border-t border-slate-200 dark:border-slate-800 pt-3">
+                                <h5 class="text-[10px] uppercase font-bold text-cyan-600 dark:text-cyan-500 tracking-wider">Variantes y Alternativas Posibles:</h5>
+                                <div class="space-y-1.5">
+                        `;
+                        part.options.forEach(opt => {
+                            extraHTML += `
+                                    <div class="flex items-start gap-2 bg-slate-200/50 dark:bg-slate-900/50 p-2 rounded border border-slate-200 dark:border-slate-800">
+                                        <span class="font-mono font-bold text-slate-800 dark:text-white min-w-[32px] shrink-0 text-xs">${opt.val}</span>
+                                        <span class="text-xs text-slate-600 dark:text-slate-400 leading-tight">${opt.desc}</span>
+                                    </div>
+                            `;
+                        });
+                        extraHTML += `
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    document.getElementById('nom-part-desc').innerHTML = `<p class="leading-relaxed">${part.desc}</p>${extraHTML}`;
+                };
+                box.appendChild(span);
+
+                // Forzar el primer clic en el primer elemento del desglose para que muestre algo por defecto
+                if (index === 0) {
+                    setTimeout(() => span.click(), 50);
+                }
+            });
+        }
+
+
+        // Iniciar un loop que resalta a las empresas explicándolas paso a paso
+        function startTour() {
+            if (tourActive) {
+                stopTour();
+                return;
+            }
+
+            tourActive = true;
+            tourIndex = 0;
+            const btn = document.getElementById('btn-tour');
+            btn.innerHTML = `
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
+                DETENER RECORRIDO
+            `;
+            btn.classList.remove('from-cyan-600', 'to-purple-600');
+            btn.classList.add('from-red-600', 'to-red-800', 'shadow-neon-purple');
+
+            document.getElementById('tour-step-indicator').classList.remove('hidden');
+
+            clearFilter(); // Asegurar mesa de AR limpia para el recorrido
+
+            // Ejecutar el primer paso inmediatamente
+            tourStep();
+
+            // Configurar intervalo para avanzar cada 6 segundos
+            tourInterval = setInterval(() => {
+                tourIndex++;
+                if (tourIndex >= companies.length) {
+                    tourIndex = 0; // Reiniciar o detener al final
+                }
+                tourStep();
+            }, 6000);
+        }
+
+        // Detener recorrido y limpiar estados
+        function stopTour() {
+            tourActive = false;
+            clearInterval(tourInterval);
+            tourInterval = null;
+
+            const btn = document.getElementById('btn-tour');
+            btn.innerHTML = `
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                </span>
+                INICIAR RECORRIDO AUTO
+            `;
+            btn.classList.remove('from-red-600', 'to-red-800', 'shadow-neon-purple');
+            btn.classList.add('from-cyan-600', 'to-purple-600', 'shadow-neon-cyan');
+
+            document.getElementById('tour-step-indicator').classList.add('hidden');
+            clearFilter();
+        }
+
+        // Ejecutar un paso del tour
+        function tourStep() {
+            const currentCompany = companies[tourIndex];
+            selectCompany(currentCompany.id);
+
+            // Simular un trigger visual de click
+            const card = document.getElementById(`chip-${currentCompany.id}`);
+            if (card) {
+                // Pequeña animación de salto de AR
+                card.classList.add('scale-110');
+                setTimeout(() => card.classList.remove('scale-110'), 300);
+            }
+
+            // Cambiar dinámicamente el desglosado de nomenclatura a la que corresponda
+            if (nomenclaturesData[currentCompany.id]) {
+                selectNomenclature(currentCompany.id);
+            }
+        }
+
+
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+            } else {
+                html.classList.add('dark');
+            }
+        }
+
+        // ============================================
+        // LÓGICA DEL POPUP (MODAL) DE FAMILIAS
+        // ============================================
+        let currentFamilyIndex = 0;
+        let currentFamilyCompanyId = null;
+
+        function getFamilyInfo(familyName) {
+            // Diccionario semántico: devuelve una imagen representativa y explicación en base al nombre de la familia
+            let img = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Intel_Core_i7-4770K_CPU_2.jpg/800px-Intel_Core_i7-4770K_CPU_2.jpg";
+            let desc = "Esta familia de procesadores cubre un segmento específico del mercado general, equilibrando potencia y capacidades para uso estándar.";
+            
+            const nameL = familyName.toLowerCase();
+            
+            if (nameL.includes('servidor') || nameL.includes('epyc') || nameL.includes('xeon') || nameL.includes('neoverse') || nameL.includes('power')) {
+                img = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Wikimedia_Foundation_Servers-8055_35.jpg/800px-Wikimedia_Foundation_Servers-8055_35.jpg";
+                desc = "Procesadores corporativos diseñados para centros de datos y servidores masivos. Soportan memoria de corrección de errores (ECC), cantidades masivas de núcleos y trabajo ininterrumpido 24/7 bajo cargas extremas.";
+            } else if (nameL.includes('laptop') || nameL.includes('ultra') || nameL.includes('kompanio')) {
+                img = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Dell_Inspiron_1525_laptop.jpg/800px-Dell_Inspiron_1525_laptop.jpg";
+                desc = "Variantes de alta eficiencia energética optimizadas especialmente para computadoras portátiles (laptops). En estas unidades, el consumo de batería y la limitación térmica son los factores de diseño más críticos.";
+            } else if (nameL.includes('snapdragon') || nameL.includes('dimensity') || nameL.includes('cortex-a') || nameL.includes('helio')) {
+                img = "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Smartphone_in_hand.jpg/800px-Smartphone_in_hand.jpg";
+                desc = "Sistemas en Chip (SoCs) altamente integrados para celulares. Combinan CPU, GPU, módems 5G y procesamiento neuronal (NPU) en una sola pastilla de silicio hipercompacta que consume menos de 5 vatios.";
+            } else if (nameL.includes('embebid') || nameL.includes('atom') || nameL.includes('cortex-m') || nameL.includes('nano') || nameL.includes('eden') || nameL.includes('celeron')) {
+                img = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Raspberry_Pi_4_Model_B_-_Top.jpg/800px-Raspberry_Pi_4_Model_B_-_Top.jpg";
+                desc = "Sistemas embebidos, IoT y gama de entrada. Ideales para robótica, maquinaria industrial y dispositivos básicos donde se requiere un procesador muy barato que a menudo funciona sin ventilador (disipación pasiva).";
+            } else if (nameL.includes('threadripper') || nameL.includes('max') || nameL.includes('x') || nameL.includes('pro')) {
+                img = "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Personal_computer%2C_exploded_5.svg/800px-Personal_computer%2C_exploded_5.svg.png";
+                desc = "Línea HEDT (High-End Desktop) para estaciones de trabajo profesionales. Ofrecen pistas PCIe masivas, anchos de banda descomunales y máxima frecuencia para editores de video 8K, animadores 3D o investigadores.";
+            }
+
+            return { img, desc };
+        }
+
+        function openFamilyModal(companyId, index) {
+            currentFamilyCompanyId = companyId;
+            currentFamilyIndex = index;
+            
+            renderFamilyModal();
+            
+            const modal = document.getElementById('family-modal');
+            const content = document.getElementById('family-modal-content');
+            modal.classList.remove('hidden');
+            
+            // Trigger animation
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeFamilyModal() {
+            const modal = document.getElementById('family-modal');
+            const content = document.getElementById('family-modal-content');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function nextFamily() {
+            const company = companies.find(c => c.id === currentFamilyCompanyId);
+            if (!company) return;
+            currentFamilyIndex = (currentFamilyIndex + 1) % company.cpuFamilies.length;
+            renderFamilyModal();
+        }
+
+        function prevFamily() {
+            const company = companies.find(c => c.id === currentFamilyCompanyId);
+            if (!company) return;
+            currentFamilyIndex = (currentFamilyIndex - 1 + company.cpuFamilies.length) % company.cpuFamilies.length;
+            renderFamilyModal();
+        }
+
+        function renderFamilyModal() {
+            const company = companies.find(c => c.id === currentFamilyCompanyId);
+            if (!company) return;
+            
+            const familyName = company.cpuFamilies[currentFamilyIndex];
+            const info = getFamilyInfo(familyName);
+
+            document.getElementById('family-modal-title').innerText = familyName;
+            document.getElementById('family-modal-desc').innerText = info.desc;
+            document.getElementById('family-modal-img').src = info.img;
+            document.getElementById('family-modal-counter').innerText = `${currentFamilyIndex + 1} / ${company.cpuFamilies.length}`;
+        }
+    </script>
+</body>
+
+</html>
