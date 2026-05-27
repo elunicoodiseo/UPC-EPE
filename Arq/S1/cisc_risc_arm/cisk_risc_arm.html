@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Multicore: CISC, RISC y ARM</title>
+    <!-- Tailwind CSS para diseño responsivo rápido -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons para iconografía moderna y tecnológica -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght=400;500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+        :root {
+            --color-cisc: #3b82f6;
+            /* Azul Eléctrico */
+            --color-risc: #10b981;
+            /* Verde Neón */
+            --color-arm: #f97316;
+            /* Naranja Energético */
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #030712;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* */
+        /* Contenedor holográfico totalmente nítido sin rejillas superpuestas oscuras */
+        .holo-container {
+            position: relative;
+            background: rgba(8, 12, 26, 0.85);
+            /* Fondo oscuro premium para máximo contraste */
+            border: 1px solid rgba(59, 130, 246, 0.35);
+            /* Bordes nítidos y brillantes */
+            backdrop-filter: blur(16px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.1);
+            border-radius: 0.75rem;
+        }
+
+        /* Línea de escaneo holográfico simplificada y no invasiva (solo un sutil destello que pasa de arriba a abajo) */
+        @keyframes scan {
+            0% {
+                transform: translateY(-100%);
+            }
+
+            100% {
+                transform: translateY(100%);
+            }
+        }
+
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.3), transparent);
+            animation: scan 8s linear infinite;
+            pointer-events: none;
+            z-index: 20;
+            opacity: 0.5;
+        }
+
+        /* */
+        /* Simulación del espacio 3D para Realidad Aumentada */
+        .ar-viewport {
+            perspective: 1200px;
+            transform-style: preserve-3d;
+        }
+
+        .ar-stage {
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform: rotateX(25deg) rotateY(-15deg);
+        }
+
+        .floating-chip {
+            transform-style: preserve-3d;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .floating-chip:hover {
+            transform: translateZ(35px) scale(1.08);
+        }
+
+        /* Animación suave de flotación de componentes */
+        @keyframes float-slow {
+
+            0%,
+            100% {
+                transform: translateY(0) rotateX(2deg);
+            }
+
+            50% {
+                transform: translateY(-12px) rotateX(-2deg);
+            }
+        }
+
+        .animate-float {
+            animation: float-slow 5s ease-in-out infinite;
+        }
+
+        /* Animación para pulso de datos en los pipelines */
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                opacity: 0.4;
+                filter: drop-shadow(0 0 2px currentColor);
+            }
+
+            50% {
+                opacity: 1;
+                filter: drop-shadow(0 0 10px currentColor);
+            }
+        }
+
+        .pulse-active {
+            animation: pulse-glow 1.8s infinite;
+        }
+
+        /* Ocultar barra de scroll manteniendo interactividad */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Bordes y acentos por arquitectura */
+        .holo-card-cisc {
+            border-left: 4px solid var(--color-cisc);
+        }
+
+        .holo-card-risc {
+            border-left: 4px solid var(--color-risc);
+        }
+
+        .holo-card-arm {
+            border-left: 4px solid var(--color-arm);
+        }
+
+        .progress-bar {
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+
+<body class="bg-[#020613] text-gray-100 min-h-screen relative overflow-y-auto antialiased">
+
+    <!-- Rejilla digital en el fondo (muy sutil para simular laboratorio) -->
+    <div
+        class="fixed inset-0 pointer-events-none opacity-[0.12] z-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px]">
+    </div>
+
+    <!-- Luces de laboratorio de fondo -->
+    <div
+        class="absolute top-1/3 left-10 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none">
+    </div>
+    <div
+        class="absolute bottom-1/3 right-10 w-[500px] h-[500px] bg-orange-500/5 rounded-full blur-[120px] pointer-events-none">
+    </div>
+
+    <!-- -->
+    <!-- 1. PANTALLA DE BIENVENIDA -->
+    <section id="welcome-screen"
+        class="fixed inset-0 z-50 flex flex-col justify-center items-center px-4 bg-gradient-to-br from-[#01040a] via-[#070b16] to-[#020613] transition-all duration-1000">
+        <div
+            class="absolute inset-0 pointer-events-none opacity-25 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.15),transparent_80%)]">
+        </div>
+        <div class="scanline"></div>
+
+        <div class="max-w-4xl text-center space-y-8 z-10 animate-float">
+            <!-- Emblema de CPU -->
+            <div
+                class="inline-flex items-center justify-center p-4 rounded-full bg-blue-500/10 border border-blue-500/30 mb-2 shadow-[0_0_30px_rgba(59,130,246,0.1)]">
+                <i data-lucide="cpu" class="w-14 h-14 text-cyan-400 animate-pulse"></i>
+            </div>
+
+            <h1
+                class="text-4xl md:text-6xl font-black tracking-wider uppercase font-orbitron bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-emerald-400 to-orange-400">
+                Arquitecturas Multicore<br><span
+                    class="text-2xl md:text-4xl block mt-2 text-white font-normal">Comparativo: CISC vs RISC vs
+                    ARM</span>
+            </h1>
+
+            <p class="text-gray-400 text-lg md:text-xl max-w-3xl mx-auto font-light leading-relaxed">
+                Descubre cómo se diseñan, procesan instrucciones y consumen energía los chips más avanzados del planeta
+                mediante una simulación educativa en Realidad Aumentada.
+            </p>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
+                <button onclick="startExperience()"
+                    class="px-8 py-4 bg-gradient-to-r from-blue-600 via-emerald-500 to-orange-500 text-white font-orbitron font-bold text-lg rounded-lg shadow-lg shadow-blue-500/20 hover:shadow-emerald-500/30 hover:scale-105 transition-all duration-300 flex items-center gap-3">
+                    <i data-lucide="sparkles" class="w-5 h-5 animate-spin" style="animation-duration: 4s;"></i>
+                    INICIAR EXPERIENCIA AR
+                </button>
+            </div>
+
+            <div
+                class="text-[11px] text-gray-500 uppercase tracking-widest pt-8 flex items-center justify-center gap-2">
+                <span>CISC</span> <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                <span>RISC</span> <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                <span>ARM</span>
+            </div>
+            <div class="footer-inner">
+                <p class="footer-copy" style="font-size: 12px; color: white; text-align: center;">© 2026 — Experiencia
+                    Técnica Interactiva. Fines educativos - Luis Torrejón Arias.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- -->
+    <!-- INTERFAZ PRINCIPAL DE LA EXPERIENCIA -->
+    <main id="main-experience" class="hidden min-h-screen flex flex-col z-10 relative">
+
+        <!-- BARRA DE NAVEGACIÓN -->
+        <header
+            class="w-full border-b border-gray-800 bg-[#060a13]/90 backdrop-blur-md px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-0 z-40">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-blue-500/10 rounded border border-blue-500/30">
+                    <i data-lucide="cpu" class="w-6 h-6 text-cyan-400"></i>
+                </div>
+                <div>
+                    <h1 class="font-orbitron font-bold text-md tracking-wider text-cyan-400">AR ARCHITECTURE LAB</h1>
+                    <p class="text-[10px] text-gray-400 uppercase tracking-wider">Módulo de Visualización de
+                        Procesadores</p>
+                </div>
+            </div>
+
+            <!-- Selector de arquitectura respetando el orden estricto (CISC, RISC, ARM) -->
+            <div class="flex items-center gap-1.5 bg-gray-950/90 p-1 rounded-lg border border-gray-800">
+                <span class="text-[10px] text-gray-500 font-bold px-2 uppercase font-orbitron">Explorar:</span>
+                <button onclick="selectArchitecture('cisc')" id="nav-btn-cisc"
+                    class="px-3.5 py-1.5 rounded text-xs font-orbitron tracking-wider transition-all duration-300">1.
+                    CISC</button>
+                <button onclick="selectArchitecture('risc')" id="nav-btn-risc"
+                    class="px-3.5 py-1.5 rounded text-xs font-orbitron tracking-wider transition-all duration-300">2.
+                    RISC</button>
+                <button onclick="selectArchitecture('arm')" id="nav-btn-arm"
+                    class="px-3.5 py-1.5 rounded text-xs font-orbitron tracking-wider transition-all duration-300">3.
+                    ARM</button>
+            </div>
+
+            <!-- Telemetría global y reseteo -->
+            <div class="flex items-center gap-4 text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                    <span class="text-gray-300 font-mono text-[10px] tracking-widest">ENTORNO AR ACTIVO</span>
+                </div>
+                <button onclick="resetLab()"
+                    class="p-2 bg-gray-900 border border-gray-800 hover:border-red-500/50 hover:text-red-400 rounded transition-all text-gray-400 flex items-center gap-1.5"
+                    title="Reiniciar Experiencia">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                    <span class="font-orbitron text-[10px] uppercase font-bold">Reiniciar</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- -->
+        <!-- SECCIÓN PRINCIPAL: PANELES HOLOGRÁFICOS E INTERACTIVOS -->
+        <section class="grid grid-cols-1 xl:grid-cols-12 gap-6 p-4 md:p-6 flex-grow">
+
+            <!-- PANEL IZQUIERDO: DETALLES DE LA ARQUITECTURA SELECCIONADA (CISC -> RISC -> ARM) -->
+            <div class="xl:col-span-4 flex flex-col gap-6">
+
+                <div
+                    class="holo-container p-6 relative overflow-hidden flex-grow flex flex-col justify-between min-h-[500px]">
+                    <div class="scanline"></div>
+
+                    <div>
+                        <!-- Encabezado de la arquitectura seleccionada -->
+                        <div id="arch-info-header" class="mb-4">
+                            <!-- Inyectado por Javascript -->
+                        </div>
+
+                        <!-- Métricas Clave -->
+                        <div class="grid grid-cols-3 gap-2 py-3 border-y border-gray-800/80 my-4 text-center">
+                            <div class="p-2 bg-gray-950/40 rounded border border-gray-900">
+                                <span
+                                    class="block text-[9px] text-gray-400 uppercase tracking-widest">Instrucciones</span>
+                                <span id="metric-instructions"
+                                    class="font-bold font-orbitron text-xs text-cyan-400">--</span>
+                            </div>
+                            <div class="p-2 bg-gray-950/40 rounded border border-gray-900">
+                                <span class="block text-[9px] text-gray-400 uppercase tracking-widest">Foco Clave</span>
+                                <span id="metric-focus"
+                                    class="font-bold font-orbitron text-[10px] text-amber-400">--</span>
+                            </div>
+                            <div class="p-2 bg-gray-950/40 rounded border border-gray-900">
+                                <span class="block text-[9px] text-gray-400 uppercase tracking-widest">Eficiencia
+                                    W</span>
+                                <span id="metric-efficiency"
+                                    class="font-bold font-orbitron text-xs text-emerald-400">--</span>
+                            </div>
+                        </div>
+
+                        <!-- Detalles Técnicos de la Arquitectura -->
+                        <div class="flex-grow space-y-4 text-sm font-medium" id="arch-info-body">
+                            <!-- Inyectado por Javascript -->
+                        </div>
+                    </div>
+
+                    <!-- Representación Visual del Diagrama de Flujo de Instrucciones -->
+                    <div class="mt-6 pt-4 border-t border-gray-800/80">
+                        <h4
+                            class="text-xs uppercase tracking-widest text-cyan-400 mb-2 font-orbitron flex items-center gap-1.5">
+                            <i data-lucide="git-commit" class="w-4 h-4"></i>
+                            Diagrama de Flujo de Datos
+                        </h4>
+                        <div id="instruction-flow-diagram"
+                            class="h-32 bg-slate-950/90 border border-slate-800 rounded-lg overflow-hidden flex items-center justify-center relative">
+                            <!-- Animaciones dinámicas inyectadas -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- -->
+            <!-- ESCENARIO CENTRAL: REALIDAD AUMENTADA CON MANUAL DE VISTA ACTIVA -->
+            <div class="xl:col-span-5 flex flex-col gap-6">
+
+                <div class="holo-container p-4 flex-grow flex flex-col relative min-h-[500px]">
+                    <div class="scanline"></div>
+
+                    <!-- HUD Superior del Visor AR -->
+                    <div class="absolute top-4 left-4 z-20 flex flex-col gap-1">
+                        <div
+                            class="flex items-center gap-1.5 text-xs text-cyan-400 font-orbitron bg-cyan-950/70 px-2.5 py-1 rounded border border-cyan-500/30">
+                            <i data-lucide="eye" class="w-3.5 h-3.5 animate-pulse"></i>
+                            <span>VISTA AR ACTIVA</span>
+                        </div>
+                        <span class="text-[9px] text-gray-400 font-mono tracking-widest uppercase">ESPACIO VIRTUAL
+                            HOLOGRÁFICO</span>
+                    </div>
+
+                    <!-- Controles de Rotación de Escenario de AR -->
+                    <div class="absolute top-4 right-4 z-20 flex items-center gap-1.5">
+                        <button onclick="tiltStage('up')"
+                            class="p-1.5 bg-gray-950/80 rounded border border-gray-800 hover:border-cyan-400 text-gray-400 hover:text-white transition-all"><i
+                                data-lucide="chevron-up" class="w-4 h-4"></i></button>
+                        <button onclick="tiltStage('down')"
+                            class="p-1.5 bg-gray-950/80 rounded border border-gray-800 hover:border-cyan-400 text-gray-400 hover:text-white transition-all"><i
+                                data-lucide="chevron-down" class="w-4 h-4"></i></button>
+                        <button onclick="tiltStage('left')"
+                            class="p-1.5 bg-gray-950/80 rounded border border-gray-800 hover:border-cyan-400 text-gray-400 hover:text-white transition-all"><i
+                                data-lucide="rotate-ccw" class="w-4 h-4"></i></button>
+                        <button onclick="tiltStage('right')"
+                            class="p-1.5 bg-gray-950/80 rounded border border-gray-800 hover:border-cyan-400 text-gray-400 hover:text-white transition-all"><i
+                                data-lucide="rotate-cw" class="w-4 h-4"></i></button>
+                    </div>
+
+                    <!-- ESCENARIO PRINCIPAL AR (CON CHIPS ORDENADOS: CISC, RISC, ARM) -->
+                    <div class="flex-grow flex items-center justify-center ar-viewport relative overflow-hidden p-4">
+
+                        <!-- Base de la Proyección Holográfica -->
+                        <div class="absolute bottom-12 left-6 right-6 h-2 border border-cyan-500/20 bg-cyan-950/5 rounded-full filter blur-[1px]"
+                            style="transform: rotateX(80deg);"></div>
+
+                        <!-- Contenedor del escenario 3D -->
+                        <div id="ar-stage"
+                            class="ar-stage w-full h-full flex items-center justify-around gap-2 max-w-[500px] relative">
+
+                            <!-- 1. CHIP CISC (Azul Eléctrico) -->
+                            <div id="chip-cisc" onclick="selectArchitecture('cisc')"
+                                class="floating-chip cursor-pointer flex flex-col items-center p-3 rounded-xl border border-blue-500/20 bg-gradient-to-b from-blue-950/30 to-slate-900/90 w-28 md:w-32 relative text-center">
+                                <div
+                                    class="absolute -top-2 left-1/2 transform -translate-x-1/2 px-2.5 py-0.5 bg-blue-600 rounded text-[9px] font-orbitron tracking-widest text-white shadow-lg shadow-blue-500/30">
+                                    CISC</div>
+                                <div
+                                    class="w-14 h-14 bg-blue-950/70 border border-blue-500/40 rounded-lg flex flex-col justify-center items-center shadow-lg shadow-blue-500/10 mb-2 relative">
+                                    <div class="grid grid-cols-2 gap-0.5 p-1 w-full h-full">
+                                        <div
+                                            class="bg-blue-800/60 rounded-sm w-full h-full flex items-center justify-center text-[8px] font-bold text-blue-200">
+                                            C1</div>
+                                        <div
+                                            class="bg-blue-800/60 rounded-sm w-full h-full flex items-center justify-center text-[8px] font-bold text-blue-200">
+                                            C2</div>
+                                        <div
+                                            class="bg-blue-800/60 rounded-sm w-full h-full flex items-center justify-center text-[8px] font-bold text-blue-200">
+                                            C3</div>
+                                        <div
+                                            class="bg-blue-800/60 rounded-sm w-full h-full flex items-center justify-center text-[8px] font-bold text-blue-200">
+                                            C4</div>
+                                    </div>
+                                    <div
+                                        class="absolute w-full h-full border border-blue-400 rounded-lg animate-ping opacity-10 pointer-events-none">
+                                    </div>
+                                </div>
+                                <span class="text-xs font-bold font-orbitron text-blue-400">Intel x86 Core</span>
+                                <span class="text-[8px] text-gray-400 uppercase font-mono mt-0.5">4 Núcleos
+                                    Homogéneos</span>
+
+                                <div class="mt-2.5 w-full space-y-1">
+                                    <div class="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
+                                        <div id="chip-bar-cisc" class="h-full bg-blue-500 progress-bar"
+                                            style="width: 75%"></div>
+                                    </div>
+                                    <div class="flex justify-between text-[8px] font-mono text-gray-400">
+                                        <span>TEMP</span><span id="chip-temp-cisc">65°C</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2. CHIP RISC (Verde Neón) -->
+                            <div id="chip-risc" onclick="selectArchitecture('risc')"
+                                class="floating-chip cursor-pointer flex flex-col items-center p-3 rounded-xl border border-emerald-500/20 bg-gradient-to-b from-emerald-950/30 to-slate-900/90 w-28 md:w-32 relative text-center">
+                                <div
+                                    class="absolute -top-2 left-1/2 transform -translate-x-1/2 px-2.5 py-0.5 bg-emerald-600 rounded text-[9px] font-orbitron tracking-widest text-white shadow-lg shadow-emerald-500/30">
+                                    RISC</div>
+                                <div
+                                    class="w-14 h-14 bg-emerald-950/70 border border-emerald-500/40 rounded-lg flex flex-col justify-center items-center shadow-lg shadow-emerald-500/10 mb-2 relative">
+                                    <div class="grid grid-cols-2 gap-0.5 p-1 w-full h-full">
+                                        <div
+                                            class="bg-emerald-800/60 rounded-sm w-full h-full flex items-center justify-center text-[8px] font-bold text-emerald-200">
+                                            R1</div>
+                                        <div
+                                            class="bg-emerald-800/60 rounded-sm w-full h-full flex items-center justify-center text-[8px] font-bold text-emerald-200">
+                                            R2</div>
+                                        <div
+                                            class="bg-emerald-800/60 rounded-sm w-full h-full flex items-center justify-center text-[8px] font-bold text-emerald-200">
+                                            R3</div>
+                                        <div
+                                            class="bg-emerald-800/60 rounded-sm w-full h-full flex items-center justify-center text-[8px] font-bold text-emerald-200">
+                                            R4</div>
+                                    </div>
+                                    <div
+                                        class="absolute w-full h-full border border-emerald-400 rounded-lg animate-ping opacity-10 pointer-events-none">
+                                    </div>
+                                </div>
+                                <span class="text-xs font-bold font-orbitron text-emerald-400">RISC-V Pro</span>
+                                <span class="text-[8px] text-gray-400 uppercase font-mono mt-0.5">4 Núcleos
+                                    Pipeline</span>
+
+                                <div class="mt-2.5 w-full space-y-1">
+                                    <div class="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
+                                        <div id="chip-bar-risc" class="h-full bg-emerald-500 progress-bar"
+                                            style="width: 50%"></div>
+                                    </div>
+                                    <div class="flex justify-between text-[8px] font-mono text-gray-400">
+                                        <span>TEMP</span><span id="chip-temp-risc">45°C</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 3. CHIP ARM (Naranja Energético) -->
+                            <div id="chip-arm" onclick="selectArchitecture('arm')"
+                                class="floating-chip cursor-pointer flex flex-col items-center p-3 rounded-xl border border-orange-500/20 bg-gradient-to-b from-orange-950/30 to-slate-900/90 w-28 md:w-32 relative text-center">
+                                <div
+                                    class="absolute -top-2 left-1/2 transform -translate-x-1/2 px-2.5 py-0.5 bg-orange-600 rounded text-[9px] font-orbitron tracking-widest text-white shadow-lg shadow-orange-500/30">
+                                    ARM</div>
+                                <div
+                                    class="w-14 h-14 bg-orange-950/70 border border-orange-500/40 rounded-lg flex flex-col justify-center items-center shadow-lg shadow-orange-500/10 mb-2 relative">
+                                    <div class="grid grid-cols-4 gap-0.5 p-1 w-full h-full">
+                                        <!-- big.LITTLE Layout -->
+                                        <div
+                                            class="bg-orange-600 rounded-sm col-span-2 row-span-2 flex items-center justify-center text-[8px] font-bold text-white shadow-inner">
+                                            B1</div>
+                                        <div
+                                            class="bg-orange-600 rounded-sm col-span-2 row-span-2 flex items-center justify-center text-[8px] font-bold text-white shadow-inner">
+                                            B2</div>
+                                        <div
+                                            class="bg-purple-800/90 rounded-sm col-span-1 row-span-1 flex items-center justify-center text-[6px] font-bold text-purple-200">
+                                            L1</div>
+                                        <div
+                                            class="bg-purple-800/90 rounded-sm col-span-1 row-span-1 flex items-center justify-center text-[6px] font-bold text-purple-200">
+                                            L2</div>
+                                        <div
+                                            class="bg-purple-800/90 rounded-sm col-span-1 row-span-1 flex items-center justify-center text-[6px] font-bold text-purple-200">
+                                            L3</div>
+                                        <div
+                                            class="bg-purple-800/90 rounded-sm col-span-1 row-span-1 flex items-center justify-center text-[6px] font-bold text-purple-200">
+                                            L4</div>
+                                    </div>
+                                    <div
+                                        class="absolute w-full h-full border border-orange-400 rounded-lg animate-ping opacity-10 pointer-events-none">
+                                    </div>
+                                </div>
+                                <span class="text-xs font-bold font-orbitron text-orange-400">Cortex / Apple M</span>
+                                <span class="text-[8px] text-gray-400 uppercase font-mono mt-0.5">8 Núcl.
+                                    big.LITTLE</span>
+
+                                <div class="mt-2.5 w-full space-y-1">
+                                    <div class="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
+                                        <div id="chip-bar-arm" class="h-full bg-orange-500 progress-bar"
+                                            style="width: 30%"></div>
+                                    </div>
+                                    <div class="flex justify-between text-[8px] font-mono text-gray-400">
+                                        <span>TEMP</span><span id="chip-temp-arm">38°C</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- EXPLICACIÓN INTERACTIVA DE LA VISTA AR ACTIVA (REQUERIDO) -->
+                    <div class="mt-2 bg-slate-950/90 border border-gray-800 rounded-lg p-3.5">
+                        <h4
+                            class="text-xs uppercase tracking-widest text-cyan-400 font-bold font-orbitron flex items-center gap-1.5 mb-2">
+                            <i data-lucide="info" class="w-4 h-4 text-cyan-400"></i>
+                            ¿CÓMO FUNCIONA LA INSPECCIÓN EN VISTA AR ACTIVA?
+                        </h4>
+                        <p class="text-[11px] text-gray-400 leading-relaxed">
+                            Al hacer clic sobre cualquier procesador flotante en este escenario virtual en 3D:
+                        </p>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 mt-2 text-[10px] text-gray-300">
+                            <div class="p-2 bg-blue-950/20 rounded border border-blue-950">
+                                <span class="font-orbitron text-blue-400 font-bold block mb-0.5">1. CISC</span>
+                                Se simulan sus <strong class="text-blue-300">núcleos de potencia masiva</strong>.
+                                Observa el gráfico de flujo de datos para ver cómo una sola orden compleja se subdivide
+                                internamente en múltiples microoperaciones.
+                            </div>
+                            <div class="p-2 bg-emerald-950/20 rounded border border-emerald-950">
+                                <span class="font-orbitron text-emerald-400 font-bold block mb-0.5">2. RISC</span>
+                                Revela una matriz homogénea enfocada en <strong class="text-emerald-300">velocidad y
+                                    regularidad</strong>. El gráfico muestra la segmentación de datos pura de 5 fases
+                                avanzando uniformemente en pipeline.
+                            </div>
+                            <div class="p-2 bg-orange-950/20 rounded border border-orange-950">
+                                <span class="font-orbitron text-orange-400 font-bold block mb-0.5">3. ARM</span>
+                                Muestra un diseño heterogéneo unificado. Visualiza cómo trabaja su planificador
+                                redirigiendo tareas de fondo a núcleos <strong class="text-purple-300">LITTLE</strong> y
+                                tareas pesadas a núcleos <strong class="text-orange-300">BIG</strong>.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- -->
+            <!-- PANEL DERECHO: SIMULADOR DE CARGAS CON EXPLICACIÓN TÉCNICA (CISC -> RISC -> ARM) -->
+            <div class="xl:col-span-3 flex flex-col gap-6">
+
+                <div class="holo-container p-5 relative overflow-hidden flex-grow flex flex-col justify-between">
+                    <div class="scanline"></div>
+
+                    <div>
+                        <h3
+                            class="font-orbitron font-bold text-sm tracking-widest text-orange-400 flex items-center gap-1.5 mb-3">
+                            <i data-lucide="sliders" class="w-4 h-4"></i>
+                            SIMULADOR DE CARGAS
+                        </h3>
+
+                        <!-- Listado de Escenarios de Trabajo -->
+                        <div class="space-y-1.5 mb-4">
+                            <label
+                                class="text-[10px] text-gray-400 uppercase tracking-widest block font-bold mb-1">Selecciona
+                                un Escenario de Prueba:</label>
+                            <div class="grid grid-cols-1 gap-1.5">
+                                <button onclick="runWorkload('web')" id="wl-web"
+                                    class="workload-btn px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-left text-xs hover:border-cyan-500 flex items-center justify-between transition-all duration-200">
+                                    <span class="flex items-center gap-2"><i data-lucide="globe"
+                                            class="w-4 h-4 text-blue-400"></i> Navegación Web</span>
+                                    <span class="text-[9px] text-gray-500 font-mono">Carga Ligera</span>
+                                </button>
+                                <button onclick="runWorkload('game')" id="wl-game"
+                                    class="workload-btn px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-left text-xs hover:border-cyan-500 flex items-center justify-between transition-all duration-200">
+                                    <span class="flex items-center gap-2"><i data-lucide="gamepad-2"
+                                            class="w-4 h-4 text-red-400"></i> Videojuego AAA 3D</span>
+                                    <span class="text-[9px] text-red-500 font-bold font-mono">Carga Máxima</span>
+                                </button>
+                                <button onclick="runWorkload('ai')" id="wl-ai"
+                                    class="workload-btn px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-left text-xs hover:border-cyan-500 flex items-center justify-between transition-all duration-200">
+                                    <span class="flex items-center gap-2"><i data-lucide="brain"
+                                            class="w-4 h-4 text-purple-400"></i> Inferencia de IA</span>
+                                    <span class="text-[9px] text-purple-400 font-mono">Carga Matemática</span>
+                                </button>
+                                <button onclick="runWorkload('server')" id="wl-server"
+                                    class="workload-btn px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-left text-xs hover:border-cyan-500 flex items-center justify-between transition-all duration-200">
+                                    <span class="flex items-center gap-2"><i data-lucide="server"
+                                            class="w-4 h-4 text-cyan-400"></i> Servidor de Datos</span>
+                                    <span class="text-[9px] text-cyan-400 font-mono">Multi-hilo Constante</span>
+                                </button>
+                                <button onclick="runWorkload('iot')" id="wl-iot"
+                                    class="workload-btn px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-left text-xs hover:border-cyan-500 flex items-center justify-between transition-all duration-200">
+                                    <span class="flex items-center gap-2"><i data-lucide="satellite-dish"
+                                            class="w-4 h-4 text-emerald-400"></i> Sensor IoT de Campo</span>
+                                    <span class="text-[9px] text-emerald-500 font-mono">Bajísimo Consumo</span>
+                                </button>
+                                <button onclick="runWorkload('video')" id="wl-video"
+                                    class="workload-btn px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-left text-xs hover:border-cyan-500 flex items-center justify-between transition-all duration-200">
+                                    <span class="flex items-center gap-2"><i data-lucide="video"
+                                            class="w-4 h-4 text-yellow-400"></i> Renderizado Video 4K</span>
+                                    <span class="text-[9px] text-yellow-500 font-mono">Carga Sostenida</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- EXPLICACIÓN DE COMPORTAMIENTO DEL SIMULADOR (REQUERIDO) -->
+                    <div id="simulator-explanation" class="bg-gray-950/90 border border-gray-800 rounded-lg p-3 my-3">
+                        <span
+                            class="block text-[10px] font-bold uppercase tracking-wider text-amber-500 mb-1 font-orbitron">¿Por
+                            qué cambian las métricas según el chip?</span>
+                        <p id="simulator-explanation-text"
+                            class="text-[11px] text-gray-400 leading-relaxed leading-normal">
+                            Selecciona una carga para analizar la relación de consumo, temperatura y MIPS (Millones de
+                            Instrucciones por Segundo) en cada microarquitectura.
+                        </p>
+                    </div>
+
+                    <!-- Telemetría Dinámica -->
+                    <div class="space-y-3.5 pt-3 border-t border-gray-800">
+                        <h4
+                            class="text-xs uppercase tracking-widest text-cyan-400 font-orbitron flex items-center gap-1.5">
+                            <i data-lucide="bar-chart-2" class="w-4 h-4 text-cyan-400"></i>
+                            Telemetría del Chip Activo
+                        </h4>
+
+                        <div class="space-y-2 text-xs">
+                            <!-- Uso de CPU -->
+                            <div>
+                                <div class="flex justify-between text-[10px] mb-0.5">
+                                    <span class="text-gray-400 uppercase font-mono">Carga en los Núcleos</span>
+                                    <span id="telemetry-usage-val" class="font-mono font-bold text-white">0%</span>
+                                </div>
+                                <div class="h-1.5 w-full bg-gray-900 rounded-full overflow-hidden">
+                                    <div id="telemetry-usage-bar" class="progress-bar h-full bg-cyan-400"
+                                        style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <!-- Consumo -->
+                            <div>
+                                <div class="flex justify-between text-[10px] mb-0.5">
+                                    <span class="text-gray-400 uppercase font-mono">Consumo Eléctrico</span>
+                                    <span id="telemetry-power-val" class="font-mono font-bold text-white">0 W</span>
+                                </div>
+                                <div class="h-1.5 w-full bg-gray-900 rounded-full overflow-hidden">
+                                    <div id="telemetry-power-bar" class="progress-bar h-full bg-orange-400"
+                                        style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <!-- Temperatura -->
+                            <div>
+                                <div class="flex justify-between text-[10px] mb-0.5">
+                                    <span class="text-gray-400 uppercase font-mono">Temperatura de Junta</span>
+                                    <span id="telemetry-temp-val" class="font-mono font-bold text-white">0°C</span>
+                                </div>
+                                <div class="h-1.5 w-full bg-gray-900 rounded-full overflow-hidden">
+                                    <div id="telemetry-temp-bar" class="progress-bar h-full bg-red-400"
+                                        style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <!-- Rendimiento de Tarea -->
+                            <div>
+                                <div class="flex justify-between text-[10px] mb-0.5">
+                                    <span class="text-gray-400 uppercase font-mono">Rendimiento Estimado</span>
+                                    <span id="telemetry-perf-val" class="font-mono font-bold text-white">0 MIPS</span>
+                                </div>
+                                <div class="h-1.5 w-full bg-gray-900 rounded-full overflow-hidden">
+                                    <div id="telemetry-perf-bar" class="progress-bar h-full bg-emerald-400"
+                                        style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Estado en Tiempo Real -->
+                        <div class="bg-gray-950/70 border border-gray-800 p-2.5 rounded-lg mt-2 text-center">
+                            <p id="workload-analysis-text" class="text-[11px] text-gray-300 italic leading-relaxed">
+                                Inicializando análisis de telemetría...
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- -->
+        <!-- SECCIÓN DE CASOS DE USO REALES (CISC -> RISC -> ARM) -->
+        <section class="p-4 md:p-6">
+            <h2 class="font-orbitron text-2xl font-bold tracking-widest text-center mb-6 uppercase">
+                <span class="text-cyan-400 font-black">//</span> Casos de Uso del Mundo Real
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                <!-- Tarjeta CISC (Azul) -->
+                <div class="holo-container p-6 holo-card-cisc hover:-translate-y-2 transition-transform duration-300">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2.5 bg-blue-500/10 rounded-lg text-blue-400">
+                            <i data-lucide="laptop" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-orbitron font-bold text-lg text-blue-400">1. CISC en Acción</h3>
+                            <span class="text-xs text-gray-400 uppercase tracking-wider">Cómputo General y Potencia
+                                General</span>
+                        </div>
+                    </div>
+                    <ul class="space-y-3 text-xs md:text-sm text-gray-300 font-medium">
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-blue-500 mt-0.5 shrink-0"></i>
+                            <span><strong>Sistemas de Escritorio y Laptops:</strong> Todo el software heredado comercial
+                                corre sobre x86. Su decodificación convierte código denso en múltiples microoperaciones
+                                internas de alta velocidad de reloj.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-blue-500 mt-0.5 shrink-0"></i>
+                            <span><strong>Servidores Empresariales:</strong> Grandes centros de cómputo donde la
+                                compatibilidad histórica de software y la potencia por núcleo individual para flujos
+                                complejos de bases de datos son indispensables.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Tarjeta RISC (Verde) -->
+                <div class="holo-container p-6 holo-card-risc hover:-translate-y-2 transition-transform duration-300">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2.5 bg-emerald-500/10 rounded-lg text-emerald-400">
+                            <i data-lucide="microchip" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-orbitron font-bold text-lg text-emerald-400">2. RISC en Acción</h3>
+                            <span class="text-xs text-gray-400 uppercase tracking-wider">Optimización, Simplicidad e
+                                Industria</span>
+                        </div>
+                    </div>
+                    <ul class="space-y-3 text-xs md:text-sm text-gray-300 font-medium">
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0"></i>
+                            <span><strong>Sistemas de Alto Control Embebido:</strong> Enrutadores de red de alta
+                                fidelidad, controladores industriales y microcontroladores que requieren precisión
+                                absoluta instrucción por instrucción.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0"></i>
+                            <span><strong>Estándar Abierto RISC-V:</strong> Microprocesadores académicos e industriales
+                                libres que permiten desarrollar aceleradores especializados de Inteligencia Artificial
+                                sin regalías.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Tarjeta ARM (Naranja) -->
+                <div class="holo-container p-6 holo-card-arm hover:-translate-y-2 transition-transform duration-300">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2.5 bg-orange-500/10 rounded-lg text-orange-400">
+                            <i data-lucide="smartphone" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-orbitron font-bold text-lg text-orange-400">3. ARM en Acción</h3>
+                            <span class="text-xs text-gray-400 uppercase tracking-wider">Movilidad, SoC y
+                                Rendimiento/Watt</span>
+                        </div>
+                    </div>
+                    <ul class="space-y-3 text-xs md:text-sm text-gray-300 font-medium">
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-orange-500 mt-0.5 shrink-0"></i>
+                            <span><strong>Smartphones y Tablets:</strong> La eficiencia por watt y la arquitectura
+                                heterogénea permiten apagar los núcleos principales 'BIG' y delegar tareas de fondo a
+                                núcleos 'LITTLE' para extender la duración de la batería.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-orange-500 mt-0.5 shrink-0"></i>
+                            <span><strong>Computadoras Portátiles Modernas:</strong> Los procesadores Apple Silicon
+                                (M1/M2/M3) demuestran que ARM es capaz de superar la potencia bruta de procesadores x86
+                                disipando una fracción de calor.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- TABLA COMPARATIVA CON NUEVO ORDEN (CISC -> RISC -> ARM) -->
+        <section class="p-4 md:p-6">
+            <div class="holo-container p-6 relative overflow-hidden">
+                <div class="scanline"></div>
+                <h2
+                    class="font-orbitron text-xl font-bold tracking-widest text-cyan-400 mb-6 uppercase flex items-center gap-2">
+                    <i data-lucide="grid" class="w-5 h-5 text-cyan-400"></i>
+                    Matriz Comparativa de Arquitecturas Multicore
+                </h2>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm border-collapse min-w-[700px]">
+                        <thead>
+                            <tr class="border-b border-gray-800 text-xs uppercase tracking-wider text-cyan-400">
+                                <th class="py-3 px-4">Criterio de Evaluación</th>
+                                <th class="py-3 px-4 border-l border-gray-900 bg-blue-950/20">CISC (Complex Instruction
+                                    Set)</th>
+                                <th class="py-3 px-4 border-l border-gray-900 bg-emerald-950/20">RISC (Reduced
+                                    Instruction Set)</th>
+                                <th class="py-3 px-4 border-l border-gray-900 bg-orange-950/20">ARM (Advanced RISC
+                                    Machine)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-800/50 font-medium text-gray-200">
+                            <tr class="hover:bg-gray-900/40 transition-colors">
+                                <td class="py-3 px-4 font-bold text-gray-300">Filosofía de Instrucción</td>
+                                <td class="py-3 px-4 border-l border-gray-900 bg-blue-950/10">Instrucciones complejas,
+                                    variables, múltiples ciclos.</td>
+                                <td class="py-3 px-4 border-l border-gray-900 bg-emerald-950/10">Instrucciones simples,
+                                    uniformes, ciclo único.</td>
+                                <td class="py-3 px-4 border-l border-gray-900 bg-orange-950/10">Principios RISC,
+                                    optimizada para System-on-Chip (SoC).</td>
+                            </tr>
+                            <tr class="hover:bg-gray-900/40 transition-colors">
+                                <td class="py-3 px-4 font-bold text-gray-300">Complejidad Física</td>
+                                <td class="py-3 px-4 border-l border-gray-900 bg-blue-950/10">Muy Alta (Decodificador de
+                                    microinstrucciones masivo).</td>
+                                <td class="py-3 px-4 border-l border-gray-900 bg-emerald-950/10">Baja a Media (Lógica
+                                    compacta, libera espacio para registros).</td>
+                                <td class="py-3 px-4 border-l border-gray-900 bg-orange-950/10">Media (Optimizada para
+                                    controladores de energía integrados).</td>
+                            </tr>
+                            <tr class="hover:bg-gray-900/40 transition-colors">
+                                <td class="py-3 px-4 font-bold text-gray-300">Eficiencia Térmica</td>
+                                <td class="py-3 px-4 border-l border-gray-900 bg-blue-950/10">Baja (Mucha disipación
+                                    térmica activa requerida).</td>
+                                <td class="py-3 px-4 border-l border-gray-900 bg-emerald-950/10">Moderada (Bajo
+                                    calentamiento por su simplicidad).</td>
+                                <td class="py-3 px-4 border-l border-gray-900 bg-orange-950/10">Extremadamente Alta
+                                    (Bajísimo calentamiento general).</td>
+                            </tr>
+                            <tr class="hover:bg-gray-900/40 transition-colors">
+                                <td class="py-3 px-4 font-bold text-gray-300">Conteo de Núcleos</td>
+                                <td class="py-3 px-4 border-l border-gray-900 bg-blue-950/10">Homogéneos potentes de
+                                    alto consumo.</td>
+                                <td class="py-3 px-4 border-l border-gray-900 bg-emerald-950/10">Homogéneos modulares y
+                                    escalables.</td>
+                                <td class="py-3 px-4 border-l border-gray-900 bg-orange-950/10">Heterogéneos
+                                    (Arquitectura big.LITTLE / DynamIQ).</td>
+                            </tr>
+                            <tr class="hover:bg-gray-900/40 transition-colors">
+                                <td class="py-3 px-4 font-bold text-gray-300">Ejemplo de Uso</td>
+                                <td class="py-3 px-4 border-l border-gray-900 bg-blue-950/10">Procesadores Intel Core
+                                    i9, AMD Ryzen, Servidores x86.</td>
+                                <td class="py-3 px-4 border-l border-gray-900 bg-emerald-950/10">Controladores de Red,
+                                    RISC-V, MIPS, SPARC.</td>
+                                <td class="py-3 px-4 border-l border-gray-900 bg-orange-950/10">Apple M-Series,
+                                    Snapdragon, Exynos, Cortex-A.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ACTIVIDAD INTERACTIVA: QUIZ -->
+        <section class="p-4 md:p-6 max-w-4xl mx-auto w-full">
+            <div class="holo-container p-6 border-2 border-dashed border-cyan-500/30 relative">
+                <div class="scanline"></div>
+
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-orbitron font-bold text-md text-cyan-400 flex items-center gap-2">
+                        <i data-lucide="graduation-cap" class="w-5 h-5 animate-bounce"></i>
+                        EVALUACIÓN DE ARQUITECTURAS MULTICORE
+                    </h3>
+                    <div
+                        class="bg-gray-900 px-3 py-1 rounded-full border border-gray-800 text-xs flex items-center gap-1.5 font-mono">
+                        <span class="text-gray-400">Puntaje:</span>
+                        <span id="quiz-score-val" class="font-bold text-amber-400">0 pts</span>
+                    </div>
+                </div>
+
+                <div id="quiz-container" class="space-y-6">
+                    <!-- Dinámico por JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- CIERRE EDUCATIVO -->
+        <footer
+            class="w-full bg-[#01040a] border-t border-gray-800 py-10 px-6 mt-12 text-center text-sm relative font-medium">
+            <div class="max-w-4xl mx-auto space-y-4">
+                <div class="flex justify-center gap-3">
+                    <span
+                        class="px-3 py-1 bg-blue-950/50 text-blue-400 border border-blue-800/30 rounded-full font-orbitron text-xs">#CISC</span>
+                    <span
+                        class="px-3 py-1 bg-emerald-950/50 text-emerald-400 border border-emerald-800/30 rounded-full font-orbitron text-xs">#RISC</span>
+                    <span
+                        class="px-3 py-1 bg-orange-950/50 text-orange-400 border border-orange-800/30 rounded-full font-orbitron text-xs">#ARM</span>
+                </div>
+
+                <p class="text-gray-400 max-w-2xl mx-auto text-xs md:text-sm">
+                    <strong>Resumen Académico de Flujos:</strong> El procesador <strong
+                        class="text-blue-400">CISC</strong> está pensado para condensar software complejo en
+                    instrucciones potentes; <strong class="text-emerald-400">RISC</strong> descompone todo en
+                    instrucciones atómicas uniformes para mantener el pipeline lleno a alta velocidad; y <strong
+                        class="text-orange-400">ARM</strong> expande las bases de RISC mediante diseños integrados en
+                    chips de bajísimo consumo optimizados para el control heterogéneo de tareas móviles y servidores
+                    ecológicos.
+                </p>
+
+                <div
+                    class="p-4 bg-slate-900/30 border border-slate-800/80 rounded-lg max-w-2xl mx-auto italic text-cyan-300 text-xs md:text-sm">
+                    “En arquitecturas multicore modernas, no solo importa cuántos núcleos tiene un procesador, sino cómo
+                    cada arquitectura organiza sus instrucciones, energía y tareas.”
+                </div>
+
+                <div class="footer-inner">
+                    <p class="footer-copy" style="font-size: 12px; color: white; text-align: center;">© 2026 —
+                        Experiencia
+                        Técnica Interactiva. Fines educativos - Luis Torrejón Arias.
+                    </p>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- -->
+    <!-- JS DE CONTROL Y LÓGICA DE NEGOCIO -->
+    <script>
+        // Datos de las Arquitecturas respetando CISC -> RISC -> ARM
+        const architectureData = {
+            cisc: {
+                title: "CISC — Complex Instruction Set Computer",
+                subtitle: "Computación de Conjunto de Instrucciones Complejo",
+                description: "CISC tiene como objetivo principal realizar operaciones complejas utilizando el menor número de líneas de código ensamblador posible. En esta arquitectura, una sola instrucción máquina puede leer datos de memoria, realizar una operación aritmética y volver a guardarlos. Esto reduce el espacio de los programas, pero sobrecarga el microprocesador con transistores dedicados a un decodificador masivo de instrucciones que disipa más calor.",
+                focus: "Fuerza Bruta & Compatibilidad",
+                instructions: "Complejas y Variables",
+                efficiency: "Moderada / Baja",
+                color: "var(--color-cisc)",
+                features: [
+                    "Instrucciones complejas con múltiples ciclos de reloj por ejecución.",
+                    "Minimiza drásticamente la cantidad de líneas de código en programas compilados.",
+                    "Requiere hardware complejo de decodificación interna (mecanismo micro-operacional).",
+                    "Uso estándar en computadoras convencionales, laptops y servidores empresariales x86.",
+                    "Rendimiento mono-hilo espectacular a costa de una alta disipación térmica y energética."
+                ]
+            },
+            risc: {
+                title: "RISC — Reduced Instruction Set Computer",
+                subtitle: "Computación de Conjunto de Instrucciones Reducido",
+                description: "La filosofía RISC plantea un diseño inverso al de CISC: simplificar el set de instrucciones para que todas tengan un tamaño fijo y regular que se ejecute en un ciclo de reloj único. Al transferir la complejidad de la compilación al software, el hardware de silicio queda liberado de decodificadores densos, permitiendo implementar un pipeline (segmentación) uniforme de datos de alta velocidad de reloj y un mayor banco de registros.",
+                focus: "Velocidad & Simplicidad de Pipeline",
+                instructions: "Simples y Uniformes",
+                efficiency: "Alta",
+                color: "var(--color-risc)",
+                features: [
+                    "Instrucciones de tamaño fijo ejecutadas en un ciclo de reloj simple.",
+                    "Especialmente optimizado para segmentación uniforme de datos o Pipeline de múltiples fases.",
+                    "El compilador divide instrucciones pesadas de forma modular en código simple.",
+                    "Hardware simplificado con menor consumo eléctrico general.",
+                    "Usado en enrutadores, sistemas integrados industriales y el estándar abierto RISC-V."
+                ]
+            },
+            arm: {
+                title: "ARM — Advanced RISC Machine",
+                subtitle: "Arquitectura RISC Altamente Eficiente y Heterogénea",
+                description: "ARM adopta los pilares de diseño RISC simplificados, orientándose radicalmente al rendimiento por watt. Es ideal para System-on-Chip (SoC) integrados en silicio. Su ventaja multicore principal es la arquitectura heterogénea (big.LITTLE), donde se asocian núcleos gigantes de altísimo rendimiento para cargas pesadas y núcleos ultracompactos de consumo insignificante para procesos en segundo plano.",
+                focus: "Máxima Eficiencia por Watt",
+                instructions: "Simples y Optimizadas",
+                efficiency: "Extremadamente Alta",
+                color: "var(--color-arm)",
+                features: [
+                    "Diseñado desde cero para la eficiencia en silicio de System-on-Chip (SoC).",
+                    "Esquema de núcleos heterogéneos (big.LITTLE) para control milimétrico del consumo energético.",
+                    "Ideal para dispositivos dependientes de batería móvil (smartphones, sensores IoT, etc.).",
+                    "Adopción masiva en laptops avanzadas (Apple Silicon) y servidores cloud ecológicos.",
+                    "Permite la co-integración directa de procesadores de IA y aceleradores dedicados."
+                ]
+            }
+        };
+
+        // Escenarios de carga con explicaciones técnicas detalladas
+        const workloadData = {
+            web: {
+                title: "Navegación Web",
+                cisc: { usage: 22, power: 12, temp: 40, perf: 2400 },
+                risc: { usage: 18, power: 8, temp: 34, perf: 2500 },
+                arm: { usage: 14, power: 2.2, temp: 30, perf: 2350 },
+                explanations: {
+                    cisc: "Para la navegación web tradicional (HTML/JS), CISC utiliza un núcleo de potencia general pero desperdicia calor por su denso decodificador inactivo.",
+                    risc: "RISC procesa rápidamente las solicitudes en un pipeline ágil sin demoras con un consumo intermedio.",
+                    arm: "ARM apaga por completo sus núcleos BIG y ejecuta la navegación web en los núcleos LITTLE eficientes, reduciendo el consumo eléctrico a mínimos absolutos."
+                }
+            },
+            game: {
+                title: "Videojuego AAA 3D de Alta Gama",
+                cisc: { usage: 92, power: 125, temp: 79, perf: 9900 },
+                risc: { usage: 86, power: 60, temp: 59, perf: 8600 },
+                arm: { usage: 89, power: 38, temp: 49, perf: 9200 },
+                explanations: {
+                    cisc: "CISC demuestra su supremacía aquí con instrucciones complejas precompiladas y alta frecuencia, pero genera una temperatura altísima de 79°C.",
+                    risc: "RISC rinde de manera predecible con su pipeline uniforme de ejecución, manteniendo temperaturas estables.",
+                    arm: "ARM activa a máxima potencia sus núcleos BIG cooperando con su GPU integrada, logrando alta tasa de cuadros con solo 38W de disipación."
+                }
+            },
+            ai: {
+                title: "Inferencia de Redes Neuronales (IA)",
+                cisc: { usage: 81, power: 98, temp: 72, perf: 7400 },
+                risc: { usage: 76, power: 42, temp: 50, perf: 8000 },
+                arm: { usage: 71, power: 23, temp: 42, perf: 8250 },
+                explanations: {
+                    cisc: "CISC ejecuta la inferencia de forma potente mediante conjuntos de registros densos como AVX, consumiendo alta energía.",
+                    risc: "RISC procesa las matrices matemáticas masivas con instrucciones simples y pipelines paralelos eficientes.",
+                    arm: "ARM destaca al desviar de inmediato los tensores matemáticos directamente a su motor neuronal integrado (NPU) en el chip SoC, minimizando el consumo."
+                }
+            },
+            server: {
+                title: "Servidor de Bases de Datos",
+                cisc: { usage: 66, power: 88, temp: 67, perf: 8500 },
+                risc: { usage: 56, power: 37, temp: 45, perf: 8200 },
+                arm: { usage: 51, power: 19, temp: 40, perf: 8300 },
+                explanations: {
+                    cisc: "CISC gestiona consultas monolíticas complejas de bases de datos gracias a su arquitectura x86 convencional de alta compatibilidad.",
+                    risc: "RISC escala dinámicamente el procesamiento paralelo en base a núcleos limpios ideales para múltiples solicitudes de red.",
+                    arm: "ARM utiliza sus múltiples núcleos distribuidos de manera balanceada en la nube, optimizando el costo operativo por watt de los centros de datos modernos."
+                }
+            },
+            iot: {
+                title: "Sensor IoT de Campo",
+                cisc: { usage: 10, power: 7.5, temp: 37, perf: 280 },
+                risc: { usage: 4, power: 0.9, temp: 27, perf: 460 },
+                arm: { usage: 2, power: 0.4, temp: 25, perf: 430 },
+                explanations: {
+                    cisc: "CISC tiene pérdidas excesivas de corriente parásita debido a los decodificadores masivos inactivos, resultando inviable para baterías pequeñas.",
+                    risc: "RISC destaca aquí gracias a chips básicos que operan con baja potencia e instrucciones fijas perfectas para lectura periódica de datos.",
+                    arm: "ARM apaga casi la totalidad del silicio y mantiene el chip en suspensión de microamperios, asegurando años de uso con una celda de batería diminuta."
+                }
+            },
+            video: {
+                title: "Renderizado de Video 4K Sostenido",
+                cisc: { usage: 98, power: 138, temp: 85, perf: 10600 },
+                risc: { usage: 91, power: 68, temp: 63, perf: 9000 },
+                arm: { usage: 86, power: 39, temp: 51, perf: 9600 },
+                explanations: {
+                    cisc: "El renderizado 4K pone al límite la unidad de coma flotante de CISC, finalizando la tarea rápidamente pero alcanzando 85°C de calor de junta.",
+                    risc: "RISC mantiene un avance constante fotograma por fotograma sin caídas con el soporte de su set simple.",
+                    arm: "ARM utiliza bloques de descodificación de video dedicados de hardware (como ProRes engines) dentro del SoC, entregando alto rendimiento sin sobrecalentar el silicio."
+                }
+            }
+        };
+
+        // Estado Global
+        let currentArch = "cisc";
+        let currentWorkload = "web";
+        let rotationX = 25;
+        let rotationY = -15;
+        let quizIndex = 0;
+        let quizScore = 0;
+
+        // Inicialización
+        window.onload = function () {
+            lucide.createIcons();
+            selectArchitecture("cisc");
+            runWorkload("web");
+            renderQuiz();
+        };
+
+        // Comenzar Experiencia
+        function startExperience() {
+            const screen = document.getElementById("welcome-screen");
+            screen.classList.add("opacity-0", "pointer-events-none");
+            setTimeout(() => {
+                screen.classList.add("hidden");
+                document.getElementById("main-experience").classList.remove("hidden");
+            }, 1000);
+        }
+
+        // Selección de Arquitectura y Sincronización
+        function selectArchitecture(arch) {
+            currentArch = arch;
+
+            // Actualizar botones de navegación respetando CISC, RISC, ARM
+            ['cisc', 'risc', 'arm'].forEach(a => {
+                const btn = document.getElementById(`nav-btn-${a}`);
+                if (a === arch) {
+                    btn.classList.add('bg-gray-800', 'text-cyan-400', 'border', 'border-cyan-500/50', 'shadow-[0_0_10px_rgba(34,211,238,0.15)]');
+                    btn.classList.remove('text-gray-400');
+                } else {
+                    btn.className = "px-3.5 py-1.5 rounded text-xs font-orbitron tracking-wider transition-all duration-300 hover:bg-gray-800 text-gray-400";
+                }
+            });
+
+            // Resaltar Chip correspondiente en el Escenario 3D
+            ['cisc', 'risc', 'arm'].forEach(a => {
+                const chip = document.getElementById(`chip-${a}`);
+                if (a === arch) {
+                    chip.style.transform = "translateZ(35px) scale(1.1)";
+                    chip.style.borderColor = architectureData[a].color;
+                    chip.style.boxShadow = `0 0 25px ${architectureData[a].color}40`;
+                } else {
+                    chip.style.transform = "none";
+                    chip.style.borderColor = "rgba(156, 163, 175, 0.15)";
+                    chip.style.boxShadow = "none";
+                }
+            });
+
+            // Obtener información de arquitectura
+            const data = architectureData[arch];
+
+            // Renderizar encabezado
+            document.getElementById("arch-info-header").innerHTML = `
+                <span class="text-[10px] uppercase tracking-widest font-bold font-orbitron block mb-1 text-cyan-400">// CONTROLADOR HOLOGRÁFICO ACTIVO</span>
+                <h2 class="text-2xl font-black font-orbitron text-white leading-tight">${data.title}</h2>
+                <p class="text-xs text-gray-400 mt-1 font-mono">${data.subtitle}</p>
+            `;
+
+            // Métricas Rápidas
+            document.getElementById("metric-instructions").innerText = data.instructions;
+            document.getElementById("metric-focus").innerText = data.focus;
+            document.getElementById("metric-efficiency").innerText = data.efficiency;
+
+            // Renderizar listado de características
+            let featuresHtml = data.features.map(f => `
+                <li class="flex items-start gap-2 text-xs md:text-sm font-semibold">
+                    <span class="p-0.5 rounded bg-cyan-950 text-cyan-400 shrink-0 mt-0.5 border border-cyan-800/30">
+                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                    </span>
+                    <span class="text-gray-300">${f}</span>
+                </li>
+            `).join('');
+
+            document.getElementById("arch-info-body").innerHTML = `
+                <p class="text-gray-400 text-xs md:text-sm leading-relaxed mb-4 font-semibold">${data.description}</p>
+                <h3 class="text-xs uppercase tracking-wider text-cyan-400 font-bold font-orbitron mb-2">Características Clave:</h3>
+                <ul class="space-y-2">
+                    ${featuresHtml}
+                </ul>
+            `;
+
+            lucide.createIcons();
+            drawInstructionFlow(arch);
+            updateSimulationValues();
+        }
+
+        // Simulación visual en tiempo real de los pipelines (Flujos de datos)
+        function drawInstructionFlow(arch) {
+            const container = document.getElementById("instruction-flow-diagram");
+            container.innerHTML = "";
+
+            if (arch === "cisc") {
+                container.innerHTML = `
+                    <div class="absolute inset-0 flex flex-col justify-around items-center p-2 text-xs">
+                        <div class="flex items-center gap-1.5 px-3 py-1 bg-blue-950/70 border border-blue-500 rounded text-blue-400 font-mono font-bold animate-pulse z-10">
+                            <i data-lucide="package" class="w-4 h-4"></i>
+                            INSTRUCCIÓN COMPLEJA (x86)
+                        </div>
+                        
+                        <div class="w-full relative flex justify-around">
+                            <svg class="absolute inset-x-0 -top-4 h-12 w-full pointer-events-none" style="stroke: var(--color-cisc); stroke-dasharray: 4; stroke-width: 1.5;">
+                                <line x1="50%" y1="0%" x2="15%" y2="100%" />
+                                <line x1="50%" y1="0%" x2="50%" y2="100%" />
+                                <line x1="50%" y1="0%" x2="85%" y2="100%" />
+                            </svg>
+                            <div class="px-2 py-0.5 bg-slate-900 border border-blue-900/40 text-[9px] text-blue-200 rounded font-mono z-10 animate-bounce font-bold" style="animation-delay: 0.1s">Carga Reg</div>
+                            <div class="px-2 py-0.5 bg-slate-900 border border-blue-900/40 text-[9px] text-blue-200 rounded font-mono z-10 animate-bounce font-bold" style="animation-delay: 0.3s">Suma ALU</div>
+                            <div class="px-2 py-0.5 bg-slate-900 border border-blue-900/40 text-[9px] text-blue-200 rounded font-mono z-10 animate-bounce font-bold" style="animation-delay: 0.5s">Guarda Mem</div>
+                        </div>
+                    </div>
+                `;
+            } else if (arch === "risc") {
+                container.innerHTML = `
+                    <div class="absolute inset-0 flex flex-col justify-center items-center p-2">
+                        <span class="text-[9px] uppercase text-gray-400 mb-2 font-mono font-bold">Segmentación de 5 etapas (Pipeline)</span>
+                        <div class="flex gap-1 w-full max-w-[340px] text-[10px] font-mono font-bold text-center">
+                            <div class="flex-1 py-1 bg-emerald-950/70 border border-emerald-500 rounded text-emerald-300 pulse-active" style="animation-delay: 0s">IF<br><span class="text-[7px] text-gray-400 font-bold">Fetch</span></div>
+                            <div class="flex-1 py-1 bg-emerald-950/70 border border-emerald-500 rounded text-emerald-300 pulse-active" style="animation-delay: 0.2s">ID<br><span class="text-[7px] text-gray-400 font-bold">Dec</span></div>
+                            <div class="flex-1 py-1 bg-emerald-950/70 border border-emerald-500 rounded text-emerald-300 pulse-active" style="animation-delay: 0.4s">EX<br><span class="text-[7px] text-gray-400 font-bold">Exe</span></div>
+                            <div class="flex-1 py-1 bg-emerald-950/70 border border-emerald-500 rounded text-emerald-300 pulse-active" style="animation-delay: 0.6s">MEM<br><span class="text-[7px] text-gray-400 font-bold">Mem</span></div>
+                            <div class="flex-1 py-1 bg-emerald-950/70 border border-emerald-500 rounded text-emerald-300 pulse-active" style="animation-delay: 0.8s">WB<br><span class="text-[7px] text-gray-400 font-bold">Wb</span></div>
+                        </div>
+                        <div class="w-full text-center text-[9px] text-emerald-400 mt-2 font-mono flex items-center justify-center gap-1 font-bold">
+                            <i data-lucide="zap" class="w-3 h-3"></i> Flujo Estable: 1 Instrucción simple por ciclo
+                        </div>
+                    </div>
+                `;
+            } else if (arch === "arm") {
+                container.innerHTML = `
+                    <div class="absolute inset-0 flex flex-col justify-around p-2 text-xs">
+                        <div class="flex justify-between items-center px-2">
+                            <div class="p-1 bg-orange-950/70 border border-orange-500/30 rounded text-orange-400 font-mono text-[9px] text-center w-24 font-bold">
+                                2 Núcleos BIG<br><span class="text-[7px] text-gray-400">Rendimiento</span>
+                            </div>
+                            <div class="text-[10px] text-gray-400 font-bold font-orbitron text-center">
+                                Planificador
+                                <div class="flex justify-center my-0.5">
+                                    <i data-lucide="shuffle" class="w-3.5 h-3.5 text-orange-400"></i>
+                                </div>
+                            </div>
+                            <div class="p-1 bg-purple-950/70 border border-purple-500/30 rounded text-purple-400 font-mono text-[9px] text-center w-24 font-bold">
+                                4 Núcleos LITTLE<br><span class="text-[7px] text-gray-400">Eficiencia</span>
+                            </div>
+                        </div>
+                        <div class="text-center text-[9px] text-gray-400 italic font-mono px-4 font-bold">
+                            ARM asigna dinámicamente según la severidad del escenario seleccionado.
+                        </div>
+                    </div>
+                `;
+            }
+            lucide.createIcons();
+        }
+
+        // Lanzar escenario en el Simulador
+        function runWorkload(workload) {
+            currentWorkload = workload;
+
+            const buttons = document.querySelectorAll(".workload-btn");
+            buttons.forEach(btn => {
+                btn.className = "workload-btn px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-left text-xs hover:border-cyan-500 flex items-center justify-between transition-all duration-200 font-semibold";
+            });
+
+            const activeBtn = document.getElementById(`wl-${workload}`);
+            activeBtn.className = "workload-btn px-3 py-2 bg-cyan-950/80 border border-cyan-500 rounded-lg text-left text-xs flex items-center justify-between transition-all duration-200 shadow-md shadow-cyan-500/20 font-bold";
+
+            updateSimulationValues();
+        }
+
+        // Telemetría del simulador en tiempo real
+        function updateSimulationValues() {
+            const data = workloadData[currentWorkload];
+            const archData = data[currentArch];
+
+            // Animación de barra de telemetría del chip seleccionado
+            document.getElementById("telemetry-usage-bar").style.width = `${archData.usage}%`;
+            document.getElementById("telemetry-usage-val").innerText = `${archData.usage}%`;
+
+            document.getElementById("telemetry-power-bar").style.width = `${(archData.power / 140) * 100}%`;
+            document.getElementById("telemetry-power-val").innerText = `${archData.power} W`;
+
+            document.getElementById("telemetry-temp-bar").style.width = `${(archData.temp / 100) * 100}%`;
+            document.getElementById("telemetry-temp-val").innerText = `${archData.temp} °C`;
+
+            document.getElementById("telemetry-perf-bar").style.width = `${(archData.perf / 11000) * 100}%`;
+            document.getElementById("telemetry-perf-val").innerText = `${archData.perf.toLocaleString()} MIPS`;
+
+            // Explicación detallada de la carga en base a la arquitectura seleccionada
+            document.getElementById("simulator-explanation-text").innerText = data.explanations[currentArch];
+
+            // Actualizar análisis del estado en tiempo real
+            document.getElementById("workload-analysis-text").innerHTML = `
+                Análisis de <strong>${data.title}</strong> sobre <strong>${currentArch.toUpperCase()}</strong> completo.
+            `;
+
+            // Actualizar barras flotantes de los chips en el Escenario AR
+            ['cisc', 'risc', 'arm'].forEach(a => {
+                const spec = data[a];
+                document.getElementById(`chip-bar-${a}`).style.width = `${spec.usage}%`;
+                document.getElementById(`chip-temp-${a}`).innerText = `${spec.temp}°C`;
+            });
+        }
+
+        // Rotación del escenario de AR con eje 3D
+        function tiltStage(direction) {
+            if (direction === "up") rotationX = Math.min(rotationX + 10, 60);
+            if (direction === "down") rotationX = Math.max(rotationX - 10, 5);
+            if (direction === "left") rotationY -= 15;
+            if (direction === "right") rotationY += 15;
+
+            document.getElementById("ar-stage").style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
+        }
+
+        // Renderizado del Cuestionario
+        function renderQuiz() {
+            const container = document.getElementById("quiz-container");
+            container.innerHTML = "";
+
+            if (quizIndex < quizData.length) {
+                const questionObj = quizData[quizIndex];
+
+                let optionsHtml = questionObj.options.map((opt, i) => `
+                    <button onclick="checkAnswer(${i})" class="w-full text-left p-3.5 bg-gray-900 hover:bg-cyan-950/40 border border-gray-800 hover:border-cyan-500 rounded-lg text-xs md:text-sm font-bold transition-all duration-300">
+                        ${opt.text}
+                    </button>
+                `).join('');
+
+                container.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="text-xs text-cyan-400 font-bold font-orbitron uppercase tracking-widest">Escenario de Cómputo ${quizIndex + 1} de ${quizData.length}</div>
+                        <h4 class="text-sm md:text-base font-bold text-white leading-relaxed">${questionObj.question}</h4>
+                        <div class="space-y-2">
+                            ${optionsHtml}
+                        </div>
+                    </div>
+                `;
+            } else {
+                let stars = "⭐".repeat(Math.max(1, Math.min(5, quizScore)));
+                container.innerHTML = `
+                    <div class="text-center py-6 space-y-4">
+                        <div class="text-4xl">${stars}</div>
+                        <h4 class="font-orbitron font-bold text-lg text-emerald-400 uppercase">¡Evaluación de Arquitectura Finalizada!</h4>
+                        <p class="text-xs md:text-sm text-gray-300 max-w-md mx-auto font-semibold">
+                            Has validado tu capacidad de discriminar entre microarquitecturas de silicio. Lograste un puntaje de <strong class="text-amber-400">${quizScore} de ${quizData.length}</strong> aciertos.
+                        </p>
+                        <button onclick="restartQuiz()" class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-orbitron rounded text-xs transition-colors uppercase font-bold inline-flex items-center gap-2">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reintentar Evaluación
+                        </button>
+                    </div>
+                `;
+                lucide.createIcons();
+            }
+        }
+
+        // Comprobación de respuestas
+        function checkAnswer(optionIndex) {
+            const questionObj = quizData[quizIndex];
+            const isCorrect = questionObj.options[optionIndex].isCorrect;
+            const container = document.getElementById("quiz-container");
+
+            if (isCorrect) {
+                quizScore++;
+                document.getElementById("quiz-score-val").innerText = `${quizScore * 100} pts`;
+            }
+
+            container.innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2 ${isCorrect ? 'text-emerald-400' : 'text-red-400'} font-bold font-orbitron text-lg animate-pulse">
+                        <i data-lucide="${isCorrect ? 'check-circle' : 'x-circle'}" class="w-6 h-6"></i>
+                        ${isCorrect ? '¡CORRECTO! ANÁLISIS ACERTADO' : 'ANÁLISIS INCORRECTO'}
+                    </div>
+                    <p class="text-xs md:text-sm text-gray-300 bg-gray-950/80 p-4 border border-gray-800 rounded-lg leading-relaxed font-semibold">
+                        ${questionObj.successMsg}
+                    </p>
+                    <button onclick="nextQuestion()" class="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-orbitron font-bold text-xs rounded transition-all flex items-center gap-1.5 ml-auto">
+                        <span>Siguiente</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function nextQuestion() {
+            quizIndex++;
+            renderQuiz();
+        }
+
+        function restartQuiz() {
+            quizIndex = 0;
+            quizScore = 0;
+            document.getElementById("quiz-score-val").innerText = "0 pts";
+            renderQuiz();
+        }
+
+        // Reinicio completo del laboratorio virtual
+        function resetLab() {
+            currentArch = "cisc";
+            currentWorkload = "web";
+            rotationX = 25;
+            rotationY = -15;
+            document.getElementById("ar-stage").style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
+            selectArchitecture("cisc");
+            runWorkload("web");
+            restartQuiz();
+        }
+    </script>
+</body>
+
+</html>
