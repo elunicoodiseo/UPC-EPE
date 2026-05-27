@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Single Core vs Multicore - Simulación Educativa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #05050a;
+            --neon-cyan: #00f2ff;
+            --neon-purple: #b026ff;
+            --neon-green: #39ff14;
+            --neon-orange: #ff7300;
+            --panel-bg: rgba(10, 15, 30, 0.8);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(0, 242, 255, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(176, 38, 255, 0.05), transparent 25%);
+        }
+
+        .hologram-panel {
+            background: var(--panel-bg);
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.1), inset 0 0 20px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+        }
+
+        .hologram-btn {
+            background: linear-gradient(45deg, rgba(0, 242, 255, 0.1), rgba(0, 100, 255, 0.2));
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            text-shadow: 0 0 5px var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .hologram-btn:hover {
+            background: rgba(0, 242, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-action {
+            background: rgba(57, 255, 20, 0.1);
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+        }
+
+        .btn-action:hover {
+            background: rgba(57, 255, 20, 0.3);
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.5);
+        }
+
+        .btn-danger {
+            background: rgba(255, 115, 0, 0.1);
+            border: 1px solid var(--neon-orange);
+            color: var(--neon-orange);
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 115, 0, 0.3);
+            box-shadow: 0 0 15px rgba(255, 115, 0, 0.5);
+        }
+
+        /* Pantalla Inicial */
+        #introScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #0a0f1e 0%, #000000 100%);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1s ease;
+        }
+
+        /* Utilidades visuales */
+        .glow-text {
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #000;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--neon-cyan);
+            border-radius: 4px;
+        }
+
+        /* Controles Range */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--neon-cyan);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-cyan);
+            margin-top: -6px;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(0, 242, 255, 0.3);
+            border-radius: 2px;
+        }
+
+        /* Tabla comparativa */
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(0, 242, 255, 0.2);
+            text-align: left;
+        }
+
+        th {
+            background: rgba(0, 242, 255, 0.1);
+            color: var(--neon-cyan);
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .analogy-box {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+        }
+    </style>
+</head>
+
+<body class="antialiased">
+
+    <!-- PANTALLA INICIAL -->
+    <div id="introScreen">
+        <div class="max-w-4xl p-8 text-center hologram-panel border-cyan-500 mx-4">
+            <i class="fas fa-microchip text-6xl text-cyan-400 mb-6 glow-text animate-pulse"></i>
+            <h1 class="text-4xl md:text-5xl font-bold mb-6 text-white tracking-wide glow-text"
+                style="color: var(--neon-cyan)">
+                Single Core vs Multicore
+            </h1>
+            <h2 class="text-xl text-cyan-200 mb-6">¿Cómo responde un procesador ante múltiples peticiones?</h2>
+            <p class="text-gray-300 text-lg leading-relaxed mb-8 max-w-2xl mx-auto">
+                Los procesadores reciben instrucciones constantemente. Cuando abrimos aplicaciones, reproducimos videos,
+                navegamos por internet o ejecutamos programas, el CPU debe atender muchas tareas. En esta experiencia
+                interactiva y holográfica veremos cómo trabaja un procesador con un solo núcleo frente a uno con
+                múltiples núcleos.
+            </p>
+            <button id="startBtn"
+                class="hologram-btn px-10 py-4 rounded-full text-xl font-bold uppercase tracking-wider">
+                <i class="fas fa-play mr-2"></i> Iniciar Simulación
+            </button>
+            <p>&nbsp;</p>
+            <div class="footer-inner">
+                <p class="footer-copy" style="font-size: 12px; color: white; text-align: center;">© 2026 — Experiencia
+                    Técnica Interactiva. Fines educativos - Luis Torrejón Arias.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div id="mainContainer" class="hidden min-h-screen p-4 md:p-6 flex flex-col gap-6">
+
+        <!-- CABECERA -->
+        <header class="flex flex-wrap justify-between items-center hologram-panel p-4">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-microchip text-2xl text-cyan-400"></i>
+                <h1 class="text-2xl font-bold text-white tracking-widest uppercase">CPU SIMULATOR XR</h1>
+            </div>
+            <div class="text-sm text-cyan-300">
+                <i class="fas fa-circle text-xs text-red-500 animate-pulse mr-1"></i> Simulación en tiempo real
+            </div>
+        </header>
+
+        <!-- ZONA SUPERIOR: CONTROLES Y SIMULACIÓN -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-grow">
+
+            <!-- PANEL LATERAL: CONFIGURACIÓN -->
+            <aside class="hologram-panel p-5 flex flex-col gap-6 lg:col-span-1">
+                <h3 class="text-xl font-bold text-cyan-400 border-b border-cyan-800 pb-2"><i
+                        class="fas fa-cogs mr-2"></i> Configuración</h3>
+
+                <!-- Velocidad -->
+                <div>
+                    <label class="flex justify-between text-sm mb-2 text-gray-300">
+                        <span>Velocidad de Simulación</span>
+                        <span id="speedLabel" class="text-cyan-400 font-bold">Muy Lenta</span>
+                    </label>
+                    <input type="range" id="speedSlider" min="1" max="4" value="1">
+                </div>
+
+                <!-- Cores Multicore -->
+                <div>
+                    <label class="flex justify-between text-sm mb-2 text-gray-300">
+                        <span>Núcleos Multicore</span>
+                        <span id="coreLabel" class="text-purple-400 font-bold">4 Cores</span>
+                    </label>
+                    <input type="range" id="coreSlider" min="2" max="8" step="2" value="4">
+                </div>
+
+                <!-- Tipo de Carga -->
+                <div>
+                    <label class="block text-sm mb-2 text-gray-300">Tipo de Tareas</label>
+                    <select id="loadType"
+                        class="w-full bg-gray-900 border border-cyan-800 text-cyan-100 p-2 rounded focus:outline-none focus:border-cyan-400">
+                        <option value="web">Navegación Web</option>
+                        <option value="gaming">Videojuegos</option>
+                        <option value="ai">Inteligencia Artificial</option>
+                        <option value="mixed">Uso Cotidiano (Mixto)</option>
+                    </select>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="mt-4 border-t border-cyan-800 pt-4">
+                    <h4 class="text-sm text-cyan-500 mb-3 uppercase tracking-wider">Enviar Peticiones</h4>
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <button class="hologram-btn btn-action py-2 rounded text-sm font-bold" onclick="sendTasks(1)">1
+                            Petición</button>
+                        <button class="hologram-btn btn-action py-2 rounded text-sm font-bold" onclick="sendTasks(4)">4
+                            Peticiones</button>
+                        <button class="hologram-btn btn-action py-2 rounded text-sm font-bold" onclick="sendTasks(8)">8
+                            Peticiones</button>
+                        <button class="hologram-btn btn-action py-2 rounded text-sm font-bold"
+                            onclick="sendTasks(16)">16 Peticiones</button>
+                    </div>
+                    <button class="w-full hologram-btn btn-danger py-2 rounded text-sm font-bold mt-2"
+                        onclick="clearSim()">
+                        <i class="fas fa-trash-alt mr-2"></i> Limpiar Simulación
+                    </button>
+                </div>
+            </aside>
+
+            <!-- ÁREA DE CANVAS (SIMULACIÓN VISUAL) -->
+            <main class="hologram-panel lg:col-span-3 relative h-[600px] overflow-hidden rounded-lg flex flex-col">
+                <div
+                    class="absolute top-4 left-4 z-10 bg-black/60 px-3 py-1 rounded text-cyan-400 border border-cyan-800 text-sm backdrop-blur">
+                    Vista Holográfica Activa
+                </div>
+                <canvas id="simCanvas" class="w-full h-full block bg-transparent"></canvas>
+            </main>
+        </div>
+
+        <!-- MÉTRICAS EN TIEMPO REAL -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Stats Single Core (Añadido evento de clic y cursor interactivo) -->
+            <div class="hologram-panel p-5 border-t-4 border-cyan-500 relative overflow-hidden cursor-pointer hover:bg-cyan-900/20 transition-all group"
+                onclick="openModal('single')">
+                <!-- Icono indicador de información -->
+                <div class="absolute top-4 right-4 text-cyan-500/50 group-hover:text-cyan-400 transition-colors z-20">
+                    <i class="fas fa-info-circle text-2xl drop-shadow-[0_0_8px_rgba(0,242,255,0.8)]"></i>
+                </div>
+
+                <div
+                    class="absolute -right-10 -top-10 text-cyan-500/10 text-9xl transition-transform group-hover:scale-110">
+                    <i class="fas fa-microchip"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-cyan-400 mb-4 glow-text flex items-center gap-2">
+                    Single Core
+                    <span
+                        class="text-xs font-normal text-cyan-200 bg-cyan-900/50 px-2 py-1 rounded hidden group-hover:inline-block transition-all">Clic
+                        para info</span>
+                </h3>
+                <div class="grid grid-cols-2 gap-4 text-sm relative z-10">
+                    <div class="bg-black/40 p-3 rounded border border-cyan-900">
+                        <span class="text-gray-400 block mb-1">Recibidas / Procesadas</span>
+                        <span class="text-xl text-white font-bold" id="sc_count">0 / 0</span>
+                    </div>
+                    <div class="bg-black/40 p-3 rounded border border-cyan-900">
+                        <span class="text-gray-400 block mb-1">En Cola (Esperando)</span>
+                        <span class="text-xl text-orange-400 font-bold" id="sc_queue">0</span>
+                    </div>
+                    <div class="bg-black/40 p-3 rounded border border-cyan-900">
+                        <span class="text-gray-400 block mb-1">Tiempo de Espera Prom.</span>
+                        <span class="text-xl text-white font-bold" id="sc_wait">0 ms</span>
+                    </div>
+                    <div class="bg-black/40 p-3 rounded border border-cyan-900">
+                        <span class="text-gray-400 block mb-1">Estado</span>
+                        <span class="text-lg font-bold text-green-400" id="sc_status">LIBRE</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Multi Core (Añadido evento de clic y cursor interactivo) -->
+            <div class="hologram-panel p-5 border-t-4 border-purple-500 relative overflow-hidden cursor-pointer hover:bg-purple-900/20 transition-all group"
+                onclick="openModal('multi')">
+                <!-- Icono indicador de información -->
+                <div
+                    class="absolute top-4 right-4 text-purple-500/50 group-hover:text-purple-400 transition-colors z-20">
+                    <i class="fas fa-info-circle text-2xl drop-shadow-[0_0_8px_rgba(176,38,255,0.8)]"></i>
+                </div>
+
+                <div
+                    class="absolute -right-10 -top-10 text-purple-500/10 text-9xl transition-transform group-hover:scale-110">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-purple-400 mb-4 glow-text flex items-center gap-2">
+                    Multicore
+                    <span
+                        class="text-xs font-normal text-purple-200 bg-purple-900/50 px-2 py-1 rounded hidden group-hover:inline-block transition-all">Clic
+                        para info</span>
+                </h3>
+                <div class="grid grid-cols-2 gap-4 text-sm relative z-10">
+                    <div class="bg-black/40 p-3 rounded border border-purple-900">
+                        <span class="text-gray-400 block mb-1">Recibidas / Procesadas</span>
+                        <span class="text-xl text-white font-bold" id="mc_count">0 / 0</span>
+                    </div>
+                    <div class="bg-black/40 p-3 rounded border border-purple-900">
+                        <span class="text-gray-400 block mb-1">En Cola (Esperando)</span>
+                        <span class="text-xl text-orange-400 font-bold" id="mc_queue">0</span>
+                    </div>
+                    <div class="bg-black/40 p-3 rounded border border-purple-900">
+                        <span class="text-gray-400 block mb-1">Tiempo de Espera Prom.</span>
+                        <span class="text-xl text-white font-bold" id="mc_wait">0 ms</span>
+                    </div>
+                    <div class="bg-black/40 p-3 rounded border border-purple-900 flex justify-between items-center">
+                        <div>
+                            <span class="text-gray-400 block mb-1">Cores Activos</span>
+                            <span class="text-xl text-green-400 font-bold" id="mc_active_cores">0 / 4</span>
+                        </div>
+                        <span class="text-lg font-bold text-green-400 text-right" id="mc_status">LIBRE</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN COMPARATIVA Y ANALOGÍA -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+
+            <!-- Tabla -->
+            <div class="hologram-panel p-5">
+                <h3 class="text-xl font-bold text-cyan-400 border-b border-cyan-800 pb-2 mb-4"><i
+                        class="fas fa-table mr-2"></i> Panel Comparativo</h3>
+                <div class="overflow-x-auto">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Característica</th>
+                                <th>Single Core</th>
+                                <th>Multicore</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm">
+                            <tr>
+                                <td>Número de núcleos</td>
+                                <td>1</td>
+                                <td>Múltiples (2, 4, 8...)</td>
+                            </tr>
+                            <tr>
+                                <td>Procesamiento simultáneo</td>
+                                <td class="text-orange-400">Limitado (1 a la vez)</td>
+                                <td class="text-green-400">Alto (Paralelo)</td>
+                            </tr>
+                            <tr>
+                                <td>Cola de tareas</td>
+                                <td class="text-red-400">Alta (Se satura rápido)</td>
+                                <td class="text-green-400">Baja o Media</td>
+                            </tr>
+                            <tr>
+                                <td>Tiempo de espera</td>
+                                <td class="text-red-400">Mayor</td>
+                                <td class="text-green-400">Menor</td>
+                            </tr>
+                            <tr>
+                                <td>Uso de recursos</td>
+                                <td>Concentrado al 100%</td>
+                                <td>Distribuido eficientemente</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Analogía Visual -->
+            <div class="hologram-panel p-5 bg-gradient-to-br from-black to-blue-900/20">
+                <h3 class="text-xl font-bold text-cyan-400 border-b border-cyan-800 pb-2 mb-4"><i
+                        class="fas fa-lightbulb mr-2 text-yellow-400"></i> Analogía Didáctica</h3>
+
+                <p class="text-gray-300 text-sm mb-6 leading-relaxed">
+                    Imagina una taquilla o ventanilla de banco:
+                </p>
+
+                <div class="flex flex-col gap-6">
+                    <!-- Single Analogy -->
+                    <div class="flex items-center gap-4 analogy-box" style="animation-delay: 0s;">
+                        <div class="w-1/3 text-right text-cyan-400 font-bold">Single Core</div>
+                        <div class="w-2/3 flex items-center bg-black/50 p-2 rounded border border-cyan-800">
+                            <i class="fas fa-user-tie text-2xl text-cyan-500 mr-4"></i>
+                            <div class="flex gap-1 overflow-hidden">
+                                <i class="fas fa-user text-gray-500"></i>
+                                <i class="fas fa-user text-gray-500"></i>
+                                <i class="fas fa-user text-gray-500"></i>
+                                <i class="fas fa-user text-gray-500"></i>
+                                <span class="text-xs text-orange-400 ml-2 mt-1">¡Larga fila de espera!</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Multi Analogy -->
+                    <div class="flex items-center gap-4 analogy-box" style="animation-delay: 2s;">
+                        <div class="w-1/3 text-right text-purple-400 font-bold">Multicore</div>
+                        <div class="w-2/3 flex flex-col gap-2">
+                            <div class="flex items-center bg-black/50 p-2 rounded border border-purple-800">
+                                <i class="fas fa-user-tie text-xl text-purple-500 mr-4"></i>
+                                <div class="flex gap-1"><i class="fas fa-user text-gray-500"></i><i
+                                        class="fas fa-user text-gray-500"></i></div>
+                            </div>
+                            <div class="flex items-center bg-black/50 p-2 rounded border border-purple-800">
+                                <i class="fas fa-user-tie text-xl text-purple-500 mr-4"></i>
+                                <div class="flex gap-1"><i class="fas fa-user text-gray-500"></i><i
+                                        class="fas fa-user text-gray-500"></i></div>
+                            </div>
+                            <span class="text-xs text-green-400 text-center">Fila distribuida, atención rápida</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL DE INFORMACIÓN (Nuevo componente) -->
+    <div id="infoModal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex justify-center items-center opacity-0 transition-opacity duration-300">
+        <div class="hologram-panel p-8 max-w-2xl w-full mx-4 relative transform scale-95 transition-transform duration-300"
+            id="infoModalContent">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl"><i
+                    class="fas fa-times"></i></button>
+
+            <div class="flex items-center gap-4 mb-6 border-b border-cyan-800 pb-4">
+                <i id="modalIcon" class="fas fa-microchip text-4xl glow-text"></i>
+                <h2 id="modalTitle" class="text-3xl font-bold tracking-wider glow-text">Título</h2>
+            </div>
+
+            <div id="modalBody"
+                class="text-gray-300 space-y-4 text-lg leading-relaxed max-h-[60vh] overflow-y-auto pr-4">
+                <!-- El contenido dinámico se inyectará aquí -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ENGINE DE SIMULACIÓN EN CANVAS Y CONTROL DE MODAL -->
+    <script>
+        // --- UI & Controls ---
+        const introScreen = document.getElementById('introScreen');
+        const mainContainer = document.getElementById('mainContainer');
+        const startBtn = document.getElementById('startBtn');
+
+        startBtn.addEventListener('click', () => {
+            introScreen.style.opacity = '0';
+            setTimeout(() => {
+                introScreen.style.display = 'none';
+                mainContainer.classList.remove('hidden');
+                initSimulation();
+            }, 800);
+        });
+
+        // --- Lógica del Modal (Nuevo) ---
+        const infoModal = document.getElementById('infoModal');
+        const infoModalContent = document.getElementById('infoModalContent');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        const modalIcon = document.getElementById('modalIcon');
+
+        const explanations = {
+            single: {
+                title: "Procesador Single Core",
+                icon: "fa-microchip",
+                color: "text-cyan-400",
+                borderColor: "border-cyan-800",
+                body: `
+                    <p>Un procesador de un solo núcleo (Single Core) es una Unidad Central de Procesamiento que cuenta con <strong>un único centro físico de procesamiento</strong> (core) dentro de su chip.</p>
+                    
+                    <h4 class="text-cyan-300 font-bold mt-6 mb-2 text-xl"><i class="fas fa-cogs mr-2"></i> ¿Cómo funciona?</h4>
+                    <p>Este tipo de procesador evalúa y ejecuta las instrucciones de forma <strong>estrictamente secuencial</strong>, una tras otra. Si el sistema debe manejar varias aplicaciones al mismo tiempo, el procesador emplea una técnica llamada <em>Time-Slicing</em> (segmentación de tiempo).</p>
+                    <p>En el Time-Slicing, el CPU cambia entre diferentes tareas a una velocidad altísima (milisegundos o nanosegundos). Esto engaña al ojo humano, haciéndonos creer que todo se ejecuta a la vez. Sin embargo, físicamente, <strong>el núcleo solo puede calcular una instrucción matemática o lógica en un momento dado</strong>.</p>
+                    
+                    <h4 class="text-cyan-300 font-bold mt-6 mb-2 text-xl"><i class="fas fa-exclamation-triangle mr-2"></i> El problema: Cuellos de Botella</h4>
+                    <p>Cuando abrimos programas que exigen mucha potencia (como editar un video, jugar un juego pesado o descomprimir archivos grandes), esa única "línea de ensamblaje" llega al 100% de su capacidad. Al no haber otra vía de escape, las peticiones entrantes del sistema operativo se acumulan en una larga cola de espera.</p>
+                    <p>Esto se traduce en lo que los usuarios experimentan como <em>lag</em>, pantallas congeladas o el clásico "No responde".</p>
+                `
+            },
+            multi: {
+                title: "Procesador Multicore",
+                icon: "fa-layer-group",
+                color: "text-purple-400",
+                borderColor: "border-purple-800",
+                body: `
+                    <p>Un procesador multinúcleo (Multicore) es un solo componente de hardware que contiene <strong>dos o más unidades de procesamiento independientes</strong> ("cores") integradas en un mismo circuito integrado o chip físico.</p>
+                    
+                    <h4 class="text-purple-300 font-bold mt-6 mb-2 text-xl"><i class="fas fa-network-wired mr-2"></i> ¿Cómo funciona?</h4>
+                    <p>A diferencia del Single Core, aquí disponemos de <strong>múltiples líneas de ensamblaje reales trabajando en paralelo</strong>. El sistema operativo (mediante el planificador de tareas) actúa como un director de orquesta, distribuyendo de manera inteligente la carga de trabajo pesada entre los diferentes núcleos disponibles.</p>
+                    
+                    <div class="bg-purple-900/20 p-4 rounded border border-purple-800/50 my-4">
+                        <p class="text-purple-200 font-semibold mb-2">Ejemplo de distribución en un videojuego:</p>
+                        <ul class="list-disc pl-5 space-y-1 text-sm text-gray-300">
+                            <li><strong>Core 1:</strong> Procesa las interacciones del jugador y controles.</li>
+                            <li><strong>Core 2:</strong> Calcula las colisiones y las físicas 3D del mundo.</li>
+                            <li><strong>Core 3:</strong> Controla la Inteligencia Artificial de los enemigos.</li>
+                            <li><strong>Core 4:</strong> Mantiene los procesos de fondo del sistema operativo activos.</li>
+                        </ul>
+                    </div>
+
+                    <h4 class="text-purple-300 font-bold mt-6 mb-2 text-xl"><i class="fas fa-tachometer-alt mr-2"></i> Ventajas y Rendimiento</h4>
+                    <p>El procesamiento en paralelo (Parallel Computing) disminuye de forma drástica las colas de espera. El resultado directo es que <strong>el sistema se siente increíblemente responsivo</strong>. Si una aplicación pesada bloquea temporalmente al Core 1, los Cores 2, 3 y 4 siguen perfectamente libres para garantizar que el ratón se mueva, la música suene y las páginas web carguen sin interrupciones.</p>
+                `
+            }
+        };
+
+        window.openModal = function (type) {
+            const data = explanations[type];
+            modalTitle.textContent = data.title;
+            modalBody.innerHTML = data.body;
+
+            // Actualizar clases de color visualmente
+            modalIcon.className = `fas ${data.icon} text-4xl glow-text ${data.color}`;
+            modalTitle.className = `text-3xl font-bold tracking-wider glow-text ${data.color}`;
+            modalTitle.parentElement.className = `flex items-center gap-4 mb-6 border-b pb-4 ${data.borderColor}`;
+
+            infoModal.classList.remove('hidden');
+
+            // Trigger reflow for transition
+            void infoModal.offsetWidth;
+
+            infoModal.classList.remove('opacity-0');
+            infoModalContent.classList.remove('scale-95');
+            infoModalContent.classList.add('scale-100');
+        };
+
+        window.closeModal = function () {
+            infoModal.classList.add('opacity-0');
+            infoModalContent.classList.remove('scale-100');
+            infoModalContent.classList.add('scale-95');
+
+            setTimeout(() => {
+                infoModal.classList.add('hidden');
+            }, 300);
+        };
+
+        // Cerrar modal al hacer clic fuera del contenido
+        infoModal.addEventListener('click', (e) => {
+            if (e.target === infoModal) closeModal();
+        });
+
+
+        const speedSlider = document.getElementById('speedSlider');
+        const speedLabel = document.getElementById('speedLabel');
+        const coreSlider = document.getElementById('coreSlider');
+        const coreLabel = document.getElementById('coreLabel');
+        const loadTypeSelect = document.getElementById('loadType');
+
+        const speedNames = ["Muy Lenta", "Lenta", "Normal", "Rápida"];
+        // Multiplicador de velocidad (inverso: menor num = más lento)
+        const speedValues = [0.2, 0.8, 2.0, 5.0];
+        let currentSpeed = speedValues[0];
+
+        speedSlider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            speedLabel.textContent = speedNames[val - 1];
+            currentSpeed = speedValues[val - 1];
+        });
+
+        coreSlider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            coreLabel.textContent = val + " Cores";
+            if (processors.multi) processors.multi.setCores(val);
+        });
+
+        // --- Datos de Tareas ---
+        const taskDictionary = {
+            web: [
+                { name: "Cargar HTML", icon: "🌐", dest: "Red" },
+                { name: "Renderizar UI", icon: "🖥️", dest: "Pantalla" },
+                { name: "Script JS", icon: "⚙️", dest: "RAM" },
+                { name: "Cache", icon: "💾", dest: "Disco" }
+            ],
+            gaming: [
+                { name: "Física 3D", icon: "🧊", dest: "RAM" },
+                { name: "Texturas", icon: "🎨", dest: "GPU" },
+                { name: "Audio FX", icon: "🎵", dest: "Pantalla" }, // Simplificado a pantalla/salida
+                { name: "Input Auto", icon: "🎮", dest: "RAM" }
+            ],
+            ai: [
+                { name: "Matriz", icon: "🧮", dest: "GPU" },
+                { name: "Pesos Red", icon: "🧠", dest: "RAM" },
+                { name: "Inferencia", icon: "⚡", dest: "GPU" },
+                { name: "Guardar Modelo", icon: "💾", dest: "Disco" }
+            ],
+            mixed: [
+                { name: "Antivirus", icon: "🛡️", dest: "Disco" },
+                { name: "Video YT", icon: "▶️", dest: "GPU" },
+                { name: "Descarga", icon: "⬇️", dest: "Red" },
+                { name: "Mensaje", icon: "✉️", dest: "Red" }
+            ]
+        };
+
+        function getRandomTaskInfo() {
+            const type = loadTypeSelect.value;
+            const list = taskDictionary[type];
+            return list[Math.floor(Math.random() * list.length)];
+        }
+
+        // --- Simulación Engine ---
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        let animationId;
+
+        // --- Eventos de Interactividad del Canvas ---
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            let pointer = false;
+
+            // Comprobar Single Core
+            if (processors.single) {
+                processors.single.isHovered = (mouseX >= processors.single.x && mouseX <= processors.single.x + processors.single.width && mouseY >= processors.single.y && mouseY <= processors.single.y + processors.single.height);
+                if (processors.single.isHovered) pointer = true;
+            }
+
+            // Comprobar Multicore
+            if (processors.multi) {
+                processors.multi.isHovered = (mouseX >= processors.multi.x && mouseX <= processors.multi.x + processors.multi.width && mouseY >= processors.multi.y && mouseY <= processors.multi.y + processors.multi.height);
+                if (processors.multi.isHovered) pointer = true;
+            }
+
+            // Cambiar cursor a mano si estamos sobre un procesador
+            canvas.style.cursor = pointer ? 'pointer' : 'default';
+        });
+
+        canvas.addEventListener('click', (e) => {
+            if (processors.single && processors.single.isHovered) window.openModal('single');
+            if (processors.multi && processors.multi.isHovered) window.openModal('multi');
+        });
+
+        // Coordenadas lógicas del sistema
+        let nodes = {
+            user: { x: 0, y: 0, label: "Usuario (Peticiones)" },
+            singleCpu: { x: 0, y: 0, width: 120, height: 120, label: "CPU Single Core" },
+            multiCpu: { x: 0, y: 0, width: 140, height: 140, label: "CPU Multicore" },
+            components: {
+                "RAM": { x: 0, y: 0, color: "#39ff14", icon: "fa-memory" },
+                "GPU": { x: 0, y: 0, color: "#ff2a2a", icon: "fa-video" },
+                "Disco": { x: 0, y: 0, color: "#ff7300", icon: "fa-hdd" },
+                "Red": { x: 0, y: 0, color: "#00f2ff", icon: "fa-network-wired" },
+                "Pantalla": { x: 0, y: 0, color: "#f200ff", icon: "fa-desktop" }
+            }
+        };
+
+        // Estado del sistema
+        class Processor {
+            constructor(type, numCores, x, y, width, height) {
+                this.type = type; // 'single' o 'multi'
+                this.x = x; this.y = y; this.width = width; this.height = height;
+                this.queue = [];
+                this.cores = [];
+                this.setCores(numCores);
+
+                // Métricas
+                this.metrics = { received: 0, processed: 0, totalWaitTime: 0 };
+                this.isHovered = false; // Detecta si el mouse está encima en el canvas
+            }
+
+            setCores(num) {
+                // Guardamos tareas en progreso si es posible
+                let activeTasks = this.cores.map(c => c.task).filter(t => t !== null);
+                this.cores = [];
+                for (let i = 0; i < num; i++) {
+                    this.cores.push({ id: i, task: null, progress: 0 });
+                }
+                // Reasignar tareas si se redujeron cores (simplificación: vuelven a cola si sobran)
+                activeTasks.forEach((t, i) => {
+                    if (i < num) {
+                        this.cores[i].task = t;
+                        this.cores[i].progress = 0; // Reinicia progreso por simplicidad
+                    } else {
+                        t.state = 'waiting';
+                        this.queue.unshift(t);
+                    }
+                });
+            }
+
+            update(dt) {
+                // Asignar tareas de la cola a cores libres
+                for (let core of this.cores) {
+                    if (core.task === null && this.queue.length > 0) {
+                        core.task = this.queue.shift();
+                        core.task.state = 'processing';
+                        core.progress = 0;
+
+                        // Calcular tiempo de espera
+                        let waitTime = performance.now() - core.task.spawnTime - core.task.travelTime;
+                        if (waitTime < 0) waitTime = 0;
+                        this.metrics.totalWaitTime += waitTime;
+                    }
+                }
+
+                // Procesar tareas en cores
+                for (let core of this.cores) {
+                    if (core.task !== null) {
+                        // El progreso base asume que toma ~2 segundos en vel normal
+                        core.progress += (dt / 2000) * currentSpeed;
+
+                        if (core.progress >= 1) {
+                            // Termina de procesar
+                            core.task.state = 'traveling_out';
+                            core.task.progress = 0; // Reset progreso para viaje de salida
+                            this.metrics.processed++;
+                            globalTasks.push(core.task); // Devuelve la tarea a la lista global para animar salida
+                            core.task = null;
+                        }
+                    }
+                }
+            }
+
+            draw() {
+                // Dibujar caja CPU
+                ctx.strokeStyle = this.type === 'single' ? '#00f2ff' : '#b026ff';
+                ctx.lineWidth = 2;
+
+                // Efecto visual cuando el mouse está encima (Hover)
+                ctx.fillStyle = this.isHovered ? 'rgba(30, 45, 65, 0.9)' : 'rgba(0,0,0,0.8)';
+
+                ctx.beginPath();
+                ctx.roundRect(this.x, this.y, this.width, this.height, 10);
+
+                // Brillo extra en Hover
+                if (this.isHovered) {
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = ctx.strokeStyle;
+                }
+
+                ctx.fill();
+                ctx.stroke();
+                ctx.shadowBlur = 0; // Reset
+
+                // Título
+                ctx.fillStyle = '#fff';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.type === 'single' ? 'Single Core' : 'Multicore', this.x + this.width / 2, this.y - 10);
+
+                // Etiqueta indicativa de clic animada
+                if (this.isHovered) {
+                    ctx.fillStyle = ctx.strokeStyle;
+                    ctx.font = 'bold 11px Arial';
+                    ctx.fillText("CLIC PARA INFO", this.x + this.width / 2, this.y - 25);
+                }
+
+                // Dibujar Cores internos
+                let cols = this.cores.length > 4 ? 4 : (this.cores.length > 1 ? 2 : 1);
+                let rows = Math.ceil(this.cores.length / cols);
+                let padding = 10;
+                let cW = (this.width - padding * (cols + 1)) / cols;
+                let cH = (this.height - padding * (rows + 1)) / rows;
+
+                for (let i = 0; i < this.cores.length; i++) {
+                    let col = i % cols;
+                    let row = Math.floor(i / cols);
+                    let cx = this.x + padding + col * (cW + padding);
+                    let cy = this.y + padding + row * (cH + padding);
+
+                    let core = this.cores[i];
+
+                    // Fondo core
+                    ctx.fillStyle = core.task ? (this.type === 'single' ? 'rgba(0, 242, 255, 0.4)' : 'rgba(176, 38, 255, 0.4)') : '#222';
+                    ctx.fillRect(cx, cy, cW, cH);
+                    ctx.strokeStyle = core.task ? (this.type === 'single' ? '#00f2ff' : '#b026ff') : '#444';
+                    ctx.strokeRect(cx, cy, cW, cH);
+
+                    // Si procesa, mostrar barra y efecto glow
+                    if (core.task) {
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = ctx.strokeStyle;
+                        ctx.fillStyle = ctx.strokeStyle;
+                        ctx.fillRect(cx, cy + cH * (1 - core.progress), cW, cH * core.progress);
+                        ctx.shadowBlur = 0; // Reset
+
+                        // Icono tarea
+                        ctx.fillStyle = '#fff';
+                        ctx.font = '12px Arial';
+                        ctx.fillText(core.task.info.icon, cx + cW / 2, cy + cH / 2 + 4);
+                    }
+                }
+
+                // Dibujar Cola de Espera (abajo)
+                ctx.textAlign = 'left';
+                let qy = this.y + this.height + 20;
+                ctx.fillStyle = '#ff7300';
+                ctx.fillText(`En cola: ${this.queue.length}`, this.x, qy);
+
+                // Dibujar cajitas de cola
+                let maxVis = Math.min(this.queue.length, 5);
+                for (let i = 0; i < maxVis; i++) {
+                    ctx.fillStyle = '#ff7300';
+                    ctx.fillRect(this.x + i * 22, qy + 10, 18, 18);
+                    ctx.fillStyle = '#000';
+                    ctx.font = '10px Arial';
+                    ctx.fillText(this.queue[i].info.icon, this.x + i * 22 + 2, qy + 23);
+                }
+                if (this.queue.length > 5) {
+                    ctx.fillStyle = '#fff';
+                    ctx.fillText("+", this.x + 5 * 22, qy + 24);
+                }
+            }
+        }
+
+        class Task {
+            constructor(targetCpuStr) {
+                this.info = getRandomTaskInfo();
+                this.targetCpuStr = targetCpuStr;
+                this.cpu = targetCpuStr === 'single' ? processors.single : processors.multi;
+
+                this.x = nodes.user.x;
+                this.y = nodes.user.y;
+
+                this.state = 'traveling_in'; // traveling_in, waiting, processing, traveling_out
+                this.progress = 0; // 0 a 1 para trayectos
+
+                this.spawnTime = performance.now();
+                this.travelTime = 0;
+            }
+
+            update(dt) {
+                if (this.state === 'traveling_in') {
+                    // Velocidad de viaje base asume 2 segundos para llegar
+                    this.progress += (dt / 2000) * currentSpeed;
+
+                    // Interpolar posicion
+                    let targetX = this.cpu.x + this.cpu.width / 2;
+                    let targetY = this.cpu.y + this.cpu.height; // Entra por abajo
+
+                    this.x = nodes.user.x + (targetX - nodes.user.x) * this.progress;
+                    this.y = nodes.user.y + (targetY - nodes.user.y) * this.progress;
+
+                    if (this.progress >= 1) {
+                        this.state = 'waiting';
+                        this.travelTime = performance.now() - this.spawnTime;
+                        this.cpu.queue.push(this);
+                        // Sale de globalTasks temporalmente
+                    }
+                }
+                else if (this.state === 'traveling_out') {
+                    this.progress += (dt / 1500) * currentSpeed; // Salida un poco más rápida
+
+                    let startX = this.cpu.x + this.cpu.width / 2;
+                    let startY = this.cpu.y; // Sale por arriba
+
+                    let comp = nodes.components[this.info.dest];
+                    let targetX = comp.x;
+                    let targetY = comp.y;
+
+                    // Curva bezier simple o interpolación directa
+                    this.x = startX + (targetX - startX) * this.progress;
+                    this.y = startY + (targetY - startY) * this.progress;
+
+                    // Animación del componente (iluminar)
+                    comp.active = true;
+                    comp.timer = 20; // frames activo
+
+                    if (this.progress >= 1) {
+                        this.state = 'done';
+                    }
+                }
+            }
+
+            draw() {
+                if (this.state === 'traveling_in' || this.state === 'traveling_out') {
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = this.targetCpuStr === 'single' ? '#00f2ff' : '#b026ff';
+
+                    // Dibujar el "paquete de datos"
+                    ctx.fillStyle = ctx.shadowColor;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+
+                    // Texto/Icono
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.info.icon, this.x, this.y + 4);
+
+                    // Etiqueta (solo en velocidades lentas para no ensuciar, o siempre)
+                    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                    ctx.fillText(this.info.name, this.x, this.y - 12);
+                }
+            }
+        }
+
+        let processors = {};
+        let globalTasks = []; // Tareas en tránsito
+        let lastTime = 0;
+        let dashOffset = 0; // Para animación de líneas
+
+        function initSimulation() {
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            processors = {
+                single: new Processor('single', 1, canvas.width / 2 - 250, canvas.height / 2 - 50, 120, 120),
+                multi: new Processor('multi', parseInt(coreSlider.value), canvas.width / 2 + 130, canvas.height / 2 - 50, 160, 160)
+            };
+
+            lastTime = performance.now();
+            requestAnimationFrame(animate);
+            setInterval(updateDOMMetrics, 500); // Actualizar métricas texto cada 0.5s
+        }
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+
+            // Recalcular posiciones estáticas
+            nodes.user = { x: canvas.width / 2, y: canvas.height - 40 };
+
+            // Actualizar CPUs si ya existen
+            if (processors.single) {
+                processors.single.x = canvas.width / 2 - 250;
+                processors.single.y = canvas.height / 2 - 20;
+                processors.multi.x = canvas.width / 2 + 90;
+                processors.multi.y = canvas.height / 2 - 40; // Multi un poco más grande
+            }
+
+            // Posiciones componentes (Arco superior)
+            const compNames = Object.keys(nodes.components);
+            const w = canvas.width;
+            const h = canvas.height;
+            nodes.components["Red"].x = w * 0.15; nodes.components["Red"].y = 60;
+            nodes.components["RAM"].x = w * 0.35; nodes.components["RAM"].y = 40;
+            nodes.components["Pantalla"].x = w * 0.5; nodes.components["Pantalla"].y = 30;
+            nodes.components["GPU"].x = w * 0.65; nodes.components["GPU"].y = 40;
+            nodes.components["Disco"].x = w * 0.85; nodes.components["Disco"].y = 60;
+        }
+
+        window.sendTasks = function (count) {
+            for (let i = 0; i < count; i++) {
+                // Separación en el tiempo para que no salgan exactamente empalmadas
+                setTimeout(() => {
+                    let ts = new Task('single');
+                    let tm = new Task('multi');
+                    globalTasks.push(ts, tm);
+                    processors.single.metrics.received++;
+                    processors.multi.metrics.received++;
+                }, i * 200 * (1 / currentSpeed)); // El delay escala con la velocidad
+            }
+        };
+
+        window.clearSim = function () {
+            globalTasks = [];
+            processors.single.queue = [];
+            processors.single.cores.forEach(c => c.task = null);
+            processors.single.metrics = { received: 0, processed: 0, totalWaitTime: 0 };
+
+            processors.multi.queue = [];
+            processors.multi.cores.forEach(c => c.task = null);
+            processors.multi.metrics = { received: 0, processed: 0, totalWaitTime: 0 };
+        };
+
+        function drawPaths() {
+            dashOffset -= 1 * currentSpeed; // Velocidad de las hormiguitas
+
+            // Función helper
+            function drawDashedLine(x1, y1, x2, y2, color, active) {
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = active ? color : 'rgba(255,255,255,0.1)';
+                ctx.lineWidth = active ? 2 : 1;
+                ctx.setLineDash(active ? [10, 5] : []);
+                ctx.lineDashOffset = active ? dashOffset : 0;
+                if (active) {
+                    ctx.shadowBlur = 5;
+                    ctx.shadowColor = color;
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.shadowBlur = 0;
+            }
+
+            // Saber si hay tráfico en entrada
+            let trafficInS = globalTasks.some(t => t.targetCpuStr === 'single' && t.state === 'traveling_in');
+            let trafficInM = globalTasks.some(t => t.targetCpuStr === 'multi' && t.state === 'traveling_in');
+
+            // User -> Single CPU
+            drawDashedLine(nodes.user.x, nodes.user.y, processors.single.x + processors.single.width / 2, processors.single.y + processors.single.height, '#00f2ff', trafficInS);
+
+            // User -> Multi CPU
+            drawDashedLine(nodes.user.x, nodes.user.y, processors.multi.x + processors.multi.width / 2, processors.multi.y + processors.multi.height, '#b026ff', trafficInM);
+
+            // CPU -> Components (solo activamos la línea si hay una tarea viajando a ese componente específico)
+            for (let key in nodes.components) {
+                let comp = nodes.components[key];
+
+                let activeS = globalTasks.some(t => t.targetCpuStr === 'single' && t.state === 'traveling_out' && t.info.dest === key);
+                drawDashedLine(processors.single.x + processors.single.width / 2, processors.single.y, comp.x, comp.y, '#00f2ff', activeS);
+
+                let activeM = globalTasks.some(t => t.targetCpuStr === 'multi' && t.state === 'traveling_out' && t.info.dest === key);
+                drawDashedLine(processors.multi.x + processors.multi.width / 2, processors.multi.y, comp.x, comp.y, '#b026ff', activeM);
+            }
+        }
+
+        function drawStaticNodes() {
+            // Usuario
+            ctx.fillStyle = '#0064ff';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#0064ff';
+            ctx.beginPath();
+            ctx.arc(nodes.user.x, nodes.user.y, 25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#fff';
+            ctx.font = '20px "Font Awesome 6 Free"';
+            ctx.textAlign = 'center';
+            ctx.fillText('\uf007', nodes.user.x, nodes.user.y + 7); // fa-user
+            ctx.font = '14px Arial';
+            ctx.fillText(nodes.user.label, nodes.user.x, nodes.user.y - 35);
+
+            // Componentes Superiores
+            for (let key in nodes.components) {
+                let comp = nodes.components[key];
+
+                if (comp.active && comp.timer > 0) {
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = comp.color;
+                    comp.timer--;
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+
+                ctx.fillStyle = '#111';
+                ctx.strokeStyle = comp.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(comp.x, comp.y, 20, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = comp.color;
+                // Dibujo texto unicode para los iconos (simplificación visual en canvas)
+                const iconsMap = { "RAM": "M", "GPU": "G", "Disco": "D", "Red": "R", "Pantalla": "P" };
+                ctx.font = '16px Arial font-bold';
+                ctx.fillText(iconsMap[key], comp.x, comp.y + 6);
+
+                ctx.fillStyle = '#ccc';
+                ctx.font = '12px Arial';
+                ctx.fillText(key, comp.x, comp.y - 25);
+
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function animate(time) {
+            let dt = time - lastTime;
+            lastTime = time;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Dibujar Conexiones
+            drawPaths();
+
+            // Actualizar lógica procesadores
+            processors.single.update(dt);
+            processors.multi.update(dt);
+
+            // Dibujar Entidades estáticas/backgrounds
+            drawStaticNodes();
+            processors.single.draw();
+            processors.multi.draw();
+
+            // Actualizar y Dibujar Tareas en tránsito
+            for (let i = globalTasks.length - 1; i >= 0; i--) {
+                let t = globalTasks[i];
+                t.update(dt);
+                if (t.state === 'done') {
+                    globalTasks.splice(i, 1);
+                } else {
+                    t.draw();
+                }
+            }
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // --- Actualización DOM ---
+        function updateDOMMetrics() {
+            if (!processors.single) return;
+
+            // Single
+            document.getElementById('sc_count').innerText = `${processors.single.metrics.received} / ${processors.single.metrics.processed}`;
+            document.getElementById('sc_queue').innerText = processors.single.queue.length;
+
+            let scWait = processors.single.metrics.processed > 0 ?
+                Math.round(processors.single.metrics.totalWaitTime / processors.single.metrics.processed) : 0;
+            document.getElementById('sc_wait').innerText = `${scWait} ms`;
+
+            let scStatusEl = document.getElementById('sc_status');
+            if (processors.single.queue.length > 3) {
+                scStatusEl.innerText = "SATURADO"; scStatusEl.className = "text-lg font-bold text-red-500 animate-pulse";
+            } else if (processors.single.queue.length > 0 || processors.single.cores[0].task) {
+                scStatusEl.innerText = "OCUPADO"; scStatusEl.className = "text-lg font-bold text-orange-400";
+            } else {
+                scStatusEl.innerText = "LIBRE"; scStatusEl.className = "text-lg font-bold text-green-400";
+            }
+
+            // Multi
+            document.getElementById('mc_count').innerText = `${processors.multi.metrics.received} / ${processors.multi.metrics.processed}`;
+            document.getElementById('mc_queue').innerText = processors.multi.queue.length;
+
+            let mcWait = processors.multi.metrics.processed > 0 ?
+                Math.round(processors.multi.metrics.totalWaitTime / processors.multi.metrics.processed) : 0;
+            document.getElementById('mc_wait').innerText = `${mcWait} ms`;
+
+            let activeMC = processors.multi.cores.filter(c => c.task !== null).length;
+            document.getElementById('mc_active_cores').innerText = `${activeMC} / ${processors.multi.cores.length}`;
+
+            let mcStatusEl = document.getElementById('mc_status');
+            if (processors.multi.queue.length > 5) {
+                mcStatusEl.innerText = "SATURADO"; mcStatusEl.className = "text-lg font-bold text-red-500 text-right animate-pulse";
+            } else if (activeMC === processors.multi.cores.length) {
+                mcStatusEl.innerText = "OCUPADO MAX"; mcStatusEl.className = "text-lg font-bold text-orange-400 text-right";
+            } else if (activeMC > 0) {
+                mcStatusEl.innerText = "PROCESANDO"; mcStatusEl.className = "text-lg font-bold text-blue-400 text-right";
+            } else {
+                mcStatusEl.innerText = "LIBRE"; mcStatusEl.className = "text-lg font-bold text-green-400 text-right";
+            }
+        }
+    </script>
+</body>
+
+</html>
