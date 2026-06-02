@@ -1,0 +1,2503 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparativa de Arquitecturas GPU - Laboratorio Interactivo 3D/RA</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #030712;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Glassmorphism utility classes */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card-nvidia {
+            background: rgba(6, 78, 59, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.05);
+        }
+
+        .glass-card-amd {
+            background: rgba(159, 18, 57, 0.15);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            box-shadow: 0 0 20px rgba(244, 63, 94, 0.05);
+        }
+
+        .glass-card-intel {
+            background: rgba(30, 58, 138, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.05);
+        }
+
+        /* Scanline effect */
+        .scanlines {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scanlines::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 10;
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
+
+        /* Glowing effects */
+        .glow-green {
+            text-shadow: 0 0 8px #10b981;
+        }
+
+        .glow-red {
+            text-shadow: 0 0 8px #f43f5e;
+        }
+
+        .glow-blue {
+            text-shadow: 0 0 8px #3b82f6;
+        }
+
+        /* Animation keyframes */
+        @keyframes pulse-border {
+
+            0%,
+            100% {
+                border-color: rgba(255, 255, 255, 0.1);
+            }
+
+            50% {
+                border-color: rgba(255, 255, 255, 0.3);
+            }
+        }
+
+        .pulse-border {
+            animation: pulse-border 3s infinite;
+        }
+
+        /* RA Reticle styling */
+        .ar-reticle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            display: none;
+        }
+
+        .ar-reticle::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 scanlines">
+
+    <div
+        class="fixed inset-0 pointer-events-none opacity-20 z-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem]">
+    </div>
+
+    <!-- Main Container -->
+    <div class="relative z-10 flex flex-col min-h-screen">
+
+        <!-- Top Header Navigation -->
+        <header
+            class="glass-panel border-b border-slate-800 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div
+                    class="w-10 h-10 rounded-lg bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1
+                        class="text-xl md:text-2xl font-bold font-orbitron tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-emerald-400">
+                        GPU ARCH LAB</h1>
+                    <p class="text-xs text-slate-400 tracking-widest font-mono">LABORATORIO MULTIARQUITECTURA DE ÚLTIMA
+                        GENERACIÓN</p>
+                </div>
+            </div>
+
+            <!-- Level Selector & Global Stats -->
+            <div class="flex flex-wrap items-center gap-4">
+                <div class="bg-slate-900/80 rounded-lg p-1 border border-slate-700 flex text-sm">
+                    <button onclick="setLevel('basic')" id="btn-lvl-basic"
+                        class="px-3 py-1.5 rounded transition-all duration-300 font-semibold bg-indigo-600 text-white">Básico</button>
+                    <button onclick="setLevel('intermediate')" id="btn-lvl-intermediate"
+                        class="px-3 py-1.5 rounded transition-all duration-300 font-semibold text-slate-400 hover:text-white">Intermedio</button>
+                    <button onclick="setLevel('advanced')" id="btn-lvl-advanced"
+                        class="px-3 py-1.5 rounded transition-all duration-300 font-semibold text-slate-400 hover:text-white">Avanzado</button>
+                </div>
+
+
+            </div>
+        </header>
+
+        <!-- Main Layout Split -->
+        <main class="flex-1 flex flex-col lg:flex-row relative">
+
+            <!-- Left Sidebar (Control Center & Technical Data) -->
+            <section
+                class="w-full lg:w-[450px] glass-panel border-r border-slate-800 p-4 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-80px)] shrink-0 z-20">
+
+                <!-- Quick Brand Selector Cards -->
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="selectBrand('nvidia')" id="selector-nvidia"
+                        class="flex flex-col items-center justify-center py-3 px-2 rounded-lg border border-emerald-500/20 bg-emerald-950/10 hover:bg-emerald-950/30 transition-all duration-300 group">
+                        <span
+                            class="w-4 h-4 rounded-full bg-emerald-500 shadow-md shadow-emerald-500/50 mb-2 group-hover:scale-110 transition-transform"></span>
+                        <span class="font-orbitron font-bold text-sm tracking-wider text-emerald-400">NVIDIA</span>
+                        <span class="text-[9px] font-mono text-slate-500">RTX 4090 FE</span>
+                    </button>
+                    <button onclick="selectBrand('amd')" id="selector-amd"
+                        class="flex flex-col items-center justify-center py-3 px-2 rounded-lg border border-rose-500/20 bg-rose-950/10 hover:bg-rose-950/30 transition-all duration-300 group">
+                        <span
+                            class="w-4 h-4 rounded-full bg-rose-500 shadow-md shadow-rose-500/50 mb-2 group-hover:scale-110 transition-transform"></span>
+                        <span class="font-orbitron font-bold text-sm tracking-wider text-rose-400">AMD</span>
+                        <span class="text-[9px] font-mono text-slate-500">RX 7900 XTX</span>
+                    </button>
+                    <button onclick="selectBrand('intel')" id="selector-intel"
+                        class="flex flex-col items-center justify-center py-3 px-2 rounded-lg border border-blue-500/20 bg-blue-950/10 hover:bg-blue-950/30 transition-all duration-300 group">
+                        <span
+                            class="w-4 h-4 rounded-full bg-blue-500 shadow-md shadow-blue-500/50 mb-2 group-hover:scale-110 transition-transform"></span>
+                        <span class="font-orbitron font-bold text-sm tracking-wider text-blue-400">INTEL</span>
+                        <span class="text-[9px] font-mono text-slate-500">Arc A770 LE</span>
+                    </button>
+                </div>
+
+                <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800">
+                    <button onclick="toggleSidebarTab('3d-lab')" id="tab-btn-3d-lab"
+                        class="flex-1 text-center py-1.5 rounded text-xs font-semibold transition-all duration-200 bg-indigo-600 text-white">
+                        🔬 Laboratorio 3D
+                    </button>
+                    <button onclick="toggleSidebarTab('blueprints')" id="tab-btn-blueprints"
+                        class="flex-1 text-center py-1.5 rounded text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white">
+                        📐 Planos Reales (PCB)
+                    </button>
+                </div>
+
+                <!-- TAB CONTENT 1: 3D LAB CONTROLS -->
+                <div id="tab-content-3d-lab" class="space-y-4">
+                    <!-- Action Button Matrix (Modes / Scenarios) -->
+                    <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800/80">
+                        <p class="text-xs font-semibold text-indigo-400 uppercase tracking-widest mb-2 font-mono">Modos
+                            de Visualización</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="triggerAction('compare-all')" id="btn-compare-all"
+                                class="px-3 py-2 text-xs font-semibold rounded bg-slate-800 hover:bg-indigo-600/20 hover:border-indigo-500 border border-slate-700 text-left transition-all">
+                                📊 Ver 3 Marcas
+                            </button>
+                            <button onclick="triggerAction('compare-table')" id="btn-compare-table"
+                                class="px-3 py-2 text-xs font-semibold rounded bg-slate-800 hover:bg-indigo-600/20 hover:border-indigo-500 border border-slate-700 text-left transition-all">
+                                📑 Tabla Comparativa
+                            </button>
+                            <button onclick="triggerAction('sim-parallel')" id="btn-sim-parallel"
+                                class="px-3 py-2 text-xs font-semibold rounded bg-slate-800 hover:bg-indigo-600/20 hover:border-indigo-500 border border-slate-700 text-left transition-all">
+                                ⚡ Proc. Paralelo
+                            </button>
+                            <button onclick="triggerAction('sim-ai')" id="btn-sim-ai"
+                                class="px-3 py-2 text-xs font-semibold rounded bg-slate-800 hover:bg-indigo-600/20 hover:border-indigo-500 border border-slate-700 text-left transition-all">
+                                🧠 Redes de IA
+                            </button>
+                            <button onclick="triggerAction('sim-raytracing')" id="btn-sim-raytracing"
+                                class="px-3 py-2 text-xs font-semibold rounded bg-slate-800 hover:bg-indigo-600/20 hover:border-indigo-500 border border-slate-700 text-left transition-all">
+                                ☀️ Ray Tracing
+                            </button>
+                            <button onclick="triggerAction('sim-upscaling')" id="btn-sim-upscaling"
+                                class="px-3 py-2 text-xs font-semibold rounded bg-slate-800 hover:bg-indigo-600/20 hover:border-indigo-500 border border-slate-700 text-left transition-all">
+                                🖼️ Super Escalado
+                            </button>
+                            <button onclick="triggerAction('naming-guide')" id="btn-naming-guide"
+                                class="px-3 py-2 text-xs font-semibold rounded bg-slate-800 hover:bg-indigo-600/20 hover:border-indigo-500 border border-slate-700 text-left transition-all">
+                                🏷️ Gamas y Nombres
+                            </button>
+                            <button onclick="triggerAction('use-cases')" id="btn-use-cases"
+                                class="px-3 py-2 text-xs font-semibold rounded bg-slate-800 hover:bg-indigo-600/20 hover:border-indigo-500 border border-slate-700 text-left transition-all">
+                                🎯 ¿Cuál elegir?
+                            </button>
+                            <button onclick="triggerAction('segments')" id="btn-segments"
+                                class="col-span-2 px-3 py-2 text-xs font-semibold rounded bg-slate-800 hover:bg-indigo-600/20 hover:border-indigo-500 border border-slate-700 text-center transition-all text-indigo-300">
+                                📊 Resumen de Segmentos (IA, HPC, Pro)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Architecture Explosion slider -->
+                    <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800/80">
+                        <div class="flex justify-between items-center mb-1">
+                            <label
+                                class="text-xs font-semibold text-slate-400 uppercase tracking-widest font-mono">Explosión
+                                de Capas 3D</label>
+                            <span id="explode-val" class="text-xs font-bold text-indigo-400">0%</span>
+                        </div>
+                        <input type="range" id="explode-slider" min="0" max="100" value="0"
+                            oninput="handleExplode(this.value)"
+                            class="w-full accent-indigo-500 bg-slate-950 h-2 rounded-lg cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                            <span>Ensamblado</span>
+                            <span>Aletas Térmicas</span>
+                            <span>Oblea de Núcleos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB CONTENT 2: REAL ENGINEER BLUEPRINTS (SVG & REAL PHOTO VIEW) -->
+                <div id="tab-content-blueprints" class="hidden space-y-4">
+                    <div class="bg-slate-900/80 rounded-xl p-3 border border-indigo-500/20">
+                        <p class="text-xs font-bold text-indigo-300 font-orbitron uppercase mb-1">Esquema Arquitectónico
+                            Real</p>
+                        <p class="text-[11px] text-slate-400 leading-snug">Interactúa con los planos esquemáticos y
+                            fotos reales del silicio de última generación para ver la disposición física real.</p>
+                    </div>
+
+                    <!-- Toggle schematic vs real photo -->
+                    <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+                        <button onclick="setBlueprintMode('schematic')" id="btn-bp-schematic"
+                            class="flex-1 text-center py-1 rounded transition-all duration-200 bg-indigo-600 text-white font-semibold">
+                            📐 Diagrama
+                        </button>
+                        <button onclick="setBlueprintMode('real-photo')" id="btn-bp-photo"
+                            class="flex-1 text-center py-1 rounded transition-all duration-200 text-slate-400 hover:text-white font-semibold">
+                            📸 Foto Real
+                        </button>
+                    </div>
+
+                    <!-- Interactive SVGs & Images Container -->
+                    <div id="blueprint-content-container"
+                        class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col justify-center items-center overflow-hidden min-h-[220px]">
+                        <!-- Content gets dynamically injected here based on brand and mode -->
+                    </div>
+
+                    <div
+                        class="p-2 bg-slate-900/40 rounded border border-slate-800 text-[11px] font-mono text-slate-400">
+                        📌 <span class="text-slate-200">Tip de Ingeniería:</span> Las memorias VRAM rodean
+                        simétricamente el encapsulado principal para minimizar la latencia de trazas físicas.
+                    </div>
+                </div>
+
+                <!-- Interactive Info Terminal -->
+                <div
+                    class="flex-1 bg-slate-950 rounded-xl border border-slate-800 p-4 flex flex-col justify-between shadow-inner min-h-[220px]">
+                    <div class="flex items-center space-x-2 border-b border-slate-800 pb-2 mb-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                        <h3 class="text-sm font-bold font-orbitron tracking-widest uppercase text-slate-300"
+                            id="terminal-header">ESTADO DEL SISTEMA</h3>
+                    </div>
+
+                    <div class="overflow-y-auto pr-1 flex-1 text-slate-300 text-sm leading-relaxed" id="terminal-body">
+                        <!-- Content injected via JS -->
+                        <p class="text-slate-400 italic">Selecciona una marca o un modo comparativo arriba para comenzar
+                            tu exploración interactiva...</p>
+                    </div>
+
+                    <!-- Holographic tech specs panel -->
+                    <div id="tech-specs-subpanel" class="mt-4 pt-3 border-t border-slate-800/80 hidden">
+                        <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+                            <div class="bg-slate-900/40 p-1.5 rounded"><span class="text-slate-500 block">NÚCLEOS
+                                    INTELIGENTES:</span> <span id="spec-cores" class="text-slate-300">N/D</span></div>
+                            <div class="bg-slate-900/40 p-1.5 rounded"><span class="text-slate-500 block">PLATAFORMA
+                                    BASE:</span> <span id="spec-platform" class="text-slate-300">N/D</span></div>
+                            <div class="bg-slate-900/40 p-1.5 rounded"><span
+                                    class="text-slate-500 block">ENFOQUE:</span> <span id="spec-focus"
+                                    class="text-slate-300">N/D</span></div>
+                            <div class="bg-slate-900/40 p-1.5 rounded"><span class="text-slate-500 block">API
+                                    DIRECTA:</span> <span id="spec-api" class="text-slate-300">N/D</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Summary/Credits -->
+                <div class="footer-inner">
+                    <p class="footer-copy" style="font-size: 12px; color: white; text-align: center;">© 2026 —
+                        Experiencia
+                        Técnica Interactiva. Fines educativos - Luis Torrejón Arias.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Center/Right Viewport (Three.js & AR overlay Container) -->
+            <section class="flex-1 relative min-h-[450px] lg:min-h-0 bg-slate-950 flex flex-col">
+
+                <!-- Simulated Camera Element for RA Pass-through -->
+                <video id="webcam" autoplay playsinline muted
+                    class="absolute inset-0 w-full h-full object-cover hidden z-0"></video>
+
+                <!-- WebXR Canvas Overlay and Interactive Floating labels -->
+                <div id="canvas-container"
+                    class="absolute inset-0 w-full h-full z-10 cursor-grab active:cursor-grabbing"></div>
+
+                <!-- Custom Camera Simulated Grid UI / Hologram controls overlaying canvas -->
+                <div class="absolute inset-x-0 bottom-4 z-20 pointer-events-none flex justify-center px-4">
+                    <div
+                        class="glass-panel px-4 py-2 rounded-full border border-slate-800/60 flex items-center space-x-6 text-xs text-slate-300 shadow-xl pointer-events-auto">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span class="font-mono">SIMULADOR RA ACTIVO</span>
+                        </div>
+                        <div class="h-4 w-[1px] bg-slate-800"></div>
+                        <button onclick="toggleGrid()" class="hover:text-white transition-colors">Grid: <span
+                                id="grid-status-lbl">ON</span></button>
+                        <div class="h-4 w-[1px] bg-slate-800"></div>
+                        <button onclick="autoRotate()" class="hover:text-white transition-colors">Auto-Giro: <span
+                                id="rotate-status-lbl">OFF</span></button>
+                    </div>
+                </div>
+
+                <!-- RA Target Frame -->
+                <div id="ar-frame" class="ar-reticle"></div>
+
+                <!-- Brand Overlay Watermark -->
+                <div class="absolute top-4 right-4 pointer-events-none z-20 flex flex-col items-end">
+                    <span id="watermark-brand"
+                        class="text-3xl font-black font-orbitron text-slate-800 tracking-widest">COMPARADOR
+                        GLOBAL</span>
+                    <span id="watermark-info" class="text-[10px] font-mono text-slate-600 tracking-wider">LABORATORIO
+                        MULTIARQUITECTURA</span>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Interactive Overlay Modal for Naming Guide / Table Comparativa / Use Cases -->
+    <div id="overlay-modal"
+        class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4">
+        <div
+            class="glass-panel w-full max-w-4xl max-h-[90vh] rounded-2xl border border-slate-800 overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+                <h2 id="modal-title" class="text-xl font-bold font-orbitron tracking-wider text-indigo-400">Título del
+                    Modal</h2>
+                <button onclick="closeModal()"
+                    class="w-8 h-8 rounded-full bg-slate-800 hover:bg-rose-600 text-white flex items-center justify-center transition-colors font-bold">&times;</button>
+            </div>
+
+            <div id="modal-body" class="p-6 overflow-y-auto flex-1">
+                <!-- Injected programmatically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript logic -->
+    <script>
+        // State variables
+        let activeBrand = 'nvidia';
+        let currentLevel = 'basic';
+        let isARActive = false;
+        let isGridEnabled = true;
+        let isAutoRotate = false;
+        let currentAction = 'compare-all';
+        let explosionFactor = 0;
+        let activeSidebarTab = '3d-lab';
+        let blueprintMode = 'schematic'; // 'schematic' or 'real-photo'
+
+        // Three.js instances
+        let scene, camera, renderer, clock;
+        let gpuModels = {
+            nvidia: null,
+            amd: null,
+            intel: null
+        };
+        let bases = {
+            nvidia: null,
+            amd: null,
+            intel: null
+        };
+        let gridHelper;
+        let lightAmbient, dirLight;
+        let raytracingSimulationGroup, parallelParticles, matrixParticles, upscalingPlane;
+
+        // Camera targets & smooth look-at targets
+        let camTargetX = 0, camTargetY = 4, camTargetZ = 10;
+        let currentLookAt = new THREE.Vector3(0, 0, 0);
+        let targetLookAt = new THREE.Vector3(0, 0, 0);
+
+        // Tech Info Repository
+        const techData = {
+            nvidia: {
+                name: 'NVIDIA RTX 4090 (Ada Lovelace)',
+                color: '#10b981',
+                basic: 'NVIDIA RTX 4090 es el máximo exponente de consumo gráfico. Destaca por su gigantesca GPU AD102 con memoria ultra rápida GDDR6X y su PCB optimizado con cortes de disipación cruzada.',
+                intermediate: 'La microarquitectura Ada Lovelace introduce los núcleos Tensor de 4ta generación (capaces de FP8 matricial) y núcleos RT de 3ra generación, permitiendo ejecutar DLSS 3 con generación de cuadros mediante inteligencia artificial.',
+                advanced: 'El chip de silicio AD102, fabricado en el nodo personalizado de 4N de TSMC, alberga 16,384 sombreadores CUDA distribuidos en 128 multiprocesadores de transmisión (SM). Su arquitectura integra aceleradores dedicados Optical Flow para interpolación de fotogramas por IA y caché L2 de 72 MB para descongestionar el bus de memoria de 384 bits.',
+                cores: '16384 CUDA, 512 Tensor, 128 RT Cores',
+                platform: 'CUDA Ecosystem v12.x',
+                focus: 'Cómputo en IA, Gaming 4K Ultra, Computación Científica',
+                api: 'DirectX 12 Ultimate, CUDA, OptiX, Vulkan',
+                // Stable real images from Wikimedia Commons with appropriate credits/properties
+                realPhoto: 'imagenes/nvidia.jpg',
+                realPhotoFallback: 'https://placehold.co/400x240/070c12/10b981?text=NVIDIA+RTX+4090+PCB'
+            },
+            amd: {
+                name: 'AMD Radeon RX 7900 XTX (Navi 31)',
+                color: '#f43f5e',
+                basic: 'La Radeon RX 7900 XTX es la primera GPU en el mundo construida con un diseño de chiplets (múltiples pastillas de silicio en un mismo sustrato). Integra un chip gráfico principal rodeado de módulos de caché de alta velocidad.',
+                intermediate: 'La arquitectura RDNA 3 separa el motor de cálculo gráfico (GCD - Graphics Compute Die) de los chiplets de memoria (MCD - Memory Cache Die), optimizando los costos de manufactura y proporcionando un bus masivo conectado a Infinity Cache.',
+                advanced: 'Navi 31 combina un chiplet GCD central (nodo TSMC 5nm) que contiene 96 Compute Units unificados con instrucciones matemáticas duales, rodeado por 6 MCDs (nodo TSMC 6nm) que albergan 96MB de Infinity Cache y los controladores de memoria GDDR6, logrando un ancho de banda efectivo de hasta 5.3 TB/s.',
+                cores: '6144 Stream Processors, 96 CAs, 192 AI Cores',
+                platform: 'ROCm / HIP Framework (Open Source)',
+                focus: 'Gaming de alto rendimiento, Centros de Datos Abiertos, HPC',
+                api: 'Vulkan, OpenCL, HIP, DirectX 12 Ultimate',
+                realPhoto: 'imagenes/amd.jpg',
+                realPhotoFallback: 'https://placehold.co/400x240/0a050d/f43f5e?text=AMD+RX+7900+XTX'
+            },
+            intel: {
+                name: 'Intel Arc A770 (Alchemist ACM-G10)',
+                color: '#3b82f6',
+                basic: 'Intel Arc A770 introduce la microarquitectura Xe-HPG, orientada a gráficos de alto rendimiento para creadores de contenido y entusiastas de los videojuegos, destacando por su potente codificador por hardware del moderno codec AV1.',
+                intermediate: 'La GPU ACM-G10 cuenta con 32 Xe Cores dedicados, motores XMX para aceleración matemática de IA (XeSS) y codificadores de medios de última generación capaces de procesar video en alta velocidad.',
+                advanced: 'La arquitectura Xe-HPG de Intel integra motores de matrices Xe Matrix Extensions (XMX) capaces de ejecutar multiplicaciones de tensores con un rendimiento de 256 operaciones por ciclo por motor. Incluye decodificadores duales por hardware del códec AV1 y aprovecha la tecnología Deep Link para coordinar la GPU Arc con gráficos integrados Intel Iris.',
+                cores: '32 Xe Cores, 512 Vector, 512 Matrix Engines',
+                platform: 'oneAPI / DPC++ (Heterogénea)',
+                focus: 'Gaming 1440p, Codificación AV1 nativa, IA ligera en el borde',
+                api: 'oneAPI, SYCL, Vulkan, DX12, OpenCL',
+                realPhoto: 'imagenes/Intel.png',
+                realPhotoFallback: 'https://placehold.co/400x240/040b15/3b82f6?text=Intel+Arc+A770'
+            }
+        };
+
+        // Complete Nomenclature database (Tiers and model name segments)
+        const nomenclatureData = {
+            nvidia: [
+                {
+                    model: 'RTX 4090',
+                    tier: 'Gama Entusiasta / Ultra Alta',
+                    target: 'Computación científica pesada, renderizado comercial, entrenamiento local de modelos de IA y gaming entusiasta 4K.',
+                    segments: [
+                        { text: 'RTX', label: 'Tecnología', desc: 'Indica la integración de núcleos Tensor (IA) y núcleos RT (Ray Tracing física de la luz) dedicados en hardware (reemplazando a la antigua serie GTX).', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500' },
+                        { text: '40', label: 'Generación', desc: 'Indica la generación de la microarquitectura. La serie 40 representa a Ada Lovelace fabricada en el nodo 4N personalizado de TSMC.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: '90', label: 'Rendimiento', desc: 'Sufijo numérico de rendimiento. 90 representa el nivel más extremo de núcleos y bus de memoria en el silicio para el sector de consumo.', color: 'bg-purple-500/20 text-purple-400 border-purple-500' }
+                    ]
+                },
+                {
+                    model: 'RTX 4080',
+                    tier: 'Gama Alta',
+                    target: 'Gaming a 4K de alta velocidad, creación de contenido profesional y simulaciones locales de ingeniería.',
+                    segments: [
+                        { text: 'RTX', label: 'Tecnología', desc: 'Soporte completo de hardware inteligente con núcleos Ray Tracing y Tensor.', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500' },
+                        { text: '40', label: 'Generación', desc: 'Arquitectura actual de Ada Lovelace.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: '80', label: 'Rendimiento', desc: 'Nivel alto de rendimiento gráfico de gama premium. Gran ancho de banda y rendimiento superior en sombreadores.', color: 'bg-purple-500/20 text-purple-400 border-purple-500' }
+                    ]
+                },
+                {
+                    model: 'RTX 4070',
+                    tier: 'Gama Media-Alta',
+                    target: 'Gaming competitivo en resolución 1440p (QHD) a alta tasa de refresco, creadores de contenido avanzados e inferencia básica de IA.',
+                    segments: [
+                        { text: 'RTX', label: 'Tecnología', desc: 'Acceso a tecnologías propietarias como DLSS 3 y codificación dual AV1.', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500' },
+                        { text: '40', label: 'Generación', desc: 'Generación Ada Lovelace.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: '70', label: 'Rendimiento', desc: 'Índice de rendimiento ideal de consumo masivo para el sector de gama media-alta, equilibrando costo y potencia física.', color: 'bg-purple-500/20 text-purple-400 border-purple-500' }
+                    ]
+                },
+                {
+                    model: 'RTX 4060',
+                    tier: 'Gama Media-Baja',
+                    target: 'Gaming fluido en resolución 1080p, PCs de bajo consumo, estaciones de trabajo de entrada para estudiantes.',
+                    segments: [
+                        { text: 'RTX', label: 'Tecnología', desc: 'Acceso a aceleración de hardware inteligente a bajo costo y alta eficiencia energética.', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500' },
+                        { text: '40', label: 'Generación', desc: 'Generación Ada Lovelace.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: '60', label: 'Rendimiento', desc: 'Punto de entrada estándar para el gaming competitivo masivo a nivel internacional.', color: 'bg-purple-500/20 text-purple-400 border-purple-500' }
+                    ]
+                },
+                {
+                    model: 'RTX 3080',
+                    tier: 'Gama Alta (Gen Anterior)',
+                    target: 'Gaming 4K de generación Ampere, minería histórica y renderizado.',
+                    segments: [
+                        { text: 'RTX', label: 'Tecnología', desc: 'Núcleos RT de 2da Gen y Tensor de 3ra Gen.', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500' },
+                        { text: '30', label: 'Generación', desc: 'Arquitectura Ampere.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: '80', label: 'Rendimiento', desc: 'Alto rendimiento para entusiastas de 4K.', color: 'bg-purple-500/20 text-purple-400 border-purple-500' }
+                    ]
+                },
+                {
+                    model: 'GTX 1660 Ti',
+                    tier: 'Gama Media (Legado)',
+                    target: 'Gaming eSports 1080p sin Ray Tracing físico.',
+                    segments: [
+                        { text: 'GTX', label: 'Tecnología', desc: 'Giga Texel Shader eXtreme. Predecesor de RTX sin IA ni Ray Tracing de hardware.', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500' },
+                        { text: '16', label: 'Generación', desc: 'Arquitectura Turing (bifurcación de la serie 20 sin RT Cores).', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: '60', label: 'Rendimiento', desc: 'Segmento medio-dulce de la generación.', color: 'bg-purple-500/20 text-purple-400 border-purple-500' },
+                        { text: 'Ti', label: 'Sufijo', desc: 'Titanium, versión superior al modelo estándar.', color: 'bg-amber-500/20 text-amber-400 border-amber-500' }
+                    ]
+                },
+                {
+                    model: 'GTX 1080 Ti',
+                    tier: 'Entusiasta (Leyenda Pascal)',
+                    target: 'Considerada una de las GPUs más revolucionarias de la década por su gran salto de potencia y longevidad.',
+                    segments: [
+                        { text: 'GTX', label: 'Tecnología', desc: 'Arquitectura gráfica tradicional de fuerza bruta.', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500' },
+                        { text: '10', label: 'Generación', desc: 'Arquitectura Pascal.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: '80', label: 'Rendimiento', desc: 'Máximo nivel de chip de la serie 10.', color: 'bg-purple-500/20 text-purple-400 border-purple-500' },
+                        { text: 'Ti', label: 'Sufijo', desc: 'Titanium, versión definitiva.', color: 'bg-amber-500/20 text-amber-400 border-amber-500' }
+                    ]
+                }
+            ],
+            amd: [
+                {
+                    model: 'RX 7900 XTX',
+                    tier: 'Gama Entusiasta',
+                    target: 'Gaming nativo 4K a altas tasas de refresco, renderizado avanzado con APIs abiertas (Vulkan, HIP) y clústeres de supercomputación.',
+                    segments: [
+                        { text: 'Radeon RX', label: 'Marca / Línea', desc: 'Marca comercial de AMD que identifica a sus aceleradores gráficos de alto desempeño orientados al usuario final.', color: 'bg-rose-500/20 text-rose-400 border-rose-500' },
+                        { text: '7', label: 'Generación', desc: 'Identifica la generación de la arquitectura. El número 7 corresponde a RDNA 3, la primera arquitectura gráfica basada en Chiplets.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: '900', label: 'Rendimiento', desc: 'Índice de rendimiento de nivel insignia. Representa el bus de memoria de 384 bits más amplio y la mayor cantidad de Compute Units de silicio.', color: 'bg-purple-500/20 text-purple-400 border-purple-500' },
+                        { text: 'XTX', label: 'Sufijo Especial', desc: 'Indica la variante tope de gama absoluta. Representa un chip con el silicio completo, mayores frecuencias de reloj y límites de energía extendidos.', color: 'bg-amber-500/20 text-amber-400 border-amber-500' }
+                    ]
+                },
+                {
+                    model: 'RX 7800 XT',
+                    tier: 'Gama Alta',
+                    target: 'Gaming QHD Ultra con gran uso de texturas pesadas (16 GB VRAM) y cargas mixtas de cálculo y rasterizado.',
+                    segments: [
+                        { text: 'Radeon RX', label: 'Marca / Línea', desc: 'Línea de consumo gráfico de AMD.', color: 'bg-rose-500/20 text-rose-400 border-rose-500' },
+                        { text: '7', label: 'Generación', desc: 'Generación actual RDNA 3.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: '800', label: 'Rendimiento', desc: 'Gama alta con excelente relación precio-rendimiento y un amplio bus de ancho de banda.', color: 'bg-purple-500/20 text-purple-400 border-purple-500' },
+                        { text: 'XT', label: 'Sufijo Especial', desc: 'Sufijo "Extreme Technology". Indica núcleos adicionales activos y frecuencias de reloj superiores comparado con los modelos estándar.', color: 'bg-amber-500/20 text-amber-400 border-amber-500' }
+                    ]
+                },
+                {
+                    model: 'RX 7700 XT',
+                    tier: 'Gama Media-Alta',
+                    target: 'Gaming 1440p avanzado y creadores de contenido enfocados en productividad digital fluida.',
+                    segments: [
+                        { text: 'Radeon RX', label: 'Marca / Línea', desc: 'Línea de consumo gráfico de AMD.', color: 'bg-rose-500/20 text-rose-400 border-rose-500' },
+                        { text: '7', label: 'Generación', desc: 'Generación actual RDNA 3.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: '700', label: 'Rendimiento', desc: 'Gama media-alta optimizada para competir con las opciones homólogas de la competencia.', color: 'bg-purple-500/20 text-purple-400 border-purple-500' },
+                        { text: 'XT', label: 'Sufijo Especial', desc: 'Indica la variante mejorada ("Extreme Technology") con mayor frecuencia operativa.', color: 'bg-amber-500/20 text-amber-400 border-amber-500' }
+                    ]
+                },
+                {
+                    model: 'RX 7600',
+                    tier: 'Gama Media-Baja',
+                    target: 'Gaming eSports de alta velocidad a 1080p, equipos compactos HTPC y setups de presupuesto balanceado.',
+                    segments: [
+                        { text: 'Radeon RX', label: 'Marca / Línea', desc: 'Línea de consumo gráfico de AMD.', color: 'bg-rose-500/20 text-rose-400 border-rose-500' },
+                        { text: '7', label: 'Generación', desc: 'Generación actual RDNA 3.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: '600', label: 'Rendimiento', desc: 'Segmento de entrada masiva de AMD, excelente relación de FPS por vatio consumido.', color: 'bg-purple-500/20 text-purple-400 border-purple-500' }
+                    ]
+                },
+                {
+                    model: 'RX 6800 XT',
+                    tier: 'Gama Alta (Gen Anterior)',
+                    target: 'Gaming 1440p/4K competitivo de anterior generación (RDNA 2).',
+                    segments: [
+                        { text: 'Radeon RX', label: 'Marca / Línea', desc: 'Línea de consumo.', color: 'bg-rose-500/20 text-rose-400 border-rose-500' },
+                        { text: '6', label: 'Generación', desc: 'Generación RDNA 2. Introdujo soporte de Ray Tracing en consolas y PC.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: '800', label: 'Rendimiento', desc: 'Segmento de alto rendimiento.', color: 'bg-purple-500/20 text-purple-400 border-purple-500' },
+                        { text: 'XT', label: 'Sufijo', desc: 'Extreme Technology, indica reloj y núcleos adicionales.', color: 'bg-amber-500/20 text-amber-400 border-amber-500' }
+                    ]
+                },
+                {
+                    model: 'RX 580',
+                    tier: 'Gama Media (Clásica)',
+                    target: 'Rey indiscutible del valor para gaming 1080p durante años.',
+                    segments: [
+                        { text: 'Radeon RX', label: 'Marca / Línea', desc: 'Línea de consumo gráfica.', color: 'bg-rose-500/20 text-rose-400 border-rose-500' },
+                        { text: '5', label: 'Generación', desc: 'Arquitectura Polaris.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: '80', label: 'Rendimiento', desc: 'Nivel óptimo/superior de la línea Polaris accesible.', color: 'bg-purple-500/20 text-purple-400 border-purple-500' }
+                    ]
+                }
+            ],
+            intel: [
+                {
+                    model: 'Arc A770',
+                    tier: 'Gama Alta (Intel)',
+                    target: 'Estaciones de trabajo de edición de vídeo (AV1 nativo), gaming con reconstrucción temporal por IA (XeSS) y desarrollo heterogéneo en oneAPI.',
+                    segments: [
+                        { text: 'Arc', label: 'Familia', desc: 'Marca comercial dedicada de Intel diseñada para irrumpir en el mercado de tarjetas gráficas dedicadas de alta gama.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: 'A', label: 'Generación', desc: 'Identifica la generación del silicio en orden alfabético. "A" corresponde a Alchemist (1ra Gen). La sucesora será "B" (Battlemage).', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500' },
+                        { text: '7', label: 'Nivel', desc: 'Categoría de rendimiento general, alineado comercialmente con la división Core i7 (alto desempeño).', color: 'bg-purple-500/20 text-purple-400 border-purple-500' },
+                        { text: '70', label: 'Variante', desc: 'Variante numérica específica de la oblea de silicio. Representa el chip completo con 32 Xe Cores y mayor ancho de bus.', color: 'bg-amber-500/20 text-amber-400 border-amber-500' }
+                    ]
+                },
+                {
+                    model: 'Arc A750',
+                    tier: 'Gama Media-Alta',
+                    target: 'Gaming 1080p y 1440p competitivo a precio económico con excelentes codificadores de medios nativos.',
+                    segments: [
+                        { text: 'Arc', label: 'Familia', desc: 'Marca comercial dedicada de Intel.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: 'A', label: 'Generación', desc: 'Generación de microarquitectura Alchemist.', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500' },
+                        { text: '7', label: 'Nivel', desc: 'Nivel alto de rendimiento gráfico de Intel.', color: 'bg-purple-500/20 text-purple-400 border-purple-500' },
+                        { text: '50', label: 'Variante', desc: 'Indica la variante con una leve reducción de núcleos (28 Xe Cores) para maximizar la competitividad de costo.', color: 'bg-amber-500/20 text-amber-400 border-amber-500' }
+                    ]
+                },
+                {
+                    model: 'Arc A580',
+                    tier: 'Gama Media',
+                    target: 'Creadores multimedia independientes, streaming de entrada y setups de productividad balanceados.',
+                    segments: [
+                        { text: 'Arc', label: 'Familia', desc: 'Marca comercial dedicada de Intel.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: 'A', label: 'Generación', desc: 'Generación de microarquitectura Alchemist.', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500' },
+                        { text: '5', label: 'Nivel', desc: 'Nivel de rendimiento medio de Intel, análogo a la serie de procesadores Core i5.', color: 'bg-purple-500/20 text-purple-400 border-purple-500' },
+                        { text: '80', label: 'Variante', desc: 'Especificación de variante de rendimiento medio-alto optimizado con 24 Xe Cores activos.', color: 'bg-amber-500/20 text-amber-400 border-amber-500' }
+                    ]
+                },
+                {
+                    model: 'Arc A380',
+                    tier: 'Gama de Entrada',
+                    target: 'Sistemas multimedia ultracompactos (HTPC), servidores multimedia con baja carga térmica y PCs de oficina de entrada.',
+                    segments: [
+                        { text: 'Arc', label: 'Familia', desc: 'Marca comercial dedicada de Intel.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: 'A', label: 'Generación', desc: 'Generación de microarquitectura Alchemist.', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500' },
+                        { text: '3', label: 'Nivel', desc: 'Nivel de entrada comercial para gráficos, alineado al segmento de entrada Core i3.', color: 'bg-purple-500/20 text-purple-400 border-purple-500' },
+                        { text: '80', label: 'Variante', desc: 'Variante básica del chip físico con 8 Xe Cores activos, optimizado para bajo consumo térmico.', color: 'bg-amber-500/20 text-amber-400 border-amber-500' }
+                    ]
+                },
+                {
+                    model: 'Arc B580',
+                    tier: 'Gama Media (Battlemage - Rumor)',
+                    target: 'Próxima generación de Intel orientada a ofrecer el mejor valor para gaming 1440p.',
+                    segments: [
+                        { text: 'Arc', label: 'Familia', desc: 'Marca comercial dedicada de Intel.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: 'B', label: 'Generación', desc: 'Battlemage (2da Gen). Sucesor de Alchemist.', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500' },
+                        { text: '5', label: 'Nivel', desc: 'Rendimiento de clase media (Equivalente Core i5).', color: 'bg-purple-500/20 text-purple-400 border-purple-500' },
+                        { text: '80', label: 'Variante', desc: 'Versión destacada de su nivel.', color: 'bg-amber-500/20 text-amber-400 border-amber-500' }
+                    ]
+                },
+                {
+                    model: 'Iris Xe MAX',
+                    tier: 'Entrada Móvil (Legado)',
+                    target: 'Laptops delgadas y ligeras. Primer intento moderno de Intel en gráficos discretos móviles.',
+                    segments: [
+                        { text: 'Iris Xe', label: 'Familia', desc: 'Gráficos integrados avanzados basados en arquitectura Xe-LP.', color: 'bg-blue-500/20 text-blue-400 border-blue-500' },
+                        { text: 'MAX', label: 'Sufijo Especial', desc: 'Indica que es un chip gráfico dedicado (dGPU) y no integrado, compartiendo la misma arquitectura básica.', color: 'bg-amber-500/20 text-amber-400 border-amber-500' }
+                    ]
+                }
+            ]
+        };
+
+        // Initialize Three.js on Window Load
+        window.addEventListener('load', () => {
+            initThree();
+            selectBrand('nvidia'); // Start with NVIDIA active
+            animate();
+
+            // Dispatch a resize event immediately to correct container sizes after load finishes
+            window.dispatchEvent(new Event('resize'));
+
+            // Auto resize
+            window.addEventListener('resize', () => {
+                const width = document.getElementById('canvas-container').clientWidth || window.innerWidth;
+                const height = document.getElementById('canvas-container').clientHeight || (window.innerHeight * 0.6);
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+                renderer.setSize(width, height);
+            });
+        });
+
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            const width = container.clientWidth || window.innerWidth;
+            const height = container.clientHeight || (window.innerHeight * 0.6);
+
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = null; // transparent to allow pass-through webcam background
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+            camera.position.set(0, 4, 10);
+
+            // Clock
+            clock = new THREE.Clock();
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Ambient Grid
+            gridHelper = new THREE.GridHelper(20, 20, 0x4f46e5, 0x1e293b);
+            gridHelper.position.y = -1.5;
+            scene.add(gridHelper);
+
+            // Lighting
+            lightAmbient = new THREE.AmbientLight(0xffffff, 0.2);
+            scene.add(lightAmbient);
+
+            // Directed Main Light
+            dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 5);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            // Add brand customized spot/point lights for futuristic hologram looks
+            const blueLight = new THREE.PointLight(0x3b82f6, 1.5, 10);
+            blueLight.position.set(4, 1, 0);
+            scene.add(blueLight);
+
+            const greenLight = new THREE.PointLight(0x10b981, 1.5, 10);
+            greenLight.position.set(-4, 1, 0);
+            scene.add(greenLight);
+
+            const redLight = new THREE.PointLight(0xf43f5e, 1.5, 10);
+            redLight.position.set(0, 1, -4);
+            scene.add(redLight);
+
+            // Generate procedural models
+            buildGPUModels();
+
+            // Simple custom mouse controls
+            setupInteraction();
+        }
+
+        // Custom Simple Orbit Controls
+        let isMouseDown = false;
+        let prevMouseX = 0, prevMouseY = 0;
+        let targetRotationY = 0, targetRotationX = 0;
+
+        function setupInteraction() {
+            const dom = renderer.domElement;
+            dom.addEventListener('mousedown', (e) => {
+                isMouseDown = true;
+                prevMouseX = e.clientX;
+                prevMouseY = e.clientY;
+            });
+
+            dom.addEventListener('mousemove', (e) => {
+                if (!isMouseDown) return;
+                const deltaX = e.clientX - prevMouseX;
+                const deltaY = e.clientY - prevMouseY;
+                prevMouseX = e.clientX;
+                prevMouseY = e.clientY;
+
+                targetRotationY += deltaX * 0.007;
+                targetRotationX += deltaY * 0.007;
+            });
+
+            window.addEventListener('mouseup', () => {
+                isMouseDown = false;
+            });
+
+            // Touch events for mobile devices
+            dom.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isMouseDown = true;
+                    prevMouseX = e.touches[0].clientX;
+                    prevMouseY = e.touches[0].clientY;
+                }
+            }, { passive: true });
+
+            dom.addEventListener('touchmove', (e) => {
+                if (!isMouseDown || e.touches.length !== 1) return;
+                const deltaX = e.touches[0].clientX - prevMouseX;
+                const deltaY = e.touches[0].clientY - prevMouseY;
+                prevMouseX = e.touches[0].clientX;
+                prevMouseY = e.touches[0].clientY;
+
+                targetRotationY += deltaX * 0.008;
+                targetRotationX += deltaY * 0.008;
+            }, { passive: true });
+
+            dom.addEventListener('touchend', () => {
+                isMouseDown = false;
+            });
+
+            // Wheel zoom
+            dom.addEventListener('wheel', (e) => {
+                camera.position.z += e.deltaY * 0.005;
+                camera.position.z = Math.max(3, Math.min(20, camera.position.z));
+            }, { passive: true });
+        }
+
+        function buildGPUModels() {
+            gpuModels.nvidia = createNvidia4090();
+            gpuModels.nvidia.position.set(-3, 0, 0);
+            scene.add(gpuModels.nvidia);
+
+            gpuModels.amd = createAmd7900XTX();
+            gpuModels.amd.position.set(0, 0, 0);
+            scene.add(gpuModels.amd);
+
+            gpuModels.intel = createIntelArcA770();
+            gpuModels.intel.position.set(3, 0, 0);
+            scene.add(gpuModels.intel);
+
+            // Bases holográficas
+            bases.nvidia = createHoloBase(0x10b981);
+            bases.nvidia.position.set(-3, -1.45, 0);
+            scene.add(bases.nvidia);
+
+            bases.amd = createHoloBase(0xf43f5e);
+            bases.amd.position.set(0, -1.45, 0);
+            scene.add(bases.amd);
+
+            bases.intel = createHoloBase(0x3b82f6);
+            bases.intel.position.set(3, -1.45, 0);
+            scene.add(bases.intel);
+        }
+
+        // 1. Procedural NVIDIA RTX 4090 Founders Edition
+        function createNvidia4090() {
+            const assemblyGroup = new THREE.Group();
+
+            // Layer 1: PCB (With a triangular/V-shape cutout at the back)
+            const pcbGroup = new THREE.Group();
+            pcbGroup.name = 'PCB';
+            pcbGroup.position.y = -0.5;
+
+            const pcbShape = new THREE.Shape();
+            pcbShape.moveTo(-1.2, -0.7);
+            pcbShape.lineTo(0.7, -0.7);
+            pcbShape.lineTo(1.2, -0.3); // V-shape cutout start
+            pcbShape.lineTo(0.9, 0.0);
+            pcbShape.lineTo(1.2, 0.3); // V-shape cutout end
+            pcbShape.lineTo(0.7, 0.7);
+            pcbShape.lineTo(-1.2, 0.7);
+            pcbShape.closePath();
+
+            const extrudeSettings = { depth: 0.08, bevelEnabled: false };
+            const pcbGeo = new THREE.ExtrudeGeometry(pcbShape, extrudeSettings);
+            pcbGeo.rotateX(Math.PI / 2);
+            const pcbMat = new THREE.MeshPhongMaterial({ color: 0x070c12, shininess: 80 });
+            const pcbMesh = new THREE.Mesh(pcbGeo, pcbMat);
+            pcbMesh.receiveShadow = true;
+            pcbGroup.add(pcbMesh);
+
+            // Glow details on NVIDIA PCB
+            const greenLineMat = new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.8 });
+            const lineGeo = new THREE.BoxGeometry(0.3, 0.01, 0.6);
+            for (let i = 0; i < 3; i++) {
+                const line = new THREE.Mesh(lineGeo, greenLineMat);
+                line.position.set(-0.6 + i * 0.4, 0.05, 0);
+                pcbGroup.add(line);
+            }
+            assemblyGroup.add(pcbGroup);
+
+            // Layer 2: AD102 Core & VRAM
+            const dieGroup = new THREE.Group();
+            dieGroup.position.y = -0.2;
+            dieGroup.name = 'Core';
+
+            const dieGeo = new THREE.BoxGeometry(0.7, 0.05, 0.7);
+            const dieMat = new THREE.MeshStandardMaterial({ color: 0x2e3b4e, roughness: 0.1, metalness: 0.9 });
+            const mainDie = new THREE.Mesh(dieGeo, dieMat);
+            dieGroup.add(mainDie);
+
+            // Micron GDDR6X VRAM Blocks surrounding AD102
+            const vramGeo = new THREE.BoxGeometry(0.18, 0.06, 0.22);
+            const vramMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.5 });
+            const positions = [
+                [-0.5, 0, -0.5], [-0.5, 0, 0], [-0.5, 0, 0.5],
+                [0.5, 0, -0.5], [0.5, 0, 0], [0.5, 0, 0.5],
+                [-0.2, 0, -0.5], [0.2, 0, -0.5],
+                [-0.2, 0, 0.5], [0.2, 0, 0.5]
+            ];
+            positions.forEach(pos => {
+                const vram = new THREE.Mesh(vramGeo, vramMat);
+                vram.position.set(pos[0], pos[1], pos[2]);
+                dieGroup.add(vram);
+            });
+            assemblyGroup.add(dieGroup);
+
+            // Layer 3: Hourglass Metallic Heatsink
+            const heatsinkGroup = new THREE.Group();
+            heatsinkGroup.position.y = 0.1;
+            heatsinkGroup.name = 'Heatsink';
+
+            // Hourglass central frame
+            const frameGeo = new THREE.BoxGeometry(2.4, 0.25, 1.4);
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0xb5a491, metalness: 0.9, roughness: 0.15 }); // Champagne silver color
+            const baseFrame = new THREE.Mesh(frameGeo, frameMat);
+            heatsinkGroup.add(baseFrame);
+
+            // Diagonal high density heatsink fins
+            const finGeo = new THREE.BoxGeometry(0.015, 0.35, 1.25);
+            const finMat = new THREE.MeshStandardMaterial({ color: 0x27272a, metalness: 0.8, roughness: 0.3 });
+            for (let i = -11; i <= 11; i++) {
+                const fin = new THREE.Mesh(finGeo, finMat);
+                fin.position.set(i * 0.09, 0.1, 0);
+                fin.rotation.y = 0.35; // Diagonal angled fins
+                heatsinkGroup.add(fin);
+            }
+            assemblyGroup.add(heatsinkGroup);
+
+            // Layer 4: Shroud & Opposite Flow Fans
+            const shroudGroup = new THREE.Group();
+            shroudGroup.position.y = 0.5;
+            shroudGroup.name = 'Shroud';
+
+            // Silver Outer Bezel in Hourglass shape (Simplified)
+            const bezelGeo = new THREE.BoxGeometry(2.42, 0.2, 1.42);
+            const bezelMat = new THREE.MeshStandardMaterial({ color: 0x8e8e93, metalness: 0.9, roughness: 0.1 });
+            const bezel = new THREE.Mesh(bezelGeo, bezelMat);
+            shroudGroup.add(bezel);
+
+            // Side glowing Logo "GEFORCE RTX"
+            const logoGeo = new THREE.BoxGeometry(0.8, 0.06, 0.1);
+            const logoMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); // Bright illuminated
+            const logo = new THREE.Mesh(logoGeo, logoMat);
+            logo.position.set(0, 0.11, 0.72);
+            shroudGroup.add(logo);
+
+            // Dual flow-through fans (Opposite sides!)
+            shroudGroup.fans = [];
+            const fanGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.05, 16);
+            const fanMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.6 });
+
+            // Fan 1: Top Front side
+            const fan1Group = new THREE.Group();
+            fan1Group.position.set(-0.55, 0.11, 0);
+            const f1Mesh = new THREE.Mesh(fanGeo, fanMat);
+            f1Mesh.rotation.x = Math.PI / 2;
+            fan1Group.add(f1Mesh);
+            shroudGroup.add(fan1Group);
+            shroudGroup.fans.push(fan1Group);
+
+            // Fan 2: Bottom Reverse side (Represented on top for model symmetry, but angled)
+            const fan2Group = new THREE.Group();
+            fan2Group.position.set(0.55, 0.11, 0);
+            const f2Mesh = new THREE.Mesh(fanGeo, fanMat);
+            f2Mesh.rotation.x = -Math.PI / 2;
+            fan2Group.add(f2Mesh);
+            shroudGroup.add(fan2Group);
+            shroudGroup.fans.push(fan2Group);
+
+            assemblyGroup.add(shroudGroup);
+            assemblyGroup.scale.set(1.1, 1.1, 1.1);
+            return assemblyGroup;
+        }
+
+        // 2. Procedural AMD Radeon RX 7900 XTX Reference Model
+        function createAmd7900XTX() {
+            const assemblyGroup = new THREE.Group();
+
+            // Layer 1: PCB (Matte black, standard shape)
+            const pcbGroup = new THREE.Group();
+            pcbGroup.name = 'PCB';
+            pcbGroup.position.y = -0.5;
+
+            const pcbGeo = new THREE.BoxGeometry(2.5, 0.08, 1.3);
+            const pcbMat = new THREE.MeshPhongMaterial({ color: 0x0b0d0f, shininess: 50 });
+            const pcb = new THREE.Mesh(pcbGeo, pcbMat);
+            pcb.receiveShadow = true;
+            pcbGroup.add(pcb);
+
+            // Red detailing lines
+            const redLineMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.8 });
+            const lineGeo = new THREE.BoxGeometry(0.4, 0.01, 0.8);
+            const line = new THREE.Mesh(lineGeo, redLineMat);
+            line.position.set(0.5, 0.05, 0);
+            pcbGroup.add(line);
+            assemblyGroup.add(pcbGroup);
+
+            // Layer 2: Navi 31 Chiplet Die (1 GCD + 6 MCDs)
+            const dieGroup = new THREE.Group();
+            dieGroup.position.y = -0.2;
+            dieGroup.name = 'Core';
+
+            // Central GCD
+            const gcdGeo = new THREE.BoxGeometry(0.5, 0.05, 0.6);
+            const gcdMat = new THREE.MeshStandardMaterial({ color: 0x3f3f46, roughness: 0.1, metalness: 0.95 });
+            const gcdDie = new THREE.Mesh(gcdGeo, gcdMat);
+            dieGroup.add(gcdDie);
+
+            // 6 MCDs on flanking sides
+            const mcdGeo = new THREE.BoxGeometry(0.12, 0.06, 0.18);
+            const mcdMat = new THREE.MeshStandardMaterial({ color: 0xa1a1aa, roughness: 0.1, metalness: 0.9 });
+            const mcdPositions = [
+                [-0.35, 0, -0.22], [-0.35, 0, 0], [-0.35, 0, 0.22],
+                [0.35, 0, -0.22], [0.35, 0, 0], [0.35, 0, 0.22]
+            ];
+            mcdPositions.forEach(pos => {
+                const mcd = new THREE.Mesh(mcdGeo, mcdMat);
+                mcd.position.set(pos[0], pos[1], pos[2]);
+                dieGroup.add(mcd);
+            });
+            assemblyGroup.add(dieGroup);
+
+            // Layer 3: Heatsink with signature Red Fins
+            const heatsinkGroup = new THREE.Group();
+            heatsinkGroup.position.y = 0.1;
+            heatsinkGroup.name = 'Heatsink';
+
+            const baseHeatsinkGeo = new THREE.BoxGeometry(2.4, 0.15, 1.2);
+            const baseHeatsinkMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.8, roughness: 0.3 }); // Dark heatsink block
+            const baseHeatsink = new THREE.Mesh(baseHeatsinkGeo, baseHeatsinkMat);
+            heatsinkGroup.add(baseHeatsink);
+
+            // Vertical dense fins
+            const finGeo = new THREE.BoxGeometry(0.02, 0.35, 1.15);
+            const finMatStandard = new THREE.MeshStandardMaterial({ color: 0x3f3f46, metalness: 0.8, roughness: 0.2 });
+            const finMatSignatureRed = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.1, metalness: 0.8 }); // AMD Signature 3 Red Fins
+
+            for (let i = -12; i <= 12; i++) {
+                // Paint three specific fins on the side bright red!
+                const isSignatureRed = (i >= 5 && i <= 7);
+                const fin = new THREE.Mesh(finGeo, isSignatureRed ? finMatSignatureRed : finMatStandard);
+                fin.position.set(i * 0.08, 0.1, 0);
+                heatsinkGroup.add(fin);
+            }
+            assemblyGroup.add(heatsinkGroup);
+
+            // Layer 4: Matte Stealth Black Triple-Fan Shroud
+            const shroudGroup = new THREE.Group();
+            shroudGroup.position.y = 0.5;
+            shroudGroup.name = 'Shroud';
+
+            // Angled reference design casing
+            const frameGeo = new THREE.BoxGeometry(2.52, 0.18, 1.32);
+            const frameMat = new THREE.MeshPhongMaterial({ color: 0x111111, shininess: 30 }); // Dark matte
+            const frame = new THREE.Mesh(frameGeo, frameMat);
+            shroudGroup.add(frame);
+
+            // Red Radeon strip accent
+            const stripeGeo = new THREE.BoxGeometry(0.04, 0.19, 1.33);
+            const stripeMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+            const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+            stripe.position.set(-0.9, 0, 0);
+            shroudGroup.add(stripe);
+
+            // THREE Fans layout
+            shroudGroup.fans = [];
+            const fanGeo = new THREE.CylinderGeometry(0.33, 0.33, 0.05, 12);
+            const fanMat = new THREE.MeshStandardMaterial({ color: 0x1c1917, roughness: 0.8 });
+
+            [-0.75, 0, 0.75].forEach(posX => {
+                const fanGroup = new THREE.Group();
+                fanGroup.position.set(posX, 0.1, 0);
+                const fanMesh = new THREE.Mesh(fanGeo, fanMat);
+                fanMesh.rotation.x = Math.PI / 2;
+                fanGroup.add(fanMesh);
+                shroudGroup.add(fanGroup);
+                shroudGroup.fans.push(fanGroup);
+            });
+
+            assemblyGroup.add(shroudGroup);
+            assemblyGroup.scale.set(1.1, 1.1, 1.1);
+            return assemblyGroup;
+        }
+
+        // 3. Procedural Intel Arc A770 Limited Edition Model
+        function createIntelArcA770() {
+            const assemblyGroup = new THREE.Group();
+
+            // Layer 1: PCB (Deep black/dark blue)
+            const pcbGroup = new THREE.Group();
+            pcbGroup.name = 'PCB';
+            pcbGroup.position.y = -0.5;
+
+            const pcbGeo = new THREE.BoxGeometry(2.3, 0.08, 1.2);
+            const pcbMat = new THREE.MeshPhongMaterial({ color: 0x050b14, shininess: 60 });
+            const pcb = new THREE.Mesh(pcbGeo, pcbMat);
+            pcb.receiveShadow = true;
+            pcbGroup.add(pcb);
+            assemblyGroup.add(pcbGroup);
+
+            // Layer 2: ACM-G10 Core & Memory
+            const dieGroup = new THREE.Group();
+            dieGroup.position.y = -0.2;
+            dieGroup.name = 'Core';
+
+            const dieGeo = new THREE.BoxGeometry(0.55, 0.05, 0.55);
+            const dieMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.1, metalness: 0.9 });
+            const mainDie = new THREE.Mesh(dieGeo, dieMat);
+            dieGroup.add(mainDie);
+
+            // VRAM modules
+            const vramGeo = new THREE.BoxGeometry(0.18, 0.06, 0.2);
+            const vramMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+            const memoryPositions = [
+                [-0.42, 0, -0.3], [-0.42, 0, 0], [-0.42, 0, 0.3],
+                [0.42, 0, -0.3], [0.42, 0, 0], [0.42, 0, 0.3]
+            ];
+            memoryPositions.forEach(pos => {
+                const vram = new THREE.Mesh(vramGeo, vramMat);
+                vram.position.set(pos[0], pos[1], pos[2]);
+                dieGroup.add(vram);
+            });
+            assemblyGroup.add(dieGroup);
+
+            // Layer 3: Stealth Heatsink
+            const heatsinkGroup = new THREE.Group();
+            heatsinkGroup.position.y = 0.1;
+            heatsinkGroup.name = 'Heatsink';
+
+            const baseHeatsinkGeo = new THREE.BoxGeometry(2.2, 0.15, 1.1);
+            const baseHeatsinkMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7, roughness: 0.4 });
+            const baseHeatsink = new THREE.Mesh(baseHeatsinkGeo, baseHeatsinkMat);
+            heatsinkGroup.add(baseHeatsink);
+
+            // Vertical dense fins
+            const finGeo = new THREE.BoxGeometry(0.015, 0.3, 1.05);
+            const finMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 });
+            for (let i = -10; i <= 10; i++) {
+                const fin = new THREE.Mesh(finGeo, finMat);
+                fin.position.set(i * 0.09, 0.1, 0);
+                heatsinkGroup.add(fin);
+            }
+            assemblyGroup.add(heatsinkGroup);
+
+            // Layer 4: Shroud with diffuse RGB Border Rings
+            const shroudGroup = new THREE.Group();
+            shroudGroup.position.y = 0.5;
+            shroudGroup.name = 'Shroud';
+
+            // Sleek rounded shroud
+            const frameGeo = new THREE.BoxGeometry(2.32, 0.18, 1.22);
+            const frameMat = new THREE.MeshPhongMaterial({ color: 0x1c1917, shininess: 80 }); // Rounded glossy look
+            const frame = new THREE.Mesh(frameGeo, frameMat);
+            shroudGroup.add(frame);
+
+            // Active Glowing Neon Blue LED Ring around the edge (Intel Arc style)
+            const ringGeo = new THREE.BoxGeometry(2.34, 0.03, 1.24);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0x00d2ff }); // Cyan neon
+            const glowRing = new THREE.Mesh(ringGeo, ringMat);
+            shroudGroup.add(glowRing);
+
+            // Dual Fans
+            shroudGroup.fans = [];
+            const fanGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.05, 16);
+            const fanMat = new THREE.MeshStandardMaterial({ color: 0x292524, roughness: 0.7 });
+
+            [-0.52, 0.52].forEach(posX => {
+                const fanGroup = new THREE.Group();
+                fanGroup.position.set(posX, 0.1, 0);
+                const fanMesh = new THREE.Mesh(fanGeo, fanMat);
+                fanMesh.rotation.x = Math.PI / 2;
+                fanGroup.add(fanMesh);
+                shroudGroup.add(fanGroup);
+                shroudGroup.fans.push(fanGroup);
+            });
+
+            assemblyGroup.add(shroudGroup);
+            assemblyGroup.scale.set(1.1, 1.1, 1.1);
+            return assemblyGroup;
+        }
+
+        // Helper: Create a glowing holographic base plate under each GPU
+        function createHoloBase(colorHex) {
+            const baseGroup = new THREE.Group();
+            const cylinderGeo = new THREE.CylinderGeometry(1.6, 1.8, 0.1, 32);
+            const cylinderMat = new THREE.MeshPhongMaterial({
+                color: 0x0f172a,
+                transparent: true,
+                opacity: 0.6,
+                shininess: 100,
+                specular: colorHex
+            });
+            const baseMesh = new THREE.Mesh(cylinderGeo, cylinderMat);
+            baseGroup.add(baseMesh);
+
+            // Glowing ring outline
+            const ringGeo = new THREE.RingGeometry(1.6, 1.65, 32);
+            const ringMat = new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = Math.PI / 2;
+            ring.position.y = 0.06;
+            baseGroup.add(ring);
+
+            return baseGroup;
+        }
+
+        // Handle layer explosion factor based on slider input
+        function handleExplode(val) {
+            explosionFactor = val / 100;
+            document.getElementById('explode-val').textContent = `${val}%`;
+            applyExplosionOffsets();
+        }
+
+        // Separates the layers physically in the 3D space
+        function applyExplosionOffsets() {
+            Object.keys(gpuModels).forEach((key) => {
+                const gpu = gpuModels[key];
+                if (!gpu) return;
+
+                // PCB (Layer 1) moves down
+                const pcb = gpu.getObjectByName('PCB');
+                if (pcb) pcb.position.y = -0.5 - (explosionFactor * 0.7);
+
+                // Core (Layer 2) stays relatively stable in the center
+                const core = gpu.getObjectByName('Core');
+                if (core) core.position.y = -0.2 - (explosionFactor * 0.1);
+
+                // Heatsink (Layer 3) moves up
+                const heatsink = gpu.getObjectByName('Heatsink');
+                if (heatsink) heatsink.position.y = 0.1 + (explosionFactor * 0.6);
+
+                // Shroud (Layer 4) moves further up
+                const shroud = gpu.getObjectByName('Shroud');
+                if (shroud) shroud.position.y = 0.5 + (explosionFactor * 1.5);
+            });
+        }
+
+        // Brand Selector Handler
+        function selectBrand(brand) {
+            activeBrand = brand;
+            currentAction = brand; // Synchronize with simulation actions
+
+            // Highlight selected brand button
+            ['nvidia', 'amd', 'intel'].forEach(b => {
+                const btn = document.getElementById(`selector-${b}`);
+                if (b === brand) {
+                    btn.classList.add('bg-slate-900', 'border-indigo-500', 'ring-2', 'ring-indigo-500/50');
+                    btn.classList.remove('opacity-60');
+                } else {
+                    btn.classList.remove('bg-slate-900', 'border-indigo-500', 'ring-2', 'ring-indigo-500/50');
+                    btn.classList.add('opacity-60');
+                }
+            });
+
+            // Update Watermark and Grid Positions
+            updateWatermark(brand.toUpperCase(), techData[brand].name);
+            focusCameraOnGPU(brand);
+
+            // Update informative terminal
+            updateEducationalContent();
+
+            // Render matching SVG Blueprint or photo
+            renderEngineBlueprint(brand);
+        }
+
+        // Focus and slide the camera towards the selected GPU
+        function focusCameraOnGPU(brand) {
+            let targetX = 0;
+            if (brand === 'nvidia') targetX = -3;
+            else if (brand === 'amd') targetX = 0;
+            else if (brand === 'intel') targetX = 3;
+
+            // Make only selected brand visible or highlight, and dim others slightly
+            Object.keys(gpuModels).forEach(key => {
+                const gpu = gpuModels[key];
+                if (!gpu) return;
+
+                if (key === brand) {
+                    gpu.scale.set(1.2, 1.2, 1.2);
+                    gpu.traverse(child => {
+                        if (child.material) {
+                            child.material.transparent = false;
+                            child.material.opacity = 1.0;
+                        }
+                    });
+                } else {
+                    gpu.scale.set(0.8, 0.8, 0.8);
+                    gpu.traverse(child => {
+                        if (child.material) {
+                            child.material.transparent = true;
+                            child.material.opacity = 0.35;
+                        }
+                    });
+                }
+            });
+
+            // Update look-at target smoothly on focus change
+            targetLookAt.set(targetX, 0, 0);
+
+            // Reposition camera target dynamically in animation loop
+            gsapAnimateCamera(targetX, 1.5, 5.5);
+        }
+
+        // Camera simple interpolation
+        function gsapAnimateCamera(tx, ty, tz) {
+            camTargetX = tx;
+            camTargetY = ty;
+            camTargetZ = tz;
+        }
+
+        // Global Action trigger matrix (Simulations, guides, summary)
+        function triggerAction(action) {
+            currentAction = action;
+
+            // Stop any existing special simulations in the scene
+            clearActiveSimulations();
+
+            const terminalHeader = document.getElementById('terminal-header');
+            const terminalBody = document.getElementById('terminal-body');
+            const specsPanel = document.getElementById('tech-specs-subpanel');
+
+            // Hide basic subpanel specs by default
+            specsPanel.classList.add('hidden');
+
+            // Set buttons active state
+            const buttons = ['compare-all', 'compare-table', 'sim-parallel', 'sim-ai', 'sim-raytracing', 'sim-upscaling', 'naming-guide', 'use-cases'];
+            buttons.forEach(b => {
+                const btn = document.getElementById(`btn-${b}`);
+                if (b === action) {
+                    btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-400');
+                    btn.classList.remove('bg-slate-800');
+                } else {
+                    btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-400');
+                    btn.classList.add('bg-slate-800');
+                }
+            });
+
+            switch (action) {
+                case 'compare-all':
+                    // Put all 3 in normal scale, side-by-side
+                    Object.keys(gpuModels).forEach(key => {
+                        const gpu = gpuModels[key];
+                        if (gpu) {
+                            gpu.scale.set(1, 1, 1);
+                            gpu.traverse(child => {
+                                if (child.material) {
+                                    child.material.transparent = false;
+                                    child.material.opacity = 1.0;
+                                }
+                            });
+                        }
+                    });
+                    gsapAnimateCamera(0, 3.5, 9);
+                    targetLookAt.set(0, 0.5, 0); // focus back on center
+                    terminalHeader.textContent = "VISTA MULTIARQUITECTURA";
+                    terminalBody.innerHTML = `
+                        <div class='space-y-3'>
+                            <p class='text-amber-400 font-bold'>Laboratorio Comparativo de las tres grandes potencias:</p>
+                            <p>Hemos colocado en paralelo los silicios representativos de <strong class='text-emerald-400'>NVIDIA RTX 4090 FE</strong>, <strong class='text-rose-400'>AMD RX 7900 XTX</strong> e <strong class='text-blue-400'>Intel Arc A770</strong>.</p>
+                            <p class='text-xs text-slate-400'>Observa la base holográfica y utiliza el deslizador de <strong class='text-indigo-400'>Capa Explotada</strong> para desarmar los ventiladores, el disipador de calor y ver las zonas de núcleos internas.</p>
+                            <div class='border-l-2 border-indigo-500 pl-2 text-xs italic text-slate-400'>
+                                Nivel educativo seleccionado: <strong>${currentLevel.toUpperCase()}</strong>. Cambia el nivel arriba para adaptar la dificultad técnica de las explicaciones.
+                            </div>
+                        </div>
+                    `;
+                    updateWatermark("MARCAS DE SILICIO", "COMPREHENSIVE TRIPLE VIEW");
+                    break;
+
+                case 'compare-table':
+                    showHolographicTableModal();
+                    break;
+
+                case 'sim-parallel':
+                    setupParallelProcessingSimulation();
+                    targetLookAt.set(0, 1.0, 0);
+                    break;
+
+                case 'sim-ai':
+                    setupAISimulation();
+                    targetLookAt.set(0, 1.2, 0);
+                    break;
+
+                case 'sim-raytracing':
+                    setupRayTracingSimulation();
+                    targetLookAt.set(0, 1.2, 0);
+                    break;
+
+                case 'sim-upscaling':
+                    setupUpscalingSimulation();
+                    targetLookAt.set(0, 1.2, 0);
+                    break;
+
+                case 'naming-guide':
+                    showNamingGuideModal();
+                    break;
+
+                case 'use-cases':
+                    showUseCasesModal();
+                    break;
+            }
+        }
+
+        // Clean up visual simulations from scene
+        function clearActiveSimulations() {
+            if (raytracingSimulationGroup) { scene.remove(raytracingSimulationGroup); raytracingSimulationGroup = null; }
+            if (parallelParticles) { scene.remove(parallelParticles); parallelParticles = null; }
+            if (matrixParticles) { scene.remove(matrixParticles); matrixParticles = null; }
+            if (upscalingPlane) { scene.remove(upscalingPlane); upscalingPlane = null; }
+        }
+
+        // Action Simulation 1: Parallel Processing
+        function setupParallelProcessingSimulation() {
+            gsapAnimateCamera(0, 3.5, 9.5);
+            const terminalHeader = document.getElementById('terminal-header');
+            const terminalBody = document.getElementById('terminal-body');
+
+            terminalHeader.textContent = "SIMULACIÓN: CÓMPUTO PARALELO";
+            terminalBody.innerHTML = `
+                <div class='space-y-2 text-xs'>
+                    <span class='px-2 py-0.5 rounded bg-amber-600 text-[10px] font-bold text-white'>SIMULACIÓN ACTIVA</span>
+                    <p class='text-sm text-indigo-300 font-semibold'>¿Cómo se procesan los datos masivos?</p>
+                    <p>Mientras que una CPU procesa tareas complejas secuencialmente, la GPU divide un bloque masivo de datos en miles de pequeños hilos independientes ejecutados al mismo tiempo.</p>
+                    <p><strong class='text-emerald-400'>NVIDIA (CUDA Cores):</strong> Utiliza hilos ligeros mapeados en multiprocesadores de transmisión (SM).</p>
+                    <p><strong class='text-rose-400'>AMD (Compute Units):</strong> Se organiza en bloques de cómputo vectoriales que agrupan procesadores de flujo.</p>
+                    <p><strong class='text-blue-400'>Intel (Xe Vector Engines):</strong> Ejecuta múltiples hilos mediante unidades vectoriales Xe dedicadas.</p>
+                </div>
+            `;
+
+            // Draw a floating flow of parallel particles from a source point above the GPUs down into the silicons
+            const particleCount = 200;
+            const geo = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            const speeds = [];
+
+            const brandColors = [
+                new THREE.Color(0x10b981), // Green
+                new THREE.Color(0xf43f5e), // Red
+                new THREE.Color(0x3b82f6)  // Blue
+            ];
+
+            for (let i = 0; i < particleCount; i++) {
+                // Determine target GPU based on X coordinate
+                const brandIndex = Math.floor(Math.random() * 3);
+                const targetX = -3 + (brandIndex * 3);
+                const randomX = targetX + (Math.random() - 0.5) * 0.8;
+                const randomY = 3 + Math.random() * 2; // spawn above
+                const randomZ = (Math.random() - 0.5) * 0.8;
+
+                positions[i * 3] = randomX;
+                positions[i * 3 + 1] = randomY;
+                positions[i * 3 + 2] = randomZ;
+
+                const c = brandColors[brandIndex];
+                colors[i * 3] = c.r;
+                colors[i * 3 + 1] = c.g;
+                colors[i * 3 + 2] = c.b;
+
+                speeds.push(0.04 + Math.random() * 0.04);
+            }
+
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const mat = new THREE.PointsMaterial({
+                size: 0.12,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.9,
+                blending: THREE.AdditiveBlending
+            });
+
+            parallelParticles = new THREE.Points(geo, mat);
+            parallelParticles.userData = { speeds, originalY: 3.5 };
+            scene.add(parallelParticles);
+        }
+
+        // Action Simulation 2: AI Neural Network
+        function setupAISimulation() {
+            gsapAnimateCamera(0, 3, 9);
+            const terminalHeader = document.getElementById('terminal-header');
+            const terminalBody = document.getElementById('terminal-body');
+
+            terminalHeader.textContent = "SIMULACIÓN: INTELIGENCIA ARTIFICIAL";
+            terminalBody.innerHTML = `
+                <div class='space-y-2 text-xs'>
+                    <span class='px-2 py-0.5 rounded bg-emerald-600 text-[10px] font-bold text-white'>IA COMPILANDO</span>
+                    <p class='text-sm text-indigo-300 font-semibold'>Aceleración de Redes Neuronales Profundas</p>
+                    <p>La inteligencia artificial se fundamenta en la multiplicación masiva de matrices de números decimales complejos.</p>
+                    <p><strong class='text-emerald-400'>Tensor Cores (NVIDIA):</strong> Unidades de silicio dedicadas exclusivamente a multiplicar matrices masivas FP16/FP8 en un paso instantáneo.</p>
+                    <p><strong class='text-rose-400'>CDNA Matrix Cores (AMD):</strong> Estructuras optimizadas para optimizar cargas matemáticas densas en supercómputo e IA generativa.</p>
+                    <p><strong class='text-blue-400'>Xe Matrix Extensions (XMX) (Intel):</strong> Aceleradores matriciales para procesar inferencia de IA en el borde y gaming.</p>
+                </div>
+            `;
+
+            // Visualise matrix multiplication with a small grid of 3D glowing lines representing network nodes
+            matrixParticles = new THREE.Group();
+
+            // Create a small network grid of floating neural layers
+            const layerGeo = new THREE.SphereGeometry(0.06, 16, 16);
+            const layerMat = new THREE.MeshBasicMaterial({ color: 0x4f46e5 });
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x312e81, transparent: true, opacity: 0.4 });
+
+            const layers = [4, 5, 4];
+            const nodeMeshList = [];
+
+            for (let l = 0; l < layers.length; l++) {
+                const count = layers[l];
+                const xPos = -1.5 + (l * 1.5);
+                const nodesInLayer = [];
+
+                for (let n = 0; n < count; n++) {
+                    const yPos = -0.5 + (n * 0.4);
+                    const zPos = -0.5 + (Math.random() * 0.5);
+                    const node = new THREE.Mesh(layerGeo, layerMat);
+                    node.position.set(xPos, yPos, zPos);
+                    matrixParticles.add(node);
+                    nodesInLayer.push(node);
+                }
+                nodeMeshList.push(nodesInLayer);
+            }
+
+            // Draw connection lines
+            for (let l = 0; l < nodeMeshList.length - 1; l++) {
+                const currentLayer = nodeMeshList[l];
+                const nextLayer = nodeMeshList[l + 1];
+                currentLayer.forEach(n1 => {
+                    nextLayer.forEach(n2 => {
+                        const points = [n1.position, n2.position];
+                        const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+                        const line = new THREE.Line(lineGeo, lineMat);
+                        matrixParticles.add(line);
+                    });
+                });
+            }
+
+            matrixParticles.position.set(0, 1.5, 0);
+            scene.add(matrixParticles);
+        }
+
+        // Action Simulation 3: Ray Tracing simulation (laser reflection)
+        function setupRayTracingSimulation() {
+            const terminalHeader = document.getElementById('terminal-header');
+            const terminalBody = document.getElementById('terminal-body');
+
+            terminalHeader.textContent = "SIMULACIÓN: RAY TRACING 3D";
+            terminalBody.innerHTML = `
+                <div class='space-y-2 text-xs'>
+                    <span class='px-2 py-0.5 rounded bg-rose-600 text-[10px] font-bold text-white'>TRAZADO DE RAYOS</span>
+                    <p class='text-sm text-indigo-300 font-semibold'>La física realista de la luz y reflejos</p>
+                    <p>El Ray Tracing calcula el recorrido de rayos de luz individuales desde la cámara, rebotando en objetos tridimensionales para pintar reflejos, sombras y luces realistas.</p>
+                    <p><strong class='text-emerald-400'>RT Cores (NVIDIA):</strong> Calcula la intersección del rayo en la estructura de datos BVH sin interrumpir a los sombreadores gráficos.</p>
+                    <p><strong class='text-rose-400'>Ray Accelerators (AMD):</strong> Integrados en las Compute Units de RDNA para acelerar rebotes de luz.</p>
+                    <p><strong class='text-blue-400'>Xe Ray Tracing Units (Intel):</strong> Módulos especializados que calculan la trayectoria lumínica en la GPU dedicada.</p>
+                </div>
+            `;
+
+            // Draw a central sphere representing a game asset, and laser beams bouncing on it from the GPUs
+            raytracingSimulationGroup = new THREE.Group();
+
+            // Central mirror sphere
+            const sphereGeo = new THREE.SphereGeometry(0.6, 32, 32);
+            const sphereMat = new THREE.MeshStandardMaterial({
+                color: 0x94a3b8,
+                metalness: 1.0,
+                roughness: 0.05
+            });
+            const centralSphere = new THREE.Mesh(sphereGeo, sphereMat);
+            centralSphere.position.set(0, 1.2, 0);
+            raytracingSimulationGroup.add(centralSphere);
+
+            // Let's draw bouncing lines representing lasers in animation
+            scene.add(raytracingSimulationGroup);
+        }
+
+        // Action Simulation 4: Image Upscaling
+        function setupUpscalingSimulation() {
+            const terminalHeader = document.getElementById('terminal-header');
+            const terminalBody = document.getElementById('terminal-body');
+
+            terminalHeader.textContent = "SIMULACIÓN: SUPER ESCALADO IA";
+            terminalBody.innerHTML = `
+                <div class='space-y-2 text-xs'>
+                    <span class='px-2 py-0.5 rounded bg-cyan-600 text-[10px] font-bold text-white'>UPSCALING ACTIVO</span>
+                    <p class='text-sm text-indigo-300 font-semibold'>¿Cómo funciona DLSS, FSR y XeSS?</p>
+                    <p>La GPU renderiza internamente el videojuego a una resolución baja (ej: 1080p, rápido de procesar) y luego un algoritmo inteligente reconstruye los pixeles ausentes para entregarlo en alta definición (ej: 4K).</p>
+                    <p><strong class='text-emerald-400'>NVIDIA DLSS:</strong> Utiliza redes neuronales profundas entrenadas en supercomputadoras que se ejecutan en los Tensor Cores físicos.</p>
+                    <p><strong class='text-rose-400'>AMD FSR:</strong> Algoritmo abierto espacial y temporal que no requiere hardware de IA dedicada obligatoria.</p>
+                    <p><strong class='text-blue-400'>Intel XeSS:</strong> Usa reconstrucción por IA aprovechando las instrucciones vectoriales XMX.</p>
+                </div>
+            `;
+
+            // Draw a flat screen panel that shifts texture pixel size dynamically from pixelated to clean HD
+            const planeGeo = new THREE.PlaneGeometry(2.5, 1.5);
+            // Dynamic canvas texture simulation
+            const dCanvas = document.createElement('canvas');
+            dCanvas.width = 512;
+            dCanvas.height = 256;
+            const dCtx = dCanvas.getContext('2d');
+
+            const dynamicTexture = new THREE.CanvasTexture(dCanvas);
+            const planeMat = new THREE.MeshBasicMaterial({ map: dynamicTexture, side: THREE.DoubleSide });
+            upscalingPlane = new THREE.Mesh(planeGeo, planeMat);
+            upscalingPlane.position.set(0, 1.2, 0);
+            upscalingPlane.userData = { canvas: dCanvas, ctx: dCtx, texture: dynamicTexture, timer: 0 };
+            scene.add(upscalingPlane);
+        }
+
+        // LEVEL SETTING CONTROLLER
+        function setLevel(lvl) {
+            currentLevel = lvl;
+
+            // Highlight active level button
+            ['basic', 'intermediate', 'advanced'].forEach(l => {
+                const btn = document.getElementById(`btn-lvl-${l}`);
+                if (l === lvl) {
+                    btn.className = "px-3 py-1.5 rounded transition-all duration-300 font-semibold bg-indigo-600 text-white shadow-md shadow-indigo-500/20";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded transition-all duration-300 font-semibold text-slate-400 hover:text-white";
+                }
+            });
+
+            // Update visible content based on currently selected action/brand
+            updateEducationalContent();
+        }
+
+        // Dynamically update side informational terminal based on brand & difficulty level
+        function updateEducationalContent() {
+            const header = document.getElementById('terminal-header');
+            const body = document.getElementById('terminal-body');
+            const specsPanel = document.getElementById('tech-specs-subpanel');
+
+            // If a standard brand is active, display its description
+            if (activeBrand && (currentAction === 'nvidia' || currentAction === 'amd' || currentAction === 'intel' || currentAction === 'compare-all')) {
+                const brand = activeBrand;
+                const info = techData[brand];
+                header.textContent = `ARQUITECTURA ${brand.toUpperCase()}`;
+
+                let textToShow = info.basic;
+                if (currentLevel === 'intermediate') textToShow = info.intermediate;
+                else if (currentLevel === 'advanced') textToShow = info.advanced;
+
+                body.innerHTML = `
+                    <div class='space-y-3'>
+                        <h4 class='font-orbitron font-bold text-base text-indigo-400 flex items-center gap-2'>
+                            <span class="w-3 h-3 rounded-full" style="background-color: ${info.color}"></span>
+                            ${info.name}
+                        </h4>
+                        <p class='text-sm leading-relaxed text-slate-300'>${textToShow}</p>
+                        <div class='p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex items-center space-x-3 text-xs'>
+                            <span class='text-xl'>⚡</span>
+                            <div>
+                                <p class='font-bold text-amber-400'>Dato de Ingeniería:</p>
+                                <p class='text-slate-400'>${getBrandTip(brand)}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Update specs panel
+                document.getElementById('spec-cores').textContent = info.cores;
+                document.getElementById('spec-platform').textContent = info.platform;
+                document.getElementById('spec-focus').textContent = info.focus;
+                document.getElementById('spec-api').textContent = info.api;
+                specsPanel.classList.remove('hidden');
+            }
+        }
+
+        // Unique quick-tips for brands
+        function getBrandTip(brand) {
+            switch (brand) {
+                case 'nvidia':
+                    return 'Si vas a programar Inteligencia Artificial, CUDA es el estándar dorado de facto de la industria en PyTorch y TensorFlow.';
+                case 'amd':
+                    return 'Ofrece un rendimiento de rasterización puro excepcional por cada dólar invertido, siendo perfecto para gaming fluido.';
+                case 'intel':
+                    return 'oneAPI permite escribir código abierto de cómputo paralelo que corre sin cambios en CPU y tarjetas gráficas integradas o dedicadas.';
+                default:
+                    return '';
+            }
+        }
+
+        // Toggle Sidebar Tab
+        function toggleSidebarTab(tabName) {
+            activeSidebarTab = tabName;
+
+            const btn3D = document.getElementById('tab-btn-3d-lab');
+            const btnBlueprints = document.getElementById('tab-btn-blueprints');
+            const content3D = document.getElementById('tab-content-3d-lab');
+            const contentBlueprints = document.getElementById('tab-content-blueprints');
+
+            if (tabName === '3d-lab') {
+                btn3D.className = "flex-1 text-center py-1.5 rounded text-xs font-semibold transition-all duration-200 bg-indigo-600 text-white";
+                btnBlueprints.className = "flex-1 text-center py-1.5 rounded text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white";
+                content3D.classList.remove('hidden');
+                contentBlueprints.classList.add('hidden');
+            } else {
+                btnBlueprints.className = "flex-1 text-center py-1.5 rounded text-xs font-semibold transition-all duration-200 bg-indigo-600 text-white";
+                btn3D.className = "flex-1 text-center py-1.5 rounded text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-white";
+                contentBlueprints.classList.remove('hidden');
+                content3D.classList.add('hidden');
+
+                // Immediately render the blueprints of active brand
+                renderEngineBlueprint(activeBrand);
+            }
+        }
+
+        // Toggle Blueprint sub-mode (Schematic vs Real Photo)
+        function setBlueprintMode(mode) {
+            blueprintMode = mode;
+            const btnSchematic = document.getElementById('btn-bp-schematic');
+            const btnPhoto = document.getElementById('btn-bp-photo');
+
+            if (mode === 'schematic') {
+                btnSchematic.className = "flex-1 text-center py-1 rounded transition-all duration-200 bg-indigo-600 text-white font-semibold";
+                btnPhoto.className = "flex-1 text-center py-1 rounded transition-all duration-200 text-slate-400 hover:text-white font-semibold";
+            } else {
+                btnPhoto.className = "flex-1 text-center py-1 rounded transition-all duration-200 bg-indigo-600 text-white font-semibold";
+                btnSchematic.className = "flex-1 text-center py-1 rounded transition-all duration-200 text-slate-400 hover:text-white font-semibold";
+            }
+
+            // Re-render
+            renderEngineBlueprint(activeBrand);
+        }
+
+        // Generate Real Component SVGs or render Real Photos for the Engineering blueprint tab
+        function renderEngineBlueprint(brand) {
+            const container = document.getElementById('blueprint-content-container');
+            if (!container) return;
+
+            if (blueprintMode === 'real-photo') {
+                const info = techData[brand];
+                // Render real image with robust fallback
+                container.innerHTML = `
+                    <div class="relative w-full overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50 flex flex-col items-center">
+                        <img src="${info.realPhoto}" 
+                             alt="${info.name}" 
+                             class="w-full h-48 object-cover rounded-t-lg transition-transform hover:scale-105 duration-300 cursor-pointer"
+                             onclick="openImageModal('${info.realPhoto}', '${info.name}')"
+                             onerror="this.onerror=null; this.src='${info.realPhotoFallback}';" />
+                        <div class="p-3 w-full bg-slate-950 text-center border-t border-slate-800">
+                            <p class="text-xs font-bold font-orbitron text-indigo-400 uppercase tracking-widest">${info.name}</p>
+                            <p class="text-[10px] text-slate-500 mt-1">Fotografía real de los componentes de hardware de última generación.</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // If mode is 'schematic'
+            let svgContent = '';
+
+            if (brand === 'nvidia') {
+                svgContent = `
+                <svg viewBox="0 0 400 240" class="w-full h-auto max-w-sm drop-shadow-lg">
+                    <!-- Background plate (PCB) Founders Edition style cut in V -->
+                    <path d="M 20 20 L 300 20 L 380 70 L 350 120 L 380 170 L 300 220 L 20 220 Z" fill="#0c1017" stroke="#10b981" stroke-width="2"/>
+                    
+                    <!-- Massive AD102 Silicon Die -->
+                    <rect x="130" y="80" width="80" height="80" rx="4" fill="#2d3748" stroke="#10b981" stroke-width="1.5" />
+                    <text x="170" y="125" fill="#10b981" font-family="Orbitron" font-size="10" font-weight="bold" text-anchor="middle">NVIDIA</text>
+                    <text x="170" y="137" fill="#a1a1aa" font-family="Rajdhani" font-size="8" text-anchor="middle">AD102-300-A1</text>
+                    
+                    <!-- VRM Power Stages (Massive Phases) -->
+                    <rect x="60" y="40" width="15" height="160" fill="#1e293b" />
+                    <line x1="67.5" y1="40" x2="67.5" y2="200" stroke="#10b981" stroke-dasharray="2,3"/>
+                    
+                    <rect x="250" y="40" width="15" height="160" fill="#1e293b" />
+                    
+                    <!-- GDDR6X Micron Memory modules (12 surrounding memory chips) -->
+                    <!-- Top modules -->
+                    <rect x="120" y="55" width="22" height="18" rx="1" fill="#111827" stroke="#4b5563"/>
+                    <rect x="145" y="55" width="22" height="18" rx="1" fill="#111827" stroke="#4b5563"/>
+                    <rect x="170" y="55" width="22" height="18" rx="1" fill="#111827" stroke="#4b5563"/>
+                    <rect x="195" y="55" width="22" height="18" rx="1" fill="#111827" stroke="#4b5563"/>
+                    <!-- Side Left modules -->
+                    <rect x="102" y="85" width="22" height="18" rx="1" fill="#111827" stroke="#4b5563" transform="rotate(-90 113 94)"/>
+                    <rect x="102" y="115" width="22" height="18" rx="1" fill="#111827" stroke="#4b5563" transform="rotate(-90 113 124)"/>
+                    <rect x="102" y="145" width="22" height="18" rx="1" fill="#111827" stroke="#4b5563" transform="rotate(-90 113 154)"/>
+                    <!-- Side Right modules -->
+                    <rect x="216" y="85" width="22" height="18" rx="1" fill="#111827" stroke="#4b5563" transform="rotate(90 227 94)"/>
+                    <rect x="216" y="115" width="22" height="18" rx="1" fill="#111827" stroke="#4b5563" transform="rotate(90 227 124)"/>
+                    <rect x="216" y="145" width="22" height="18" rx="1" fill="#111827" stroke="#4b5563" transform="rotate(90 227 154)"/>
+                    <!-- Bottom modules -->
+                    <rect x="130" y="167" width="22" height="18" rx="1" fill="#111827" stroke="#4b5563"/>
+                    <rect x="155" y="167" width="22" height="18" rx="1" fill="#111827" stroke="#4b5563"/>
+                    <rect x="180" y="167" width="22" height="18" rx="1" fill="#111827" stroke="#4b5563"/>
+
+                    <!-- PCIe x16 Connector interface -->
+                    <rect x="40" y="218" width="180" height="6" fill="#fbbf24"/>
+                    
+                    <!-- Beautiful labels -->
+                    <text x="170" y="210" fill="#10b981" font-family="Rajdhani" font-size="9" text-anchor="middle" font-weight="bold">ARQUITECTURA AD102 (4nm)</text>
+                </svg>
+                `;
+            } else if (brand === 'amd') {
+                svgContent = `
+                <svg viewBox="0 0 400 240" class="w-full h-auto max-w-sm drop-shadow-lg">
+                    <!-- Standard AMD PCB rectangular -->
+                    <rect x="20" y="20" width="360" height="200" fill="#0a0507" stroke="#f43f5e" stroke-width="2" rx="4"/>
+                    
+                    <!-- Chiplet design Silicon Die Navi 31 -->
+                    <!-- Central GCD -->
+                    <rect x="145" y="70" width="70" height="100" rx="2" fill="#3f3f46" stroke="#f43f5e" stroke-width="1.5" />
+                    <text x="180" y="115" fill="#f43f5e" font-family="Orbitron" font-size="9" font-weight="bold" text-anchor="middle">GCD</text>
+                    <text x="180" y="127" fill="#e4e4e7" font-family="Rajdhani" font-size="7" text-anchor="middle">Graphics Die</text>
+
+                    <!-- 6 surrounding MCDs (Memory Cache Chiplets) -->
+                    <rect x="115" y="75" width="22" height="14" rx="1" fill="#71717a" stroke="#f43f5e"/>
+                    <rect x="115" y="110" width="22" height="14" rx="1" fill="#71717a" stroke="#f43f5e"/>
+                    <rect x="115" y="145" width="22" height="14" rx="1" fill="#71717a" stroke="#f43f5e"/>
+
+                    <rect x="223" y="75" width="22" height="14" rx="1" fill="#71717a" stroke="#f43f5e"/>
+                    <rect x="223" y="110" width="22" height="14" rx="1" fill="#71717a" stroke="#f43f5e"/>
+                    <rect x="223" y="145" width="22" height="14" rx="1" fill="#71717a" stroke="#f43f5e"/>
+
+                    <!-- VRM Modules flanking -->
+                    <rect x="50" y="40" width="12" height="160" fill="#18181b" />
+                    <rect x="280" y="40" width="12" height="160" fill="#18181b" />
+
+                    <!-- PCIe Connector -->
+                    <rect x="50" y="218" width="180" height="6" fill="#fbbf24"/>
+                    
+                    <!-- Chiplet explanation -->
+                    <text x="180" y="195" fill="#f43f5e" font-family="Rajdhani" font-size="9" text-anchor="middle" font-weight="bold">CHIPLET NAVI 31 (5nm GCD + 6nm MCD)</text>
+                </svg>
+                `;
+            } else {
+                svgContent = `
+                <svg viewBox="0 0 400 240" class="w-full h-auto max-w-sm drop-shadow-lg">
+                    <!-- Intel blue PCB rectangular -->
+                    <rect x="20" y="20" width="360" height="200" fill="#040b15" stroke="#3b82f6" stroke-width="2" rx="4"/>
+                    
+                    <!-- ACM-G10 central Silicon Die -->
+                    <rect x="140" y="75" width="80" height="80" rx="3" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5" />
+                    <text x="180" y="110" fill="#3b82f6" font-family="Orbitron" font-size="10" font-weight="bold" text-anchor="middle">INTEL Xe</text>
+                    <text x="180" y="122" fill="#a1a1aa" font-family="Rajdhani" font-size="8" text-anchor="middle">ACM-G10 (DG2)</text>
+
+                    <!-- Simetrical memory blocks around Arc -->
+                    <rect x="110" y="80" width="20" height="18" rx="1" fill="#111827"/>
+                    <rect x="110" y="105" width="20" height="18" rx="1" fill="#111827"/>
+                    <rect x="110" y="130" width="20" height="18" rx="1" fill="#111827"/>
+
+                    <rect x="230" y="80" width="20" height="18" rx="1" fill="#111827"/>
+                    <rect x="230" y="105" width="20" height="18" rx="1" fill="#111827"/>
+                    <rect x="230" y="130" width="20" height="18" rx="1" fill="#111827"/>
+
+                    <!-- PCIe Connector -->
+                    <rect x="50" y="218" width="180" height="6" fill="#fbbf24"/>
+                    
+                    <!-- Info text -->
+                    <text x="180" y="195" fill="#3b82f6" font-family="Rajdhani" font-size="9" text-anchor="middle" font-weight="bold">MICROARQUITECTURA Xe-HPG (6nm TSMC)</text>
+                </svg>
+                `;
+            }
+
+            container.innerHTML = svgContent;
+        }
+
+        // Toggle AR Camera Passthrough
+        async function toggleAR() {
+            const video = document.getElementById('webcam');
+            const reticle = document.getElementById('ar-frame');
+            const txtCamera = document.getElementById('txt-camera');
+
+            if (!isARActive) {
+                // Request camera permission
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'environment' }
+                    });
+                    video.srcObject = stream;
+                    video.classList.remove('hidden');
+                    reticle.style.display = 'block';
+                    txtCamera.textContent = "Desactivar RA";
+                    isARActive = true;
+
+                    // Clear scene background to look clean on camera feed
+                    renderer.setClearColor(0x000000, 0);
+                    scene.background = null;
+                } catch (err) {
+                    showCustomToast("No se pudo acceder a la cámara trasera. Asegúrate de dar los permisos necesarios o corre la simulación 3D standard.");
+                    console.warn("Camera failed: ", err);
+                }
+            } else {
+                // Turn off camera
+                const stream = video.srcObject;
+                if (stream) {
+                    const tracks = stream.getTracks();
+                    tracks.forEach(track => track.stop());
+                }
+                video.srcObject = null;
+                video.classList.add('hidden');
+                reticle.style.display = 'none';
+                txtCamera.textContent = "Modo RA";
+                isARActive = false;
+
+                // Restore dark gradient space background
+                renderer.setClearColor(0x030712, 1);
+            }
+        }
+
+        // Reset Camera back to default viewport
+        function resetCamera() {
+            camera.position.set(0, 4, 10);
+            targetRotationX = 0;
+            targetRotationY = 0;
+            if (gpuModels.nvidia) gpuModels.nvidia.rotation.set(0, 0, 0);
+            if (gpuModels.amd) gpuModels.amd.rotation.set(0, 0, 0);
+            if (gpuModels.intel) gpuModels.intel.rotation.set(0, 0, 0);
+        }
+
+        // Toggle visual laboratory ground grid
+        function triggerAction(actionName) {
+            // First stop any auto rotation if user clicks
+            isAutoRotate = false;
+            document.getElementById('rotate-status-lbl').textContent = 'OFF';
+
+            if (actionName === 'naming-guide') {
+                showNamingGuideModal();
+                return;
+            }
+            if (actionName === 'use-cases') {
+                showUseCasesModal();
+                return;
+            }
+            if (actionName === 'segments') {
+                showSegmentsModal();
+                return;
+            }
+        }
+
+        function toggleGrid() {
+            isGridEnabled = !isGridEnabled;
+            gridHelper.visible = isGridEnabled;
+            document.getElementById('grid-status-lbl').textContent = isGridEnabled ? "ON" : "OFF";
+        }
+
+        // Enable auto rotation of the GPUs
+        function autoRotate() {
+            isAutoRotate = !isAutoRotate;
+            document.getElementById('rotate-status-lbl').textContent = isAutoRotate ? "ON" : "OFF";
+        }
+
+        // Watermark updates helper
+        function updateWatermark(primary, secondary) {
+            document.getElementById('watermark-brand').textContent = primary;
+            document.getElementById('watermark-info').textContent = secondary;
+        }
+
+        // Render & Animation loop (runs at 60fps)
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+            const elapsedTime = clock.getElapsedTime();
+
+            // Handle Camera target interpolation (smooth sliding transition on all axes)
+            camera.position.x += (camTargetX - camera.position.x) * 0.08;
+            camera.position.y += (camTargetY - camera.position.y) * 0.08;
+            camera.position.z += (camTargetZ - camera.position.z) * 0.08;
+
+            // Interpolate the camera target lookAt smoothly
+            currentLookAt.x += (targetLookAt.x - currentLookAt.x) * 0.08;
+            currentLookAt.y += (targetLookAt.y - currentLookAt.y) * 0.08;
+            currentLookAt.z += (targetLookAt.z - currentLookAt.z) * 0.08;
+            camera.lookAt(currentLookAt);
+
+            // Handle rotations based on drag interactions
+            if (gpuModels.nvidia && gpuModels.amd && gpuModels.intel) {
+                const autoRotSpeed = isAutoRotate ? elapsedTime * 0.2 : 0;
+
+                gpuModels.nvidia.rotation.y = targetRotationY + autoRotSpeed;
+                gpuModels.nvidia.rotation.x = targetRotationX;
+
+                gpuModels.amd.rotation.y = targetRotationY + autoRotSpeed;
+                gpuModels.amd.rotation.x = targetRotationX;
+
+                gpuModels.intel.rotation.y = targetRotationY + autoRotSpeed;
+                gpuModels.intel.rotation.x = targetRotationX;
+
+                // Animate Fan spinning
+                const fanSpeed = 12;
+                ['nvidia', 'amd', 'intel'].forEach(brand => {
+                    const shroud = gpuModels[brand].getObjectByName('Shroud');
+                    if (shroud && shroud.fans) {
+                        shroud.fans.forEach(fan => {
+                            fan.rotation.y += fanSpeed * delta;
+                        });
+                    }
+                });
+            }
+
+            // SIMULATION ANIMATION UPDATES
+            // Parallel processing particles animation
+            if (parallelParticles) {
+                const positions = parallelParticles.geometry.attributes.position.array;
+                const count = positions.length / 3;
+                const speeds = parallelParticles.userData.speeds;
+
+                for (let i = 0; i < count; i++) {
+                    positions[i * 3 + 1] -= speeds[i]; // Move particle down
+
+                    // If particle reaches the GPU PCB limit, reset to top
+                    if (positions[i * 3 + 1] < -0.8) {
+                        positions[i * 3 + 1] = 3.5 + Math.random() * 2;
+                    }
+                }
+                parallelParticles.geometry.attributes.position.needsUpdate = true;
+            }
+
+            // AI Neural Network connection sparks
+            if (matrixParticles) {
+                matrixParticles.rotation.y = Math.sin(elapsedTime * 0.4) * 0.2;
+            }
+
+            // Raytracing bouncing lasers drawing
+            if (raytracingSimulationGroup) {
+                // Re-draw reflective laser lines dynamically in scene
+                // Remove old lines if any
+                const linesToRemove = [];
+                raytracingSimulationGroup.traverse(child => {
+                    if (child.isLine) linesToRemove.push(child);
+                });
+                linesToRemove.forEach(l => raytracingSimulationGroup.remove(l));
+
+                // Generate three colored rays starting from GPUs bouncing off central sphere to camera
+                const lineMatNvidia = new THREE.LineBasicMaterial({ color: 0x10b981, linewidth: 2 });
+                const lineMatAmd = new THREE.LineBasicMaterial({ color: 0xf43f5e, linewidth: 2 });
+                const lineMatIntel = new THREE.LineBasicMaterial({ color: 0x3b82f6, linewidth: 2 });
+
+                const sphereCenter = new THREE.Vector3(0, 1.2, 0);
+
+                // Laser 1: Nvidia
+                const p1 = new THREE.Vector3(-3, 0.2, 0);
+                const r1_bounce = new THREE.Vector3(2, 4 + Math.sin(elapsedTime * 4) * 1.5, 3);
+                drawRayTracePath(p1, sphereCenter, r1_bounce, lineMatNvidia);
+
+                // Laser 2: AMD
+                const p2 = new THREE.Vector3(0, 0.2, 0);
+                const r2_bounce = new THREE.Vector3(0, 4 + Math.cos(elapsedTime * 4) * 1.5, 3);
+                drawRayTracePath(p2, sphereCenter, r2_bounce, lineMatAmd);
+
+                // Laser 3: Intel
+                const p3 = new THREE.Vector3(3, 0.2, 0);
+                const r3_bounce = new THREE.Vector3(-2, 4 + Math.sin(elapsedTime * 3) * 1.5, 3);
+                drawRayTracePath(p3, sphereCenter, r3_bounce, lineMatIntel);
+            }
+
+            // Upscaling Canvas dynamic drawing simulation
+            if (upscalingPlane) {
+                const { canvas, ctx, texture, timer } = upscalingPlane.userData;
+                upscalingPlane.userData.timer += delta;
+
+                // Alternate every 3 seconds between "Low Res (Raw)" and "High Res (DLSS Reconstruction)"
+                const cycle = Math.floor(elapsedTime % 6);
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(0, 0, 512, 256);
+
+                if (cycle < 3) {
+                    // Low Res simulation
+                    ctx.fillStyle = '#3b82f6';
+                    ctx.font = '24px monospace';
+                    ctx.fillText('NATIVO: 1080p (Baja Resolución)', 40, 80);
+                    // Draw a highly pixelated circle
+                    ctx.fillStyle = '#e11d48';
+                    for (let r = 0; r < 12; r++) {
+                        for (let c = 0; c < 24; c++) {
+                            if (Math.hypot(r - 6, c - 12) < 5) {
+                                ctx.fillRect(160 + c * 10, 110 + r * 10, 8, 8);
+                            }
+                        }
+                    }
+                } else {
+                    // High Res Reconstructed simulation (DLSS/XeSS)
+                    ctx.fillStyle = '#10b981';
+                    ctx.font = '24px monospace';
+                    ctx.fillText('RECONSTRUIDO POR IA (4K HD - Activo)', 40, 80);
+                    // Draw a smooth high res circle
+                    ctx.fillStyle = '#10b981';
+                    ctx.beginPath();
+                    ctx.arc(280, 170, 50, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                texture.needsUpdate = true;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Helper helper to plot laser rays bouncing on the reflective sphere
+        function drawRayTracePath(startPoint, bouncePoint, endPoint, lineMaterial) {
+            const points1 = [startPoint, bouncePoint];
+            const geo1 = new THREE.BufferGeometry().setFromPoints(points1);
+            const line1 = new THREE.Line(geo1, lineMaterial);
+            raytracingSimulationGroup.add(line1);
+
+            const points2 = [bouncePoint, endPoint];
+            const geo2 = new THREE.BufferGeometry().setFromPoints(points2);
+            const line2 = new THREE.Line(geo2, lineMaterial);
+            raytracingSimulationGroup.add(line2);
+        }
+
+        // OVERLAY MODAL MANAGER
+        function showSegmentsModal() {
+            const modal = document.getElementById('overlay-modal');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+
+            title.textContent = "RESUMEN COMPARATIVO DE SEGMENTOS";
+            body.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm bg-slate-900 rounded-lg">
+                        <thead>
+                            <tr class="border-b border-indigo-500/30 text-indigo-300 font-orbitron text-xs">
+                                <th class="p-4 bg-slate-950/60 rounded-tl-lg uppercase">Segmento</th>
+                                <th class="p-4 bg-emerald-950/30 text-emerald-400 uppercase">NVIDIA</th>
+                                <th class="p-4 bg-rose-950/30 text-rose-400 uppercase">AMD</th>
+                                <th class="p-4 bg-blue-950/30 text-blue-400 rounded-tr-lg uppercase">Intel</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800 font-medium">
+                            <tr class="hover:bg-slate-800/40">
+                                <td class="p-4 text-slate-300 font-semibold font-orbitron"><span class="block">Consumidor</span><span class="text-[10px] text-slate-500">(Gaming y Creación)</span></td>
+                                <td class="p-4 text-emerald-200">GeForce RTX 40 Series<br><span class="text-xs text-emerald-400/60">(Ada Lovelace)</span></td>
+                                <td class="p-4 text-rose-200">Radeon RX 7000 Series<br><span class="text-xs text-rose-400/60">(RDNA 3)</span></td>
+                                <td class="p-4 text-blue-200">Arc A-Series<br><span class="text-xs text-blue-400/60">(Alchemist)</span></td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/40">
+                                <td class="p-4 text-slate-300 font-semibold font-orbitron"><span class="block">Profesional</span><span class="text-[10px] text-slate-500">(Workstation)</span></td>
+                                <td class="p-4 text-emerald-200">NVIDIA RTX Ada<br><span class="text-xs text-emerald-400/60">(antes Quadro)</span></td>
+                                <td class="p-4 text-rose-200">Radeon PRO W-Series<br><span class="text-xs text-rose-400/60">(RDNA)</span></td>
+                                <td class="p-4 text-blue-200">Arc Pro A-Series<br><span class="text-xs text-blue-400/60">(Limitado)</span></td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/40">
+                                <td class="p-4 text-slate-300 font-semibold font-orbitron"><span class="block">Centro de Datos</span><span class="text-[10px] text-slate-500">(IA / HPC)</span></td>
+                                <td class="p-4 text-emerald-200">H100, A100, L4<br><span class="text-xs text-emerald-400/60">(Hopper, Ampere, Ada)</span></td>
+                                <td class="p-4 text-rose-200">Instinct MI300, MI250<br><span class="text-xs text-rose-400/60">(CDNA 3, CDNA 2)</span></td>
+                                <td class="p-4 text-blue-200">Data Center GPU Max<br><span class="text-xs text-blue-400/60">(Ponte Vecchio)</span></td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/40">
+                                <td class="p-4 text-slate-300 font-semibold font-orbitron">Plataforma SW</td>
+                                <td class="p-4 text-emerald-200">CUDA<br><span class="text-xs text-emerald-400/60">(Propietario, dominante)</span></td>
+                                <td class="p-4 text-rose-200">ROCm<br><span class="text-xs text-rose-400/60">(Abierto, creciendo)</span></td>
+                                <td class="p-4 text-blue-200">oneAPI<br><span class="text-xs text-blue-400/60">(Abierto, emergente)</span></td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/40">
+                                <td class="p-4 text-slate-300 font-semibold font-orbitron">Tecnología Upscaling</td>
+                                <td class="p-4 text-emerald-200">DLSS<br><span class="text-xs text-emerald-400/60">(Basado en IA)</span></td>
+                                <td class="p-4 text-rose-200">FSR<br><span class="text-xs text-rose-400/60">(Algorítmico + Temporal)</span></td>
+                                <td class="p-4 text-blue-200">XeSS<br><span class="text-xs text-blue-400/60">(Basado en IA)</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function showHolographicTableModal() {
+            const modal = document.getElementById('overlay-modal');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+
+            title.textContent = "TABLA COMPARATIVA HOLOGRÁFICA GLOBAL";
+            body.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="border-b border-indigo-500/30 text-indigo-300 font-orbitron uppercase text-xs">
+                                <th class="p-4 bg-slate-900/60 rounded-tl-lg">Categoría</th>
+                                <th class="p-4 bg-emerald-950/20 text-emerald-400">🟢 NVIDIA (RTX 4090 FE)</th>
+                                <th class="p-4 bg-rose-950/20 text-rose-400">🔴 AMD (RX 7900 XTX)</th>
+                                <th class="p-4 bg-blue-950/20 text-blue-400 rounded-tr-lg">🔵 Intel (Arc A770 LE)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800 font-medium">
+                            <tr class="hover:bg-slate-900/40">
+                                <td class="p-4 text-slate-400 font-semibold font-orbitron">Plataforma</td>
+                                <td class="p-4 text-emerald-300">CUDA (Entorno maduro propietario)</td>
+                                <td class="p-4 text-rose-300">ROCm (Código Abierto / HIP)</td>
+                                <td class="p-4 text-blue-300">oneAPI (Multi-hardware estándar)</td>
+                            </tr>
+                            <tr class="hover:bg-slate-900/40">
+                                <td class="p-4 text-slate-400 font-semibold font-orbitron">Arquitectura Núcleos</td>
+                                <td class="p-4 text-slate-200">CUDA Cores, Tensor Cores (IA), RT Cores (Luz)</td>
+                                <td class="p-4 text-slate-200">CDNA (Servidor) / RDNA (Gaming), Compute Units</td>
+                                <td class="p-4 text-slate-200">Xe Core Architecture (XeSS, XMX Matrix Engines)</td>
+                            </tr>
+                            <tr class="hover:bg-slate-900/40">
+                                <td class="p-4 text-slate-400 font-semibold font-orbitron">Inteligencia Artificial</td>
+                                <td class="p-4 text-slate-300">Líder total. Gran soporte de librerías nativas.</td>
+                                <td class="p-4 text-slate-300">Crecimiento en HPC mediante chips Instinct MI300.</td>
+                                <td class="p-4 text-slate-300">Inferencia en laptops e Intel Gaudi en centros de datos.</td>
+                            </tr>
+                            <tr class="hover:bg-slate-900/40">
+                                <td class="p-4 text-slate-400 font-semibold font-orbitron"> Gaming & Ray Tracing</td>
+                                <td class="p-4 text-slate-200">Soporte óptimo, DLSS 3.0 (Generación fotogramas).</td>
+                                <td class="p-4 text-slate-200">FSR (Código Abierto), excelente rasterización pura.</td>
+                                <td class="p-4 text-slate-200">Intel Arc (XeSS AI, soporte completo AV1 nativo).</td>
+                            </tr>
+                            <tr class="hover:bg-slate-900/40">
+                                <td class="p-4 text-slate-400 font-semibold font-orbitron">Ecosistema</td>
+                                <td class="p-4 text-emerald-300">Cerrado, altamente optimizado por NVIDIA.</td>
+                                <td class="p-4 text-rose-300">Abierto, flexible e ideal para clústeres científicos.</td>
+                                <td class="p-4 text-blue-300">Heterogéneo, unifica CPU/GPU/FPGAs con un código.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        // Show Interactive Naming Explorer dashboard covering all GPU tiers
+        function showNamingGuideModal() {
+            const modal = document.getElementById('overlay-modal');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+
+            title.textContent = "EXPLORADOR INTERACTIVO DE GAMAS Y NOMENCLATURAS";
+
+            // Build the HTML scaffolding
+            body.innerHTML = `
+                <div class="flex flex-col gap-6 font-rajdhani">
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Las marcas codifican la generación, el rendimiento y las capacidades de cada tarjeta en su nombre comercial. Selecciona un fabricante y una tarjeta para descomponer e interpretar sus componentes de ingeniería:
+                    </p>
+
+                    <!-- Brand Tabs -->
+                    <div class="grid grid-cols-3 gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
+                        <button onclick="changeNomenclatureBrand('nvidia')" id="nom-btn-nvidia" class="py-2.5 rounded-lg text-xs font-bold font-orbitron transition-all">NVIDIA</button>
+                        <button onclick="changeNomenclatureBrand('amd')" id="nom-btn-amd" class="py-2.5 rounded-lg text-xs font-bold font-orbitron transition-all text-slate-400 hover:text-white">AMD RADEON</button>
+                        <button onclick="changeNomenclatureBrand('intel')" id="nom-btn-intel" class="py-2.5 rounded-lg text-xs font-bold font-orbitron transition-all text-slate-400 hover:text-white">INTEL ARC</button>
+                    </div>
+
+                    <!-- Layout: Sidebar and main info panel -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <!-- Model Sidebar buttons -->
+                        <div class="md:col-span-1 flex flex-col gap-2 bg-slate-900/30 p-2.5 rounded-xl border border-slate-800" id="nom-sidebar-list">
+                            <!-- Injected dynamically via JS -->
+                        </div>
+
+                        <!-- Main breakdown Display -->
+                        <div class="md:col-span-3 bg-slate-900/50 border border-slate-800 rounded-2xl p-5 flex flex-col gap-6" id="nom-breakdown-display">
+                            <!-- Injected dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Setup brand change function globally
+            window.changeNomenclatureBrand = function (brand) {
+                // Highlight corresponding brand button
+                ['nvidia', 'amd', 'intel'].forEach(b => {
+                    const btn = document.getElementById(`nom-btn-${b}`);
+                    if (btn) {
+                        if (b === brand) {
+                            btn.className = "py-2.5 rounded-lg text-xs font-bold font-orbitron transition-all " +
+                                (b === 'nvidia' ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/40' :
+                                    b === 'amd' ? 'bg-rose-950/40 text-rose-400 border border-rose-500/40' :
+                                        'bg-blue-950/40 text-blue-400 border border-blue-500/40');
+                        } else {
+                            btn.className = "py-2.5 rounded-lg text-xs font-bold font-orbitron transition-all text-slate-400 hover:text-white";
+                        }
+                    }
+                });
+
+                // Populate model sidebar options
+                const list = document.getElementById('nom-sidebar-list');
+                const models = nomenclatureData[brand];
+                list.innerHTML = models.map((item, idx) => `
+                    <button onclick="renderSelectedModelNomenclature('${brand}', ${idx})" 
+                            id="nom-opt-${idx}" 
+                            class="py-2.5 px-3 rounded-lg text-left text-xs font-bold font-orbitron transition-all border flex flex-col gap-0.5">
+                        <span>${item.model}</span>
+                        <span class="text-[9px] font-mono opacity-65 font-normal">${item.tier}</span>
+                    </button>
+                `).join('');
+
+                renderSelectedModelNomenclature(brand, 0);
+            };
+
+            // Setup model render function globally
+            window.renderSelectedModelNomenclature = function (brand, index) {
+                const models = nomenclatureData[brand];
+                const currentModelItem = models[index];
+
+                // Style active sidebar list items
+                models.forEach((_, idx) => {
+                    const btn = document.getElementById(`nom-opt-${idx}`);
+                    if (btn) {
+                        if (idx === index) {
+                            btn.className = "py-2.5 px-3 rounded-lg text-left text-xs font-bold font-orbitron transition-all border " +
+                                (brand === 'nvidia' ? 'bg-emerald-950/40 border-emerald-500 text-emerald-300' :
+                                    brand === 'amd' ? 'bg-rose-950/40 border-rose-500 text-rose-300' :
+                                        'bg-blue-950/40 border-blue-500 text-blue-300');
+                        } else {
+                            btn.className = "py-2.5 px-3 rounded-lg text-left text-xs font-bold font-orbitron transition-all border bg-slate-950/80 border-slate-800 text-slate-400 hover:bg-slate-900";
+                        }
+                    }
+                });
+
+                // Render detail breakdown cards inside main area
+                const display = document.getElementById('nom-breakdown-display');
+                display.innerHTML = `
+                    <div class="flex flex-col gap-4">
+                        <div class="flex justify-between items-center border-b border-slate-800/80 pb-3">
+                            <div>
+                                <span class="text-[10px] font-mono uppercase tracking-widest text-slate-500">Breakdown de Nomenclatura</span>
+                                <h3 class="text-xl font-bold font-orbitron text-white">${currentModelItem.model}</h3>
+                            </div>
+                            <span class="px-2.5 py-1 text-[10px] font-bold font-mono tracking-widest uppercase border rounded-md ${brand === 'nvidia' ? 'bg-emerald-950/20 text-emerald-400 border-emerald-500/20' : brand === 'amd' ? 'bg-rose-950/20 text-rose-400 border-rose-500/20' : 'bg-blue-950/20 text-blue-400 border-blue-500/20'}">
+                                ${currentModelItem.tier}
+                            </span>
+                        </div>
+
+                        <!-- Segment blocks layout -->
+                        <div class="flex flex-wrap gap-2 pt-2">
+                            ${currentModelItem.segments.map((seg, sIdx) => `
+                                <div onclick="selectNomenclatureSegment('${brand}', ${index}, ${sIdx})" 
+                                     id="seg-card-${sIdx}" 
+                                     class="cursor-pointer border-2 rounded-xl py-3 px-5 text-center transition-all duration-200 select-none ${seg.color} ${sIdx === 0 ? 'ring-2 ring-white/30 scale-105' : ''}">
+                                    <span class="block text-2xl font-black font-orbitron tracking-wide">${seg.text}</span>
+                                    <span class="text-[9px] font-mono uppercase tracking-widest opacity-80 mt-1 block">${seg.label}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <!-- Active Segment detailed explanation -->
+                        <div class="p-4 rounded-xl bg-slate-950 border border-slate-800/80 mt-2" id="nom-segment-explainer-card">
+                            <span class="text-[9px] font-mono uppercase tracking-widest text-indigo-400 block mb-1">Concepto de Ingeniería</span>
+                            <p class="text-sm font-bold text-slate-200" id="segment-expl-title">${currentModelItem.segments[0].label}: ${currentModelItem.segments[0].text}</p>
+                            <p class="text-xs text-slate-400 mt-1.5 leading-relaxed" id="segment-expl-desc">${currentModelItem.segments[0].desc}</p>
+                        </div>
+
+                        <!-- Target Case of Use -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2 pt-3 border-t border-slate-800/50">
+                            <div class="bg-slate-950/50 p-3 rounded-xl border border-slate-800/40">
+                                <span class="text-[9px] font-mono text-slate-500 block mb-1">RANGO DE MERCADO:</span>
+                                <p class="text-xs font-bold text-indigo-300 font-orbitron">${currentModelItem.tier}</p>
+                            </div>
+                            <div class="bg-slate-950/50 p-3 rounded-xl border border-slate-800/40">
+                                <span class="text-[9px] font-mono text-slate-500 block mb-1">CASO DE USO IDÓNEO:</span>
+                                <p class="text-xs text-slate-300 leading-snug font-medium">${currentModelItem.target}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Sub segment card selection click helper
+                window.selectNomenclatureSegment = function (b, mIdx, sIdx) {
+                    const item = nomenclatureData[b][mIdx];
+                    const segments = item.segments;
+
+                    // Style rings
+                    segments.forEach((_, idx) => {
+                        const block = document.getElementById(`seg-card-${idx}`);
+                        if (block) {
+                            if (idx === sIdx) {
+                                block.classList.add('ring-2', 'ring-white/30', 'scale-105');
+                            } else {
+                                block.classList.remove('ring-2', 'ring-white/30', 'scale-105');
+                            }
+                        }
+                    });
+
+                    // Update explainer values
+                    const activeSeg = segments[sIdx];
+                    document.getElementById('segment-expl-title').textContent = `${activeSeg.label}: ${activeSeg.text}`;
+                    document.getElementById('segment-expl-desc').textContent = activeSeg.desc;
+                };
+            };
+
+            // Start up brand nvidia on open
+            window.changeNomenclatureBrand('nvidia');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        // Show Use Cases matching tool
+        function showUseCasesModal() {
+            const modal = document.getElementById('overlay-modal');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+
+            title.textContent = "¿QUÉ MARCA DEBES ELEGIR SEGÚN TU CASO DE USO?";
+            body.innerHTML = `
+                <div class="space-y-6">
+                    <p class="text-sm text-slate-300">No existe una "mejor GPU general". La decisión de hardware ideal se basa directamente en tu carga de trabajo diaria y tu entorno de programación:</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                            <h4 class="font-bold text-emerald-400 font-orbitron">🧠 Inteligencia Artificial & Deep Learning</h4>
+                            <p class="text-xs text-slate-300 leading-relaxed"><strong>NVIDIA</strong> es la reina por excelencia gracias a su ecosistema de software maduro <strong class="text-emerald-400">CUDA</strong>. Prácticamente todos los frameworks avanzados de aprendizaje automático como PyTorch o JAX están optimizados de manera nativa para correr en GPUs NVIDIA.</p>
+                        </div>
+                        
+                        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                            <h4 class="font-bold text-rose-400 font-orbitron">🎮 Gaming & Streaming Competitivo</h4>
+                            <p class="text-xs text-slate-300 leading-relaxed"><strong>AMD Radeon</strong> ofrece el mejor rendimiento de precio por cuadro en rasterización tradicional. Sin embargo, si deseas jugar con Ray Tracing al máximo o hacer uso extensivo de upscaling inteligente, <strong>NVIDIA (con DLSS 3)</strong> toma la ventaja competitiva en fidelidad gráfica.</p>
+                        </div>
+
+                        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                            <h4 class="font-bold text-blue-400 font-orbitron">🏭 Centros de Datos e HPC</h4>
+                            <p class="text-xs text-slate-300 leading-relaxed"><strong>NVIDIA</strong> domina con los aceleradores H100 y Blackwell, pero <strong>AMD Instinct (con ROCm)</strong> ha ganado contratos históricos en supercomputadoras gubernamentales de la lista TOP500 gracias a su excelente diseño de silicio abierto sin restricciones propietarias.</p>
+                        </div>
+
+                        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                            <h4 class="font-bold text-indigo-400 font-orbitron">💻 Desarrollo Transversal & Creadores de Contenido</h4>
+                            <p class="text-xs text-slate-300 leading-relaxed"><strong>Intel Arc</strong> ofrece la mejor relación de codificación de video del mercado con aceleración dedicada por hardware del codec moderno <strong class="text-blue-400">AV1</strong> y soporte directo en herramientas como Premiere y DaVinci Resolve, además de unificación de código a través de <strong class="text-indigo-400">oneAPI</strong>.</p>
+                        </div>
+                    </div>
+
+                    <!-- Resumen Conclusivo -->
+                    <div class="p-4 rounded-xl bg-indigo-950/20 border border-indigo-500/20 text-center">
+                        <p class="font-orbitron font-bold text-sm text-indigo-300">⚡ Conclusión Didáctica ⚡</p>
+                        <p class="text-xs text-slate-300 mt-2">NVIDIA destaca en madurez de ecosistema IA, AMD en eficiencia y cómputo de alto rendimiento libre, e Intel en soluciones unificadas híbridas multiplataforma. ¡Utiliza siempre la herramienta correcta para cada trabajo!</p>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('overlay-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function openImageModal(imgSrc, titleText) {
+            const modal = document.getElementById('overlay-modal');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+
+            title.textContent = titleText;
+            body.innerHTML = `<img src="${imgSrc}" alt="${titleText}" class="w-full h-auto max-h-[75vh] object-contain rounded-xl" />`;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        // Custom friendly HTML floating toast notifier
+        function showCustomToast(message) {
+            const toast = document.createElement('div');
+            toast.className = "fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-3 bg-rose-950 border border-rose-500 text-rose-200 text-xs font-semibold rounded-xl shadow-2xl transition-all duration-300 max-w-sm text-center";
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 500);
+            }, 5000);
+        }
+    </script>
+</body>
+
+</html>

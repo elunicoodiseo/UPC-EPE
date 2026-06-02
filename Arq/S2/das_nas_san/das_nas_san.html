@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistemas de Almacenamiento: DAS, NAS y SAN</title>
+
+    <!-- Tailwind CSS para el diseño de la interfaz -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- FontAwesome para iconos tecnológicos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts: Rajdhani para toque Cyberpunk/Tech y Inter para textos legibles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- LÓGICA DE CONTROL DE AUDIO (Sintetizador Web Audio API) -->
+    <script>
+        // Variable global de control de audio compartida con la lógica de Alpine
+        window.labSoundEnabled = false;
+        let audioCtx = null;
+        let masterVolume = null;
+
+        function playCyberSound(type) {
+            try {
+                if (!window.labSoundEnabled) return;
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    masterVolume = audioCtx.createGain();
+                    masterVolume.gain.setValueAtTime(0.15, audioCtx.currentTime); // Volumen seguro y confortable
+                    masterVolume.connect(audioCtx.destination);
+                }
+
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.connect(gainNode);
+                gainNode.connect(masterVolume);
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.1);
+                    gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.1);
+                } else if (type === 'data') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.05);
+                    osc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.1);
+                    osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.25);
+                    gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.26);
+                } else if (type === 'success') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // Nota Do (C5)
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.08); // Nota Mi (E5)
+                    osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.16); // Nota Sol (G5)
+                    osc.frequency.setValueAtTime(1046.50, audioCtx.currentTime + 0.24); // Nota Do Octava (C6)
+                    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.52);
+                }
+            } catch (e) {
+                console.warn('Fallo en la síntesis de audio:', e);
+            }
+        }
+    </script>
+
+    <!-- LÓGICA DE ALPINJS PARA GESTIONAR ESTADO DE INTERFAZ -->
+    <script>
+        function labState() {
+            return {
+                activeTab: 'inicio',
+                selectedSystem: 'DAS',
+                activeDetailSection: 'ventajas',
+                focusedCompParam: 0,
+                sidebarOpen: true,
+                arMode: false,
+                soundEnabled: false,
+                selectedAction: 'save',
+                simulationActive: false,
+                activeStepIndex: 0,
+                flowSteps: [],
+
+                actions: [
+                    { id: 'save', label: 'Guardar Archivo' },
+                    { id: 'open', label: 'Abrir Documento Compartido' },
+                    { id: 'db_query', label: 'Consultar Base de Datos' },
+                    { id: 'backup', label: 'Realizar Backup Centralizado' },
+                    { id: 'vm_run', label: 'Ejecutar Máquina Virtual' }
+                ],
+
+                hardwareDetails: {
+                    'CPU (Unidad Central)': 'La CPU procesa peticiones de lectura y escritura. En sistemas DAS ejecuta toda la E/S; en SAN delega gran parte a los controladores de canal.',
+                    'Memoria RAM': 'Actúa como almacenamiento buffer temporal ultrarrápido (Caché de página y RAID caché) antes de comprometer los bloques de datos al disco físico.',
+                    'Sistema Operativo': 'Gestiona sistemas de archivos (NTFS, ext4) en DAS/NAS, o gestiona volúmenes LUN sin formato (raw blocks) directamente en cabinas SAN.',
+                    'Red LAN / SAN': 'En NAS se viaja por el bus público ethernet congestionable. En SAN se viaja por una autopista dedicada e inmune al tráfico convencional.'
+                },
+
+                comparativaData: [
+                    { parametro: 'Tipo de Conexión', das: 'Directa (Cable local)', nas: 'Red LAN general', san: 'Red de almacenamiento dedicada' },
+                    { parametro: 'Acceso a los Datos', das: 'Nivel de Bloques (Local)', nas: 'Nivel de Archivo (Red)', san: 'Nivel de Bloques (Protocolos SCSI/FC)' },
+                    { parametro: 'Protocolos Habituales', das: 'SATA, SAS, PCIe, USB', nas: 'SMB, NFS, AFP, FTP', san: 'Fibre Channel, iSCSI, FCoE' },
+                    { parametro: 'Coste Inicial', das: 'Extremadamente Bajo', nas: 'Medio (Económico para PYME)', san: 'Muy Alto (Equipos específicos)' },
+                    { parametro: 'Escalabilidad', das: 'Limitada (Física del chasis)', nas: 'Media (Añadiendo discos)', san: 'Virtualmente Ilimitada' },
+                    { parametro: 'Rendimiento general', das: 'Alto (Latencia casi nula)', nas: 'Depende de red Ethernet', san: 'Extremadamente Alto (FC)' },
+                    { parametro: 'Caso de Uso Principal', das: 'Servidor departamental aislado', nas: 'Colaboración de documentos', san: 'Clústeres VM y DB Críticas' }
+                ],
+
+                init() {
+                    // Escuchar cambios para actualizar ThreeJS si es necesario
+                    this.$watch('selectedSystem', (val) => {
+                        if (window.focusThreeJSOnSystem) {
+                            window.focusThreeJSOnSystem(val);
+                        }
+                    });
+                },
+
+                setTab(tab) {
+                    this.activeTab = tab;
+                    playCyberSound('click');
+                },
+
+                selectSystem(sys) {
+                    this.selectedSystem = sys;
+                    this.activeTab = 'teoria';
+                    playCyberSound('click');
+                    if (window.focusThreeJSOnSystem) {
+                        window.focusThreeJSOnSystem(sys);
+                    }
+                },
+
+                syncSystemWithTheory() {
+                    // Si cambia en el simulador inferior, se actualiza el foco 3D
+                    if (window.focusThreeJSOnSystem) {
+                        window.focusThreeJSOnSystem(this.selectedSystem);
+                    }
+                },
+
+                toggleSound() {
+                    this.soundEnabled = !this.soundEnabled;
+                    window.labSoundEnabled = this.soundEnabled;
+                    playCyberSound('click');
+                },
+
+                toggleARMode() {
+                    this.arMode = !this.arMode;
+                    playCyberSound('click');
+
+                    const video = document.getElementById('webcam');
+                    if (this.arMode) {
+                        // Solicitar acceso a la cámara trasera (entorno real)
+                        navigator.mediaDevices.getUserMedia({
+                            video: { facingMode: "environment" }
+                        })
+                            .then(stream => {
+                                video.srcObject = stream;
+                                video.style.opacity = '1';
+                                // Activar modo transparente en ThreeJS
+                                if (window.setThreeTransparent) {
+                                    window.setThreeTransparent(true);
+                                }
+                            })
+                            .catch(err => {
+                                console.error("Error al acceder a la cámara:", err);
+                                this.arMode = false;
+                                // Mensaje estilizado alternativo a la alerta estándar
+                                alert("No se pudo iniciar la cámara para el modo RA. Se mantendrá el modo holograma virtual.");
+                            });
+                    } else {
+                        // Detener stream
+                        if (video.srcObject) {
+                            video.srcObject.getTracks().forEach(track => track.stop());
+                        }
+                        video.style.opacity = '0';
+                        if (window.setThreeTransparent) {
+                            window.setThreeTransparent(false);
+                        }
+                    }
+                },
+
+                resetCamera() {
+                    playCyberSound('click');
+                    if (window.resetThreeCamera) {
+                        window.resetThreeCamera();
+                    }
+                },
+
+                runSimulation() {
+                    if (this.simulationActive) return;
+                    playCyberSound('data');
+                    this.simulationActive = true;
+                    this.activeStepIndex = 0;
+
+                    // Construir pasos lógicos basados en combinación de Acción + Sistema Almacenamiento
+                    this.flowSteps = this.getFlowSteps();
+
+                    // Iniciar animación en 3D
+                    if (window.triggerThreeFlowAnimation) {
+                        window.triggerThreeFlowAnimation(this.selectedSystem, this.flowSteps.length, (currentIndex) => {
+                            this.activeStepIndex = currentIndex;
+                            playCyberSound('click');
+                        }, () => {
+                            // Simulación terminada con éxito
+                            playCyberSound('success');
+                            setTimeout(() => {
+                                this.simulationActive = false;
+                            }, 2000);
+                        });
+                    }
+                },
+
+                stopSimulation() {
+                    this.simulationActive = false;
+                    playCyberSound('click');
+                    if (window.stopThreeFlowAnimation) {
+                        window.stopThreeFlowAnimation();
+                    }
+                },
+
+                getFlowSteps() {
+                    const sys = this.selectedSystem;
+                    const act = this.selectedAction;
+
+                    if (sys === 'DAS') {
+                        return [
+                            { label: 'Aplicación', icon: 'fa-cubes', description: 'La aplicación de cobros o virtualizador genera la orden de lectura/escritura en el servidor principal.' },
+                            { label: 'S. Operativo', icon: 'fa-windows', description: 'El sistema operativo del servidor calcula los sectores lógicos y envía el comando mediante la controladora host.' },
+                            { label: 'Bus Físico', icon: 'fa-microchip', description: 'Los impulsos eléctricos viajan directamente por el cable físico de cobre (SAS/PCIe/SATA).' },
+                            { label: 'Disco DAS', icon: 'fa-compact-disc', description: 'La controladora integrada del DAS escribe/lee directamente sobre los platos del disco, sin latencia de red.' }
+                        ];
+                    } else if (sys === 'NAS') {
+                        return [
+                            { label: 'Usuario / Laptop', icon: 'fa-laptop', description: 'El usuario solicita interactuar con un documento alojado en la red departamental.' },
+                            { label: 'Pila Red / IP', icon: 'fa-ethernet', description: 'El sistema operativo empaqueta el archivo usando el protocolo SMB/NFS y lo envía a la tarjeta de red (NIC).' },
+                            { label: 'Switch LAN', icon: 'fa-network-wired', description: 'El conmutador general de la oficina rutea las tramas Ethernet basándose en la dirección MAC e IP de destino.' },
+                            { label: 'Unidad NAS', icon: 'fa-hdd', description: 'La unidad NAS de almacenamiento recibe el paquete IP, reconstruye el archivo y lo gestiona a través de su sistema RAID centralizado.' }
+                        ];
+                    } else { // SAN
+                        return [
+                            { label: 'Aplicación Crítica', icon: 'fa-database', description: 'Una base de datos de alta demanda solicita bloques de información en milisegundos.' },
+                            { label: 'Host HBA', icon: 'fa-bolt', description: 'La tarjeta Host Bus Adapter (HBA) traduce la orden de bajo nivel para inyectarla en la infraestructura de fibra.' },
+                            { label: 'Switch SAN', icon: 'fa-network-wired', description: 'La red Fibre Channel dedicada guía la luz láser a través del Switch óptico sin colisiones ni tráfico ajeno.' },
+                            { label: 'Cabina SAN', icon: 'fa-server', description: 'Las controladoras de la cabina SAN de gama alta procesan el comando de bloque, lo direccionan en la LUN correspondiente y devuelven los bloques solicitados.' }
+                        ];
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Alpine.js cargado con defer para inicializar después de estructurar el DOM y scripts previos -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Three.js y OrbitControls para la visualización 3D/RA -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .font-tech {
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        /* Estilos personalizados para barra de desplazamiento */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0b1329;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #1f3a60;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+
+        /* Animaciones de pulso y neón */
+        @keyframes pulse-cyan {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 0 25px rgba(6, 182, 212, 0.8);
+            }
+        }
+
+        .neon-cyan-pulse {
+            animation: pulse-cyan 2s infinite;
+        }
+
+        @keyframes grid-move {
+            0% {
+                background-position: 0 0;
+            }
+
+            100% {
+                background-position: 50px 50px;
+            }
+        }
+
+        .bg-grid-cyber {
+            background-size: 50px 50px;
+            background-image:
+                linear-gradient(to right, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.95)),
+                linear-gradient(to right, rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+            animation: grid-move 20s linear infinite;
+        }
+
+        /* Transiciones fluidas */
+        .slide-panel {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 overflow-hidden bg-grid-cyber h-screen w-screen flex flex-col"
+    x-data="labState()">
+
+    <!-- HEADER PRINCIPAL -->
+    <header
+        class="border-b border-blue-900/40 bg-slate-900/85 backdrop-blur-md px-6 py-3 flex items-center justify-between z-30 shrink-0">
+        <div class="flex items-center gap-3">
+            <div
+                class="h-10 w-10 rounded-lg bg-blue-600/20 border border-blue-500/50 flex items-center justify-center neon-cyan-pulse">
+                <i class="fa-solid fa-server text-cyan-400 text-lg"></i>
+            </div>
+            <div>
+                <h1
+                    class="text-xl md:text-2xl font-bold tracking-wider font-tech text-white uppercase flex items-center gap-2">
+                    Sistemas de Almacenamiento <span class="text-cyan-400">DAS, NAS & SAN</span>
+                </h1>
+                <p class="text-xs text-slate-400 hidden md:block">Laboratorio Interactivo de Arquitectura de
+                    Almacenamiento y Simulación de Red</p>
+            </div>
+        </div>
+
+        <!-- Controles rápidos superiores -->
+        <div class="flex items-center gap-3">
+            <button @click="toggleSound()"
+                class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs transition flex items-center gap-2"
+                :class="soundEnabled ? 'text-green-400 border-green-500/30' : 'text-slate-400'">
+                <i class="fa-solid" :class="soundEnabled ? 'fa-volume-high' : 'fa-volume-xmark'"></i>
+                <span class="hidden sm:inline" x-text="soundEnabled ? 'Audio Activado' : 'Audio Silenciado'"></span>
+            </button>
+            <div class="h-6 w-[1px] bg-slate-800"></div>
+            <span
+                class="text-xs bg-cyan-950/50 border border-cyan-500/30 text-cyan-400 font-tech px-2.5 py-1 rounded-full uppercase tracking-widest hidden sm:inline-block">
+                v2.5 RA-PRO
+            </span>
+        </div>
+    </header>
+
+    <!-- WORKSPACE PRINCIPAL -->
+    <main class="flex-1 flex flex-col md:flex-row relative overflow-hidden">
+
+        <!-- PANEL IZQUIERDO: CONTENIDOS Y EXPLICACIONES -->
+        <section
+            class="w-full md:w-96 lg:w-[420px] bg-slate-900/90 border-r border-blue-900/40 backdrop-blur-md flex flex-col z-20 shrink-0 slide-panel overflow-y-auto"
+            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0 absolute md:relative'">
+
+            <!-- Selector de Secciones -->
+            <nav
+                class="grid grid-cols-4 border-b border-slate-800 text-xs font-tech font-semibold text-center uppercase tracking-wider shrink-0 bg-slate-950/60">
+                <button @click="setTab('inicio')"
+                    :class="activeTab === 'inicio' ? 'border-b-2 border-cyan-400 text-cyan-400 bg-slate-900/40' : 'text-slate-400 hover:text-slate-200'"
+                    class="py-3 transition">Inicio</button>
+                <button @click="setTab('teoria')"
+                    :class="activeTab === 'teoria' ? 'border-b-2 border-cyan-400 text-cyan-400 bg-slate-900/40' : 'text-slate-400 hover:text-slate-200'"
+                    class="py-3 transition">Arquitectura</button>
+                <button @click="setTab('comparar')"
+                    :class="activeTab === 'comparar' ? 'border-b-2 border-cyan-400 text-cyan-400 bg-slate-900/40' : 'text-slate-400 hover:text-slate-200'"
+                    class="py-3 transition">Comparar</button>
+                <button @click="setTab('casos')"
+                    :class="activeTab === 'casos' ? 'border-b-2 border-cyan-400 text-cyan-400 bg-slate-900/40' : 'text-slate-400 hover:text-slate-200'"
+                    class="py-3 transition">Escenarios</button>
+            </nav>
+
+            <!-- CONTENIDO DINÁMICO DEL PANEL -->
+            <div class="flex-1 p-5 space-y-6">
+
+                <!-- PESTAÑA: INICIO -->
+                <div x-show="activeTab === 'inicio'" class="space-y-5 animate-fade-in">
+                    <div class="space-y-3">
+                        <h3 class="text-lg font-tech font-bold text-cyan-400 uppercase tracking-wider">Bienvenido al
+                            Laboratorio de Almacenamiento</h3>
+                        <p class="text-sm text-slate-300 leading-relaxed">
+                            Los sistemas de almacenamiento permiten guardar, compartir y proteger la información dentro
+                            de una infraestructura tecnológica.
+                            <strong>DAS, NAS y SAN</strong> representan tres paradigmas fundamentales de conexión de
+                            almacenamiento a computadoras, servidores y redes.
+                        </p>
+                    </div>
+
+                    <div class="border border-blue-900/40 rounded-xl bg-slate-950/50 p-4 space-y-3">
+                        <h4 class="text-xs font-tech text-cyan-400 font-bold uppercase tracking-wider"><i
+                                class="fa-solid fa-gamepad mr-2"></i>Interacciones Disponibles</h4>
+                        <ul class="text-xs text-slate-400 space-y-2">
+                            <li class="flex items-start gap-2">
+                                <span class="text-cyan-400">•</span>
+                                <span><strong>Simulación RA:</strong> Activa la cámara para integrar los componentes 3D
+                                    sobre tu entorno físico.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-cyan-400">•</span>
+                                <span><strong>Animación de Datos:</strong> Observa en 3D cómo se mueven los paquetes de
+                                    datos según el protocolo y sistema seleccionado.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-cyan-400">•</span>
+                                <span><strong>Casos de Uso:</strong> Explora cómo se estructuran y resuelven escenarios
+                                    corporativos reales.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="space-y-2 pt-2">
+                        <button @click="toggleARMode()"
+                            class="w-full py-3 px-4 rounded-lg font-tech font-bold tracking-widest text-sm uppercase bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 shadow-lg"
+                            :class="arMode ? 'ring-2 ring-cyan-400' : ''">
+                            <i class="fa-solid fa-camera-rotate text-base"></i>
+                            <span x-text="arMode ? 'Desactivar Cámara RA' : 'Iniciar Experiencia RA'"></span>
+                        </button>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs font-semibold font-tech">
+                            <button @click="selectSystem('DAS')"
+                                class="p-2.5 rounded bg-slate-800 hover:bg-slate-700/80 border border-slate-700/60 text-slate-300 transition text-center flex items-center justify-center gap-2">
+                                <span class="h-2 w-2 rounded-full bg-amber-400"></span> VER DAS
+                            </button>
+                            <button @click="selectSystem('NAS')"
+                                class="p-2.5 rounded bg-slate-800 hover:bg-slate-700/80 border border-slate-700/60 text-slate-300 transition text-center flex items-center justify-center gap-2">
+                                <span class="h-2 w-2 rounded-full bg-emerald-400"></span> VER NAS
+                            </button>
+                            <button @click="selectSystem('SAN')"
+                                class="p-2.5 rounded bg-slate-800 hover:bg-slate-700/80 border border-slate-700/60 text-slate-300 transition text-center flex items-center justify-center gap-2">
+                                <span class="h-2 w-2 rounded-full bg-indigo-400"></span> VER SAN
+                            </button>
+                            <button @click="setTab('comparar')"
+                                class="p-2.5 rounded bg-slate-800 hover:bg-slate-700/80 border border-slate-700/60 text-slate-300 transition text-center flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-scale-balanced text-cyan-400"></i> COMPARATIVA
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-800/60 pt-4">
+                        <h4 class="text-sm font-tech font-bold text-slate-300 uppercase mb-3"><i
+                                class="fa-solid fa-microchip mr-2 text-blue-500"></i>Interacción con Hardware</h4>
+                        <p class="text-xs text-slate-400 mb-3">Los sistemas de almacenamiento no operan de forma
+                            aislada, requieren una coreografía perfecta con los elementos de computación primarios:</p>
+                        <div class="space-y-2">
+                            <template x-for="(hw, key) in hardwareDetails" :key="key">
+                                <div class="text-xs bg-slate-950/40 p-2.5 rounded border border-slate-800/50">
+                                    <span class="font-bold text-cyan-400 uppercase font-tech" x-text="key"></span>:
+                                    <span class="text-slate-300" x-text="hw"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PESTAÑA: TEORÍA Y ARQUITECTURAS -->
+                <div x-show="activeTab === 'teoria'" class="space-y-4 animate-fade-in">
+                    <!-- Selector Interno de Teoría -->
+                    <div class="flex rounded-lg bg-slate-950/80 p-1 border border-slate-800">
+                        <button @click="selectSystem('DAS')"
+                            :class="selectedSystem === 'DAS' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'text-slate-400 hover:text-slate-200'"
+                            class="flex-1 py-1.5 text-xs font-tech font-bold uppercase rounded border border-transparent transition">DAS</button>
+                        <button @click="selectSystem('NAS')"
+                            :class="selectedSystem === 'NAS' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'text-slate-400 hover:text-slate-200'"
+                            class="flex-1 py-1.5 text-xs font-tech font-bold uppercase rounded border border-transparent transition">NAS</button>
+                        <button @click="selectSystem('SAN')"
+                            :class="selectedSystem === 'SAN' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' : 'text-slate-400 hover:text-slate-200'"
+                            class="flex-1 py-1.5 text-xs font-tech font-bold uppercase rounded border border-transparent transition">SAN</button>
+                    </div>
+
+                    <!-- DETALLES DAS -->
+                    <div x-show="selectedSystem === 'DAS'" class="space-y-4">
+                        <div class="border-l-4 border-amber-500 pl-3">
+                            <h3 class="text-lg font-tech font-bold text-amber-400 uppercase">DAS (Direct Attached
+                                Storage)</h3>
+                            <p class="text-xs text-slate-400">Almacenamiento de Conexión Directa</p>
+                        </div>
+
+                        <div
+                            class="text-sm bg-amber-500/5 border border-amber-500/20 p-3.5 rounded-lg text-slate-300 italic leading-relaxed">
+                            "DAS es como conectar un disco duro externo directamente a tu computadora por USB, pero a
+                            escala de servidor con interfaces ultrarrápidas."
+                        </div>
+
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-tech uppercase font-bold text-amber-400">¿Cómo funciona?</h4>
+                            <p class="text-xs text-slate-300">
+                                El sistema de almacenamiento está conectado físicamente a la placa madre del host o
+                                servidor mediante un bus interno de alta velocidad (SAS, SATA, PCIe) o cable externo
+                                directo (Thunderbolt, USB-C), sin infraestructura de red de por medio.
+                            </p>
+                        </div>
+
+                        <!-- Ventajas / Desventajas / Casos -->
+                        <div
+                            class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded border border-slate-800 text-[11px] font-tech font-bold text-center">
+                            <button @click="activeDetailSection = 'ventajas'"
+                                :class="activeDetailSection === 'ventajas' ? 'bg-amber-500/20 text-amber-300' : 'text-slate-400'"
+                                class="py-1.5 rounded transition">VENTAJAS</button>
+                            <button @click="activeDetailSection = 'desventajas'"
+                                :class="activeDetailSection === 'desventajas' ? 'bg-amber-500/20 text-amber-300' : 'text-slate-400'"
+                                class="py-1.5 rounded transition">CONTRA</button>
+                            <button @click="activeDetailSection = 'casos'"
+                                :class="activeDetailSection === 'casos' ? 'bg-amber-500/20 text-amber-300' : 'text-slate-400'"
+                                class="py-1.5 rounded transition">CASOS</button>
+                        </div>
+
+                        <div
+                            class="bg-slate-950/40 p-3.5 rounded-lg border border-slate-800 min-h-[140px] text-xs leading-relaxed text-slate-300">
+                            <div x-show="activeDetailSection === 'ventajas'" class="space-y-2">
+                                <div class="flex items-center gap-2 text-green-400 font-bold font-tech uppercase"><i
+                                        class="fa-solid fa-circle-check"></i> Máximo Rendimiento Local</div>
+                                <p>Latencia mínima al no haber sobrecarga de protocolos de red ni pérdidas de colisión.
+                                    Ideal para tasas de transferencia de ráfaga muy altas.</p>
+                                <div class="flex items-center gap-2 text-green-400 font-bold font-tech uppercase"><i
+                                        class="fa-solid fa-circle-check"></i> Simplicidad de Implementación</div>
+                                <p>No requiere diseño de direccionamiento IP ni configurar switches complejos de red.
+                                </p>
+                            </div>
+                            <div x-show="activeDetailSection === 'desventajas'" class="space-y-2">
+                                <div class="flex items-center gap-2 text-rose-400 font-bold font-tech uppercase"><i
+                                        class="fa-solid fa-circle-xmark"></i> Silos de Información</div>
+                                <p>El almacenamiento es propiedad exclusiva de un único servidor. Compartir archivos
+                                    requiere exportarlos lógicamente a través del servidor (cuello de botella).</p>
+                                <div class="flex items-center gap-2 text-rose-400 font-bold font-tech uppercase"><i
+                                        class="fa-solid fa-circle-xmark"></i> Escalabilidad Limitada</div>
+                                <p>Físicamente restringido al espacio disponible de ranuras PCI/bahías internas del
+                                    chasis del servidor.</p>
+                            </div>
+                            <div x-show="activeDetailSection === 'casos'" class="space-y-2">
+                                <div class="flex items-center gap-2 text-amber-400 font-bold font-tech uppercase"><i
+                                        class="fa-solid fa-lightbulb"></i> Aplicaciones Ideales</div>
+                                <ul class="list-disc list-inside space-y-1">
+                                    <li>PC personales y estaciones de trabajo de alto rendimiento (edición de video
+                                        4K/8K local).</li>
+                                    <li>Servidores departamentales pequeños aislados.</li>
+                                    <li>Unidades dedicadas para backup y archivado directo de un servidor crítico.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DETALLES NAS -->
+                    <div x-show="selectedSystem === 'NAS'" class="space-y-4">
+                        <div class="border-l-4 border-emerald-500 pl-3">
+                            <h3 class="text-lg font-tech font-bold text-emerald-400 uppercase">NAS (Network Attached
+                                Storage)</h3>
+                            <p class="text-xs text-slate-400">Almacenamiento Conectado a la Red</p>
+                        </div>
+
+                        <div
+                            class="text-sm bg-emerald-500/5 border border-emerald-500/20 p-3.5 rounded-lg text-slate-300 italic leading-relaxed">
+                            "NAS es como tener una gran carpeta compartida en la nube local de la oficina, accesible
+                            instantáneamente por múltiples usuarios a través de la LAN."
+                        </div>
+
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-tech uppercase font-bold text-emerald-400">¿Cómo funciona?</h4>
+                            <p class="text-xs text-slate-300">
+                                Es un dispositivo inteligente independiente con su propio procesador y sistema operativo
+                                optimizado para compartir archivos. Se conecta directamente a un switch de red LAN y se
+                                comunica a nivel de archivo usando protocolos estándar TCP/IP.
+                            </p>
+                        </div>
+
+                        <!-- Ventajas / Desventajas / Casos -->
+                        <div
+                            class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded border border-slate-800 text-[11px] font-tech font-bold text-center">
+                            <button @click="activeDetailSection = 'ventajas'"
+                                :class="activeDetailSection === 'ventajas' ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-400'"
+                                class="py-1.5 rounded transition">VENTAJAS</button>
+                            <button @click="activeDetailSection = 'desventajas'"
+                                :class="activeDetailSection === 'desventajas' ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-400'"
+                                class="py-1.5 rounded transition">CONTRA</button>
+                            <button @click="activeDetailSection = 'casos'"
+                                :class="activeDetailSection === 'casos' ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-400'"
+                                class="py-1.5 rounded transition">CASOS</button>
+                        </div>
+
+                        <div
+                            class="bg-slate-950/40 p-3.5 rounded-lg border border-slate-800 min-h-[140px] text-xs leading-relaxed text-slate-300">
+                            <div x-show="activeDetailSection === 'ventajas'" class="space-y-2">
+                                <div class="flex items-center gap-2 text-green-400 font-bold font-tech uppercase"><i
+                                        class="fa-solid fa-circle-check"></i> Colaboración Multi-Usuario</div>
+                                <p>Permite el acceso concurrente a un pool común de archivos desde diferentes
+                                    plataformas (Windows, Mac, Linux).</p>
+                                <div class="flex items-center gap-2 text-green-400 font-bold font-tech uppercase"><i
+                                        class="fa-solid fa-circle-check"></i> Gestión Centralizada Inteligente</div>
+                                <p>Facilita la programación automatizada de respaldos, control de cuotas y gestión de
+                                    permisos del Directorio Activo.</p>
+                            </div>
+                            <div x-show="activeDetailSection === 'desventajas'" class="space-y-2">
+                                <div class="flex items-center gap-2 text-rose-400 font-bold font-tech uppercase"><i
+                                        class="fa-solid fa-circle-xmark"></i> Dependencia de la red LAN</div>
+                                <p>Si la red Ethernet de la empresa se congestiona con navegación web o transferencias
+                                    de vídeo, la velocidad de acceso al almacenamiento disminuye notablemente.</p>
+                                <div class="flex items-center gap-2 text-rose-400 font-bold font-tech uppercase"><i
+                                        class="fa-solid fa-circle-xmark"></i> Acceso a nivel de Archivo</div>
+                                <p>No apto para bases de datos transaccionales masivas debido a la latencia adicional de
+                                    empaquetar archivos sobre la pila de red.</p>
+                            </div>
+                            <div x-show="activeDetailSection === 'casos'" class="space-y-2">
+                                <div class="flex items-center gap-2 text-emerald-400 font-bold font-tech uppercase"><i
+                                        class="fa-solid fa-lightbulb"></i> Aplicaciones Ideales</div>
+                                <ul class="list-disc list-inside space-y-1">
+                                    <li>Servidor de archivos para PYMEs (oficinas de diseño, contabilidad).</li>
+                                    <li>Repositorio unificado de archivos multimedia domésticos o de producción.</li>
+                                    <li>Destino centralizado para backups de infraestructura de red de baja prioridad.
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DETALLES SAN -->
+                    <div x-show="selectedSystem === 'SAN'" class="space-y-4">
+                        <div class="border-l-4 border-indigo-500 pl-3">
+                            <h3 class="text-lg font-tech font-bold text-indigo-400 uppercase">SAN (Storage Area Network)
+                            </h3>
+                            <p class="text-xs text-slate-400">Red de Área de Almacenamiento Dedicada</p>
+                        </div>
+
+                        <div
+                            class="text-sm bg-indigo-500/5 border border-indigo-500/20 p-3.5 rounded-lg text-slate-300 italic leading-relaxed">
+                            "SAN es como una autopista privada subterránea de ultra-alta velocidad que conecta
+                            directamente servidores con grandes bóvedas de discos duros."
+                        </div>
+
+                        <div class="space-y-2">
+                            <h4 class="text-xs font-tech uppercase font-bold text-indigo-400">¿Cómo funciona?</h4>
+                            <p class="text-xs text-slate-300">
+                                Es una red de alta velocidad e infraestructura independiente (usualmente Fibre Channel
+                                de fibra óptica de hasta 64Gb/s o iSCSI sobre cobre dedicada) que conecta múltiples
+                                servidores a una o más cabinas de almacenamiento complejas. Transfiere información a
+                                nivel de bloques nativos de disco.
+                            </p>
+                        </div>
+
+                        <!-- Ventajas / Desventajas / Casos -->
+                        <div
+                            class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded border border-slate-800 text-[11px] font-tech font-bold text-center">
+                            <button @click="activeDetailSection = 'ventajas'"
+                                :class="activeDetailSection === 'ventajas' ? 'bg-indigo-500/20 text-indigo-300' : 'text-slate-400'"
+                                class="py-1.5 rounded transition">VENTAJAS</button>
+                            <button @click="activeDetailSection = 'desventajas'"
+                                :class="activeDetailSection === 'desventajas' ? 'bg-indigo-500/20 text-indigo-300' : 'text-slate-400'"
+                                class="py-1.5 rounded transition">CONTRA</button>
+                            <button @click="activeDetailSection = 'casos'"
+                                :class="activeDetailSection === 'casos' ? 'bg-indigo-500/20 text-indigo-300' : 'text-slate-400'"
+                                class="py-1.5 rounded transition">CASOS</button>
+                        </div>
+
+                        <div
+                            class="bg-slate-950/40 p-3.5 rounded-lg border border-slate-800 min-h-[140px] text-xs leading-relaxed text-slate-300">
+                            <div x-show="activeDetailSection === 'ventajas'" class="space-y-2">
+                                <div class="flex items-center gap-2 text-green-400 font-bold font-tech uppercase"><i
+                                        class="fa-solid fa-circle-check"></i> Rendimiento Extremo y Baja Latencia</div>
+                                <p>Transferencia directa de bloques SCSI sin sobrecarga de cabeceras de sistema de
+                                    archivos en red. Rendimiento equivalente a un bus local.</p>
+                                <div class="flex items-center gap-2 text-green-400 font-bold font-tech uppercase"><i
+                                        class="fa-solid fa-circle-check"></i> Redundancia y Alta Disponibilidad</div>
+                                <p>Diseñada sin puntos únicos de fallo usando doble ruta de fibra (Multipath) para
+                                    tolerar caídas de switches enteros.</p>
+                            </div>
+                            <div x-show="activeDetailSection === 'desventajas'" class="space-y-2">
+                                <div class="flex items-center gap-2 text-rose-400 font-bold font-tech uppercase"><i
+                                        class="fa-solid fa-circle-xmark"></i> Complejidad de Administración</div>
+                                <p>Requiere personal especializado certificado en tecnologías de zonificación, masking
+                                    de LUNs e infraestructura Fibre Channel.</p>
+                                <div class="flex items-center gap-2 text-rose-400 font-bold font-tech uppercase"><i
+                                        class="fa-solid fa-circle-xmark"></i> Altísimo Costo Inicial</div>
+                                <p>Switches Fibre Channel dedicados, tarjetas HBA instaladas en los servidores y cabinas
+                                    controladoras redundantes representan inversiones masivas.</p>
+                            </div>
+                            <div x-show="activeDetailSection === 'casos'" class="space-y-2">
+                                <div class="flex items-center gap-2 text-indigo-400 font-bold font-tech uppercase"><i
+                                        class="fa-solid fa-lightbulb"></i> Aplicaciones Ideales</div>
+                                <ul class="list-disc list-inside space-y-1">
+                                    <li>Centros de Datos de nube, Bancos e infraestructuras críticas.</li>
+                                    <li>Clústeres de virtualización masiva (VMware ESXi, Hyper-V, Proxmox).</li>
+                                    <li>Bases de datos relacionales críticas (Oracle, SQL Server, SAP Hana) que
+                                        requieren decenas de miles de IOPS de latencia menor al milisegundo.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PESTAÑA: TABLA COMPARATIVA -->
+                <div x-show="activeTab === 'comparar'" class="space-y-4 animate-fade-in">
+                    <h3 class="text-lg font-tech font-bold text-cyan-400 uppercase">Comparación Técnica Directa</h3>
+                    <p class="text-xs text-slate-400">Presiona un parámetro para resaltarlo en el comparativo visual
+                        superior.</p>
+
+                    <div class="space-y-2.5">
+                        <template x-for="(comp, idx) in comparativaData" :key="idx">
+                            <div @click="focusedCompParam = idx"
+                                class="bg-slate-950/60 p-3 rounded-lg border cursor-pointer transition"
+                                :class="focusedCompParam === idx ? 'border-cyan-500/80 bg-slate-900/50 shadow-md' : 'border-slate-800 hover:border-slate-700'">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-xs font-bold uppercase font-tech text-cyan-400"
+                                        x-text="comp.parametro"></span>
+                                    <i class="fa-solid fa-circle-info text-[10px]"
+                                        :class="focusedCompParam === idx ? 'text-cyan-400' : 'text-slate-600'"></i>
+                                </div>
+                                <div class="grid grid-cols-3 gap-1.5 text-[11px]">
+                                    <div class="p-1.5 rounded bg-amber-500/10 border border-amber-500/20 text-center">
+                                        <span class="block text-[9px] font-bold text-amber-400 font-tech">DAS</span>
+                                        <span class="text-slate-300 font-medium" x-text="comp.das"></span>
+                                    </div>
+                                    <div
+                                        class="p-1.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-center">
+                                        <span class="block text-[9px] font-bold text-emerald-400 font-tech">NAS</span>
+                                        <span class="text-slate-300 font-medium" x-text="comp.nas"></span>
+                                    </div>
+                                    <div class="p-1.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-center">
+                                        <span class="block text-[9px] font-bold text-indigo-400 font-tech">SAN</span>
+                                        <span class="text-slate-300 font-medium" x-text="comp.san"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- PESTAÑA: ESCENARIOS REALES -->
+                <div x-show="activeTab === 'casos'" class="space-y-5 animate-fade-in">
+                    <div>
+                        <h3 class="text-lg font-tech font-bold text-cyan-400 uppercase"><i
+                                class="fa-solid fa-building mr-2"></i>Escenario Corporativo Real</h3>
+                        <p class="text-xs text-slate-400 mt-1">Caso de Estudio: Empresa "Súper Ventas S.A." con 10
+                            usuarios de oficina, 1 base de datos central y máquinas virtuales.</p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div
+                            class="bg-slate-950/60 p-3.5 rounded-lg border border-amber-500/20 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 h-1.5 w-16 bg-amber-500"></div>
+                            <h4 class="text-xs font-bold text-amber-400 font-tech uppercase mb-1.5">Escenario 1:
+                                Implementación con DAS</h4>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                La empresa conecta un arreglo de discos SAS directo en su Servidor de Base de Datos
+                                principal.
+                                <strong class="text-green-400">Resultado:</strong> Las transacciones del sistema de
+                                cobros son extremadamente veloces. Sin embargo, los 10 usuarios no pueden compartir
+                                documentos fácilmente entre sí sin colapsar la RAM del servidor. Peor aún, si la placa
+                                base de ese servidor falla, toda la empresa queda completamente inoperativa hasta que el
+                                servidor de reemplazo sea reconfigurado físicamente.
+                            </p>
+                        </div>
+
+                        <div
+                            class="bg-slate-950/60 p-3.5 rounded-lg border border-emerald-500/20 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 h-1.5 w-16 bg-emerald-500"></div>
+                            <h4 class="text-xs font-bold text-emerald-400 font-tech uppercase mb-1.5">Escenario 2:
+                                Implementación con NAS</h4>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                La empresa compra un equipo NAS de 4 bahías conectado a su switch de red LAN.
+                                <strong class="text-green-400">Resultado:</strong> Los 10 usuarios colaboran
+                                perfectamente editando presupuestos, guardando PDFs de facturación de manera inmediata.
+                                Es fácil de respaldar y configurar. No obstante, al intentar montar la base de datos SQL
+                                del sistema de cobros directamente en el NAS, los tiempos de carga del inventario
+                                aumentan severamente y el sistema a veces se bloquea debido al tráfico saturado en la
+                                red LAN general de la oficina.
+                            </p>
+                        </div>
+
+                        <div
+                            class="bg-slate-950/60 p-3.5 rounded-lg border border-indigo-500/20 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 h-1.5 w-16 bg-indigo-500"></div>
+                            <h4 class="text-xs font-bold text-indigo-400 font-tech uppercase mb-1.5">Escenario 3:
+                                Implementación con SAN</h4>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                La empresa instala un clúster de servidores de hipervisores y una cabina SAN con
+                                conexión iSCSI dedicada mediante un switch SAN aislado.
+                                <strong class="text-green-400">Resultado:</strong> Es la solución definitiva. La base de
+                                datos corre con latencia de nanosegundos de forma óptima. Las copias de seguridad se
+                                generan transparentemente sin ralentizar la red de los usuarios de oficina. Si un
+                                servidor físico falla, otro servidor toma el control de inmediato, pues ambos acceden
+                                directamente a los mismos bloques en la SAN (Alta disponibilidad y balanceo real).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer del Panel con información del autor o versión -->
+            <div class="footer-inner">
+                <p class="footer-copy" style="font-size: 12px; color: white; text-align: center;">© 2026 — Experiencia
+                    Técnica Interactiva. Fines educativos - Luis Torrejón Arias.
+                </p>
+            </div>
+        </section>
+
+        <!-- CONTROLADOR FLOTANTE DE DISPOSITIVOS MÓVILES (Para abrir panel izquierdo en móvil) -->
+        <button @click="sidebarOpen = !sidebarOpen"
+            class="md:hidden absolute top-4 left-4 z-40 h-11 w-11 rounded-lg bg-slate-900 border border-slate-700 text-white flex items-center justify-center shadow-lg">
+            <i class="fa-solid" :class="sidebarOpen ? 'fa-xmark' : 'fa-bars'"></i>
+        </button>
+
+        <!-- ÁREA CENTRAL DE VISUALIZACIÓN 3D Y REALIDAD AUMENTADA SIMULADA -->
+        <section class="flex-1 relative flex flex-col bg-slate-950">
+
+            <!-- CONTENEDOR DE LA CÁMARA (Webcam para fondo de RA Simulada) -->
+            <video id="webcam"
+                class="absolute inset-0 w-full h-full object-cover z-0 opacity-0 transition-opacity duration-500 pointer-events-none"
+                autoplay playsinline muted></video>
+
+            <!-- LIENZO THREE.JS (Renders en 3D translúcido sobre la cámara) -->
+            <div id="threejs-canvas" class="absolute inset-0 z-10 w-full h-full outline-none"></div>
+
+            <!-- REJILLA DE HUD HOLOGRÁFICA / OVERLAY DE AR -->
+            <div
+                class="absolute inset-0 z-15 pointer-events-none flex flex-col justify-between p-4 border border-blue-500/10">
+                <!-- Esquinas decorativas del visor RA -->
+                <div class="flex justify-between w-full">
+                    <div class="h-6 w-6 border-t-2 border-l-2 border-cyan-500/50"></div>
+                    <div class="h-6 w-6 border-t-2 border-r-2 border-cyan-500/50"></div>
+                </div>
+
+                <!-- Alerta de estado de Simulación RA -->
+                <div class="self-center bg-slate-900/80 backdrop-blur border border-cyan-500/30 px-4 py-2 rounded-lg text-xs font-tech font-bold text-cyan-400 tracking-wider uppercase text-center flex items-center gap-2"
+                    x-show="arMode">
+                    <span class="animate-pulse h-2.5 w-2.5 rounded-full bg-red-500"></span>
+                    CÁMARA DISPOSITIVO ACTIVADA - MODO REALIDAD AUMENTADA
+                </div>
+
+                <div class="flex justify-between items-end w-full">
+                    <div class="h-6 w-6 border-b-2 border-l-2 border-cyan-500/50"></div>
+
+                    <!-- Estado en tiempo real del motor 3D -->
+                    <div
+                        class="bg-slate-950/80 backdrop-blur border border-slate-800 text-[10px] p-2 rounded text-slate-400 flex flex-col gap-1 select-none pointer-events-auto">
+                        <div class="flex items-center gap-1.5">
+                            <span class="h-1.5 w-1.5 rounded-full bg-green-400"></span>
+                            <span>Motor 3D: WebGL OK</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="h-1.5 w-1.5 rounded-full"
+                                :class="simulationActive ? 'bg-cyan-400 animate-ping' : 'bg-slate-500'"></span>
+                            <span x-text="simulationActive ? 'Flujo de datos: ACTIVO' : 'Flujo de datos: IDLE'"></span>
+                        </div>
+                    </div>
+
+                    <div class="h-6 w-6 border-b-2 border-r-2 border-cyan-500/50"></div>
+                </div>
+            </div>
+
+            <!-- BOTONERA DE CONTROLES FLOTANTES DEL MUNDO 3D -->
+            <div class="absolute top-4 right-4 z-25 flex flex-col gap-2 pointer-events-none">
+
+                <!-- Toggle AR Mode -->
+                <button @click="toggleARMode()"
+                    class="pointer-events-auto p-3 rounded-lg bg-slate-900/80 backdrop-blur border border-slate-700 hover:border-cyan-500 hover:text-cyan-400 text-slate-300 transition shadow-lg flex items-center justify-center gap-2 font-tech font-bold text-xs uppercase"
+                    title="Alternar Realidad Aumentada">
+                    <i class="fa-solid fa-vr-cardboard text-lg"></i>
+                    <span class="hidden sm:inline" x-text="arMode ? 'Ver Lab Virtual 3D' : 'Activar Cámara RA'"></span>
+                </button>
+
+                <!-- Centrar Cámara -->
+                <button @click="resetCamera()"
+                    class="pointer-events-auto p-3 rounded-lg bg-slate-900/80 backdrop-blur border border-slate-700 hover:border-cyan-500 hover:text-cyan-400 text-slate-300 transition shadow-lg flex items-center justify-center gap-2 font-tech font-bold text-xs uppercase"
+                    title="Reajustar ángulo de visión">
+                    <i class="fa-solid fa-arrows-to-eye text-base"></i>
+                    <span class="hidden sm:inline">Restablecer Enfoque</span>
+                </button>
+            </div>
+
+            <!-- BARRA DE SIMULACIÓN DE FLUJO DE DATOS (ZONA INFERIOR) -->
+            <div
+                class="absolute bottom-4 left-4 right-4 z-25 bg-slate-900/90 backdrop-blur-md border border-blue-900/40 rounded-xl p-4 flex flex-col lg:flex-row gap-4 justify-between items-stretch lg:items-center shadow-2xl">
+
+                <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+                    <div class="bg-slate-950 px-3 py-2 rounded border border-slate-800 flex flex-col justify-center">
+                        <span class="text-[9px] uppercase font-bold text-slate-500 font-tech">1. Elige Acción</span>
+                        <select x-model="selectedAction"
+                            class="bg-transparent text-sm font-semibold text-slate-200 outline-none cursor-pointer pr-4">
+                            <template x-for="act in actions" :key="act.id">
+                                <option :value="act.id" x-text="act.label" class="bg-slate-900 text-slate-200"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <div class="text-2xl text-slate-700 self-center hidden md:block"><i
+                            class="fa-solid fa-circle-arrow-right"></i></div>
+
+                    <div class="bg-slate-950 px-3 py-2 rounded border border-slate-800 flex flex-col justify-center">
+                        <span class="text-[9px] uppercase font-bold text-slate-500 font-tech">2. Selecciona
+                            Almacenamiento</span>
+                        <select x-model="selectedSystem"
+                            class="bg-transparent text-sm font-semibold text-slate-200 outline-none cursor-pointer pr-4"
+                            @change="syncSystemWithTheory()">
+                            <option value="DAS" class="bg-slate-900 text-amber-400 font-bold">DAS (Conexión Directa)
+                            </option>
+                            <option value="NAS" class="bg-slate-900 text-emerald-400 font-bold">NAS (Por red LAN)
+                            </option>
+                            <option value="SAN" class="bg-slate-900 text-indigo-400 font-bold">SAN (Red dedicada)
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 w-full lg:w-auto">
+                    <button @click="runSimulation()"
+                        class="flex-1 lg:flex-initial py-3 px-6 rounded-lg font-tech font-bold tracking-widest text-sm uppercase bg-cyan-600 hover:bg-cyan-500 text-white transition flex items-center justify-center gap-2 shadow-lg hover:shadow-cyan-500/20"
+                        :disabled="simulationActive">
+                        <i class="fa-solid fa-circle-play text-base animate-pulse"></i>
+                        <span>Simular Envío</span>
+                    </button>
+                    <button @click="stopSimulation()"
+                        class="py-3 px-4 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center justify-center"
+                        title="Detener simulación">
+                        <i class="fa-solid fa-square-stop text-base"></i>
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- SECCIÓN FLOTANTE: DETALLES DE FLUJO DE LA SIMULACIÓN ACTIVA -->
+    <div x-show="simulationActive"
+        class="absolute top-[80px] left-1/2 transform -translate-x-1/2 z-30 w-11/12 max-w-xl bg-slate-950/95 border border-cyan-500/40 rounded-xl p-4 shadow-2xl animate-bounce-short">
+        <div class="flex justify-between items-center mb-1.5 border-b border-slate-800 pb-2">
+            <h4 class="text-xs font-tech font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+                <span class="relative flex h-2 w-2">
+                    <span
+                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                </span>
+                Traza de Datos en Tiempo Real
+            </h4>
+            <button @click="stopSimulation()" class="text-slate-400 hover:text-white text-xs"><i
+                    class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="space-y-2">
+            <div class="flex justify-between text-xs text-slate-400">
+                <span>Acción: <strong class="text-white"
+                        x-text="actions.find(a=>a.id === selectedAction)?.label"></strong></span>
+                <span>Almacenamiento: <strong class="text-white" x-text="selectedSystem"></strong></span>
+            </div>
+
+            <!-- Visualizador de flujo simplificado -->
+            <div
+                class="bg-slate-900 p-3 rounded border border-slate-800 flex items-center justify-center gap-2 text-xs font-semibold text-center overflow-x-auto">
+                <template x-for="(step, sIdx) in flowSteps" :key="sIdx">
+                    <div class="flex items-center gap-1.5">
+                        <div class="px-2 py-1 rounded bg-slate-950 border border-slate-700 flex items-center gap-1"
+                            :class="sIdx === activeStepIndex ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20 neon-cyan-pulse' : 'text-slate-400'">
+                            <i class="fa-solid" :class="step.icon"></i>
+                            <span class="font-tech uppercase" x-text="step.label"></span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-[10px] text-slate-600"
+                            x-show="sIdx < flowSteps.length - 1"></i>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Explicación Técnica del Paso Actual -->
+            <p class="text-xs text-slate-300 bg-slate-900/50 p-2.5 rounded border border-slate-800 italic"
+                x-text="flowSteps[activeStepIndex]?.description"></p>
+        </div>
+    </div>
+
+    <!-- NOTA DE SOPORTE E INFORMACIÓN -->
+    <div class="fixed bottom-24 right-4 z-40" x-data="{ open: false }">
+        <button @click="open = !open"
+            class="h-10 w-10 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-700 flex items-center justify-center text-white shadow-xl transition-all duration-300 hover:scale-105">
+            <i class="fa-solid" :class="open ? 'fa-xmark' : 'fa-circle-question'"></i>
+        </button>
+        <div x-show="open"
+            class="absolute bottom-12 right-0 w-80 bg-slate-950 border border-slate-800 rounded-xl p-4 shadow-2xl space-y-3 animate-fade-in text-xs">
+            <h4 class="font-tech font-bold text-cyan-400 uppercase tracking-wider">Acerca del Simulador</h4>
+            <p class="text-slate-300 leading-relaxed">
+                Esta aplicación utiliza <strong>Three.js</strong> para construir geometrías vectoriales procedurales que
+                representan los componentes de red de forma óptima sin requerir descargas lentas de modelos GLTF
+                externos.
+            </p>
+            <div class="space-y-1">
+                <div class="text-[10px] text-slate-500 font-bold uppercase">Uso de Controles 3D:</div>
+                <p class="text-slate-400"><strong>Arrastrar con click izquierdo:</strong> Rotar
+                    cámara.<br><strong>Arrastrar con click derecho:</strong> Desplazar (Pan).<br><strong>Rueda de
+                        ratón:</strong> Zoom.</p>
+            </div>
+            <div class="bg-cyan-950/30 p-2 rounded border border-cyan-500/20 text-cyan-300 leading-normal">
+                <i class="fa-solid fa-camera mr-1"></i> Para disfrutar del modo RA, otorgue permisos de cámara si el
+                navegador se lo solicita al pulsar el botón de Realidad Aumentada.
+            </div>
+        </div>
+    </div>
+
+    <!-- MOTOR GRÁFICO 3D (THREE.JS) CON COMPONENTES PROCEDURALES -->
+    <script>
+        let scene, camera, renderer, controls;
+        let components = {};
+        let connections = [];
+        let particles = [];
+        let isTransparent = false;
+        let animationTimer = null;
+        let gridHelper;
+
+        // Colores tecnológicos
+        const COLORS = {
+            ambient: 0x070b19,
+            lineDefault: 0x1d4ed8, // Azul oscuro
+            das: 0xf59e0b,        // Ámbar
+            nas: 0x10b981,        // Esmeralda
+            san: 0x6366f1,        // Índigo
+            laser: 0x06b6d4,       // Cyan
+            textLight: 0xffffff,
+            grid: 0x3b82f6
+        };
+
+        function initThreeJS() {
+            const container = document.getElementById('threejs-canvas');
+
+            // Crear Escena
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(COLORS.ambient);
+
+            // Crear Cámara
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 8, 12);
+
+            // Crear Renderizador con soporte para superposición RA (Alpha)
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Controles orbitales adaptados a ratón y gestos táctiles
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 - 0.05; // Evitar pasar por debajo del suelo
+            controls.minDistance = 3;
+            controls.maxDistance = 30;
+
+            // Iluminación
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 12, 8);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            const pointLight = new THREE.PointLight(0x06b6d4, 1.5, 15);
+            pointLight.position.set(0, 4, 0);
+            scene.add(pointLight);
+
+            // Grid decorativo (blueprint del laboratorio)
+            gridHelper = new THREE.GridHelper(24, 24, COLORS.grid, 0x1e293b);
+            gridHelper.position.y = -1;
+            scene.add(gridHelper);
+
+            // Construcción procedimental del laboratorio de redes/almacenamiento
+            buildVirtualLab();
+
+            // Iniciar bucle de animación
+            animate();
+
+            // Soporte para redimensionado de pantalla
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // Constructor de texturas dinámicas por Canvas para simular LEDs y ranuras de hardware
+        function createHardwareTexture(type, colorHex) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+
+            // Fondo metálico oscuro
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, 128, 128);
+
+            if (type === 'server') {
+                // Ranuras de disco
+                ctx.fillStyle = '#1e293b';
+                for (let i = 0; i < 4; i++) {
+                    ctx.fillRect(10, 15 + i * 25, 108, 12);
+                    // LEDs de estado en cada ranura
+                    ctx.fillStyle = colorHex;
+                    ctx.fillRect(15, 19 + i * 25, 6, 4);
+                    ctx.fillStyle = '#1e293b';
+                }
+            } else if (type === 'nas') {
+                // Frontal tipo torre NAS con bahías verticales
+                ctx.fillStyle = '#1e293b';
+                for (let i = 0; i < 3; i++) {
+                    ctx.fillRect(15 + i * 35, 20, 20, 80);
+                    ctx.fillStyle = colorHex;
+                    ctx.fillRect(22 + i * 35, 105, 6, 6);
+                    ctx.fillStyle = '#1e293b';
+                }
+            } else if (type === 'switch') {
+                // Matriz de puertos RJ45
+                ctx.fillStyle = '#1e293b';
+                for (let i = 0; i < 12; i++) {
+                    ctx.fillRect(8 + i * 9, 30, 6, 6);
+                    ctx.fillRect(8 + i * 9, 50, 6, 6);
+                    // Luces de actividad
+                    ctx.fillStyle = colorHex;
+                    ctx.fillRect(10 + i * 9, 20, 3, 3);
+                    ctx.fillRect(10 + i * 9, 65, 3, 3);
+                    ctx.fillStyle = '#1e293b';
+                }
+            } else if (type === 'disk') {
+                // Líneas de circuitería
+                ctx.strokeStyle = colorHex;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(10, 10);
+                ctx.lineTo(60, 10);
+                ctx.lineTo(60, 110);
+                ctx.stroke();
+
+                ctx.fillStyle = colorHex;
+                ctx.beginPath();
+                ctx.arc(64, 64, 25, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            return texture;
+        }
+
+        function buildVirtualLab() {
+            // 1. SERVIDOR PRINCIPAL (Común)
+            const serverGeo = new THREE.BoxGeometry(2, 0.8, 1.8);
+            const serverMat = new THREE.MeshStandardMaterial({
+                color: 0x334155,
+                roughness: 0.2,
+                metalness: 0.8,
+                map: createHardwareTexture('server', '#3b82f6')
+            });
+            const server = new THREE.Mesh(serverGeo, serverMat);
+            server.position.set(-1.5, 0, 0);
+            scene.add(server);
+            components['ServerApp'] = server;
+            addFloatingText(server, 'Servidor App', 0.8);
+
+            // 2. DAS DISK (Direct Connection)
+            const dasGeo = new THREE.BoxGeometry(0.8, 1, 0.6);
+            const dasMat = new THREE.MeshStandardMaterial({
+                color: 0x451a03,
+                roughness: 0.3,
+                metalness: 0.9,
+                map: createHardwareTexture('disk', '#f59e0b')
+            });
+            const dasDisk = new THREE.Mesh(dasGeo, dasMat);
+            dasDisk.position.set(-4.5, -0.2, -1.5);
+            scene.add(dasDisk);
+            components['DAS_Disk'] = dasDisk;
+            addFloatingText(dasDisk, 'Unidad DAS (SAS)', 0.8);
+
+            // Cable de conexión directa (DAS)
+            createDataConnection('ServerApp', 'DAS_Disk', COLORS.das);
+
+            // 3. SWITCH LAN DE LA OFICINA
+            const switchGeo = new THREE.BoxGeometry(1.8, 0.3, 1.2);
+            const switchMat = new THREE.MeshStandardMaterial({
+                color: 0x1e293b,
+                roughness: 0.5,
+                map: createHardwareTexture('switch', '#10b981')
+            });
+            const lanSwitch = new THREE.Mesh(switchGeo, switchMat);
+            lanSwitch.position.set(-2, 1.5, 2.5);
+            scene.add(lanSwitch);
+            components['SwitchLAN'] = lanSwitch;
+            addFloatingText(lanSwitch, 'Switch LAN Ethernet', 0.4);
+
+            // Conexión Servidor -> Switch LAN
+            createDataConnection('ServerApp', 'SwitchLAN', COLORS.lineDefault);
+
+            // 4. COMPUTADORAS DE USUARIOS (Clientes LAN)
+            const clientGeo = new THREE.BoxGeometry(0.6, 0.4, 0.5);
+            const clientMat = new THREE.MeshStandardMaterial({ color: 0x0284c7 });
+
+            const client1 = new THREE.Mesh(clientGeo, clientMat);
+            client1.position.set(-4.5, 1.2, 4);
+            scene.add(client1);
+            components['ClientPC'] = client1;
+            addFloatingText(client1, 'Usuario Oficina', 0.5);
+
+            createDataConnection('ClientPC', 'SwitchLAN', COLORS.lineDefault);
+
+            // 5. UNIDAD NAS (Network Attached Storage)
+            const nasGeo = new THREE.BoxGeometry(1.2, 1.4, 1.2);
+            const nasMat = new THREE.MeshStandardMaterial({
+                color: 0x064e3b,
+                roughness: 0.4,
+                map: createHardwareTexture('nas', '#10b981')
+            });
+            const nasBox = new THREE.Mesh(nasGeo, nasMat);
+            nasBox.position.set(1.5, 0.3, 3);
+            scene.add(nasBox);
+            components['NAS_Box'] = nasBox;
+            addFloatingText(nasBox, 'Unidad NAS (IP/RAID)', 0.9);
+
+            // Conexión NAS al Switch LAN
+            createDataConnection('NAS_Box', 'SwitchLAN', COLORS.nas);
+
+            // 6. SERVIDOR DE BASE DE DATOS (Entorno SAN de alto rendimiento)
+            const dbServer = new THREE.Mesh(serverGeo, new THREE.MeshStandardMaterial({
+                color: 0x1e1b4b,
+                roughness: 0.2,
+                metalness: 0.8,
+                map: createHardwareTexture('server', '#6366f1')
+            }));
+            dbServer.position.set(2, 0, -1);
+            scene.add(dbServer);
+            components['ServerDB'] = dbServer;
+            addFloatingText(dbServer, 'Servidor DB / Clúster', 0.8);
+
+            // Conexión DB Server a LAN
+            createDataConnection('ServerDB', 'SwitchLAN', COLORS.lineDefault);
+
+            // 7. SWITCH SAN DEDICADO (Fibre Channel de alta velocidad)
+            const sanSwitchMat = new THREE.MeshStandardMaterial({
+                color: 0x2e1065,
+                roughness: 0.3,
+                map: createHardwareTexture('switch', '#6366f1')
+            });
+            const sanSwitch = new THREE.Mesh(switchGeo, sanSwitchMat);
+            sanSwitch.position.set(1.5, -0.6, -3);
+            scene.add(sanSwitch);
+            components['SwitchSAN'] = sanSwitch;
+            addFloatingText(sanSwitch, 'Switch SAN FC', 0.4);
+
+            // Servidor DB se conecta a red SAN
+            createDataConnection('ServerDB', 'SwitchSAN', COLORS.san);
+            // Servidor de Aplicaciones también se conecta a la red SAN para tolerar redundancia
+            createDataConnection('ServerApp', 'SwitchSAN', COLORS.san);
+
+            // 8. CABINA DE ALMACENAMIENTO SAN (Array masivo de discos)
+            const sanCabinaGeo = new THREE.BoxGeometry(2.2, 2.5, 2);
+            const sanCabinaMat = new THREE.MeshStandardMaterial({
+                color: 0x1e1e38,
+                roughness: 0.1,
+                metalness: 0.9
+            });
+            const sanCabina = new THREE.Mesh(sanCabinaGeo, sanCabinaMat);
+            sanCabina.position.set(4.5, 0.5, -3.5);
+            scene.add(sanCabina);
+            components['SANCabina'] = sanCabina;
+            addFloatingText(sanCabina, 'Cabina SAN (LUNs)', 1.5);
+
+            // Sub-bloques internos simulando bandejas de discos de la cabina
+            for (let i = 0; i < 4; i++) {
+                const shelfGeo = new THREE.BoxGeometry(2.0, 0.4, 1.8);
+                const shelfMat = new THREE.MeshStandardMaterial({
+                    color: 0x0f172a,
+                    map: createHardwareTexture('server', '#6366f1')
+                });
+                const shelf = new THREE.Mesh(shelfGeo, shelfMat);
+                shelf.position.set(0, -0.8 + i * 0.55, 0.1);
+                sanCabina.add(shelf);
+            }
+
+            // Conexión Switch SAN -> Cabina
+            createDataConnection('SwitchSAN', 'SANCabina', COLORS.san);
+        }
+
+        // Generar cables en 3D curvos (Bezier para toque estético futurista)
+        function createDataConnection(fromKey, toKey, colorHex) {
+            const fromObj = components[fromKey];
+            const toObj = components[toKey];
+            if (!fromObj || !toObj) return;
+
+            const pStart = fromObj.position.clone();
+            const pEnd = toObj.position.clone();
+
+            // Punto de control intermedio elevado para crear parábola
+            const pMid = new THREE.Vector3().addVectors(pStart, pEnd).multiplyScalar(0.5);
+            pMid.y += 0.8;
+
+            const curve = new THREE.QuadraticBezierCurve3(pStart, pMid, pEnd);
+            const points = curve.getPoints(24);
+            const curveGeo = new THREE.BufferGeometry().setFromPoints(points);
+
+            const curveMat = new THREE.LineBasicMaterial({
+                color: colorHex,
+                linewidth: 2,
+                transparent: true,
+                opacity: 0.6
+            });
+
+            const line = new THREE.Line(curveGeo, curveMat);
+            scene.add(line);
+            connections.push({ line, curve, from: fromKey, to: toKey, color: colorHex });
+        }
+
+        // Agregar textos/etiquetas 3D usando sprites 2D para excelente rendimiento y escalabilidad sin cargar fuentes pesadas
+        function addFloatingText(parent, text, offsetHeight) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+
+            // Fondo translúcido
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.beginPath();
+            ctx.roundRect(10, 5, 236, 54, 8);
+            ctx.fill();
+
+            // Borde
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Texto de etiqueta
+            ctx.font = 'bold 22px Rajdhani';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 128, 32);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(spriteMat);
+
+            sprite.position.set(0, offsetHeight, 0);
+            sprite.scale.set(1.8, 0.45, 1);
+
+            parent.add(sprite);
+        }
+
+        // BUCLE DE RENDERIZADO PRINCIPAL
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Efecto suave de suspensión flotante para unidades
+            const time = Date.now() * 0.001;
+
+            if (components['DAS_Disk']) {
+                components['DAS_Disk'].position.y = -0.2 + Math.sin(time * 2) * 0.05;
+            }
+            if (components['NAS_Box']) {
+                components['NAS_Box'].position.y = 0.3 + Math.sin(time * 1.5) * 0.04;
+            }
+            if (components['SANCabina']) {
+                components['SANCabina'].position.y = 0.5 + Math.sin(time * 0.8) * 0.03;
+            }
+
+            // Animación de partículas de datos circulando por las líneas físicas
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.progress += p.speed;
+
+                if (p.progress >= 1.0) {
+                    // Llegó al objetivo
+                    scene.remove(p.mesh);
+                    particles.splice(i, 1);
+
+                    // Triggers lógicos de llamadas de callback por paso
+                    if (p.onComplete) {
+                        p.onComplete();
+                    }
+                } else {
+                    // Calcular posición según curva Bezier construida
+                    const pos = p.curve.getPointAt(p.progress);
+                    p.mesh.position.copy(pos);
+
+                    // Efecto visual de estela luminosa
+                    const scale = 1.0 + Math.sin(time * 10) * 0.25;
+                    p.mesh.scale.set(scale, scale, scale);
+                }
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // ENFOCAR CÁMARA SEGÚN EL SISTEMA SELECCIONADO PARA APRENDIZAJE GUIADO
+        window.focusThreeJSOnSystem = function (system) {
+            if (!controls) return;
+
+            // Detener cualquier animación de flujo anterior para evitar colisiones lógicas
+            window.stopThreeFlowAnimation();
+
+            const targets = {
+                'DAS': { cam: { x: -5, y: 3, z: 4 }, lookAt: { x: -3, y: 0, z: -1 } },
+                'NAS': { cam: { x: 2, y: 4, z: 7 }, lookAt: { x: 0, y: 0.5, z: 2.5 } },
+                'SAN': { cam: { x: 5, y: 4, z: 2 }, lookAt: { x: 3, y: 0.2, z: -2 } }
+            };
+
+            const set = targets[system];
+            if (set) {
+                // Transición de cámara guiada por interpolación lineal (Tween manual suave)
+                const duration = 800;
+                const startCam = camera.position.clone();
+                const startTarget = controls.target.clone();
+                const startTime = Date.now();
+
+                function step() {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    // Easing cuadrático de entrada/salida
+                    const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
+
+                    camera.position.lerpVectors(startCam, new THREE.Vector3(set.cam.x, set.cam.y, set.cam.z), ease);
+                    controls.target.lerpVectors(startTarget, new THREE.Vector3(set.lookAt.x, set.lookAt.y, set.lookAt.z), ease);
+
+                    if (progress < 1) {
+                        requestAnimationFrame(step);
+                    }
+                }
+                step();
+            }
+        };
+
+        // RESTABLECER ÁNGULO GENERAL
+        window.resetThreeCamera = function () {
+            if (!controls) return;
+            const startCam = camera.position.clone();
+            const startTarget = controls.target.clone();
+            const duration = 600;
+            const startTime = Date.now();
+
+            function step() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
+
+                camera.position.lerpVectors(startCam, new THREE.Vector3(0, 8, 12), ease);
+                controls.target.lerpVectors(startTarget, new THREE.Vector3(0, 0, 0), ease);
+
+                if (progress < 1) {
+                    requestAnimationFrame(step);
+                }
+            }
+            step();
+        };
+
+        // SOPORTE DE COMPATIBILIDAD TRANSPARENTE PARA EL MODO REALIDAD AUMENTADA
+        window.setThreeTransparent = function (enable) {
+            isTransparent = enable;
+            if (enable) {
+                scene.background = null;
+                renderer.setClearColor(0x000000, 0); // Limpieza transparente para cámara
+                gridHelper.material.opacity = 0.2;
+                gridHelper.material.transparent = true;
+            } else {
+                scene.background = new THREE.Color(COLORS.ambient);
+                gridHelper.material.opacity = 1;
+                gridHelper.material.transparent = false;
+            }
+        };
+
+        // INSTANCIAR ANIMACIÓN DE PULSOS DE DATOS
+        function spawnDataPulse(fromObj, toObj, colorHex, onComplete) {
+            // Buscar la conexión curva correspondiente
+            const conn = connections.find(c =>
+                (c.from === fromObj && c.to === toObj) || (c.from === toObj && c.to === fromObj)
+            );
+
+            if (!conn) {
+                // En caso de que no haya cable directo curvo, creamos un transporte rectilíneo
+                const pStart = components[fromObj].position;
+                const pEnd = components[toObj].position;
+                const curve = new THREE.LineCurve3(pStart, pEnd);
+
+                const pulseGeo = new THREE.SphereGeometry(0.12, 16, 16);
+                const pulseMat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.9 });
+                const mesh = new THREE.Mesh(pulseGeo, pulseMat);
+                scene.add(mesh);
+
+                particles.push({ mesh, curve, progress: 0, speed: 0.04, onComplete });
+                return;
+            }
+
+            const pulseGeo = new THREE.SphereGeometry(0.14, 16, 16);
+            const pulseMat = new THREE.MeshBasicMaterial({ color: colorHex });
+            const mesh = new THREE.Mesh(pulseGeo, pulseMat);
+            scene.add(mesh);
+
+            // Si la conexión va en sentido inverso, invertimos la curva internamente
+            let activeCurve = conn.curve;
+            if (conn.from !== fromObj) {
+                const points = conn.curve.getPoints(24).reverse();
+                activeCurve = new THREE.QuadraticBezierCurve3(points[0], points[12], points[24]);
+            }
+
+            particles.push({
+                mesh,
+                curve: activeCurve,
+                progress: 0,
+                speed: 0.02, // Velocidad de datos para visualización cómoda
+                onComplete
+            });
+        }
+
+        // ANIMACIÓN DE SECUENCIAS MULTIPASO PARA SIMULACIÓN DE CASOS DE ARCHIVO
+        window.triggerThreeFlowAnimation = function (system, numSteps, onStepChange, onFinalComplete) {
+            window.stopThreeFlowAnimation();
+            let currentStep = 0;
+
+            function next() {
+                if (currentStep >= numSteps) {
+                    if (onFinalComplete) onFinalComplete();
+                    return;
+                }
+
+                onStepChange(currentStep);
+
+                // Desencadenar pulso en el canvas 3D basado en la secuencia del tipo de sistema
+                if (system === 'DAS') {
+                    if (currentStep === 0) {
+                        // Aplicación -> OS (Simulado en Servidor)
+                        flashComponent('ServerApp', COLORS.laser, () => { currentStep++; next(); });
+                    } else if (currentStep === 1) {
+                        // OS envía orden (Servidor destella)
+                        flashComponent('ServerApp', COLORS.das, () => { currentStep++; next(); });
+                    } else if (currentStep === 2) {
+                        // Bus Físico: Servidor -> DAS Disk
+                        spawnDataPulse('ServerApp', 'DAS_Disk', COLORS.das, () => { currentStep++; next(); });
+                    } else if (currentStep === 3) {
+                        // Disco DAS recibe y destella
+                        flashComponent('DAS_Disk', COLORS.das, () => { currentStep++; next(); });
+                    }
+                } else if (system === 'NAS') {
+                    if (currentStep === 0) {
+                        // ClientPC destella
+                        flashComponent('ClientPC', COLORS.laser, () => { currentStep++; next(); });
+                    } else if (currentStep === 1) {
+                        // Envío a Switch LAN
+                        spawnDataPulse('ClientPC', 'SwitchLAN', COLORS.lineDefault, () => { currentStep++; next(); });
+                    } else if (currentStep === 2) {
+                        // Switch procesa e interactúa
+                        flashComponent('SwitchLAN', COLORS.nas, () => { currentStep++; next(); });
+                    } else if (currentStep === 3) {
+                        // Switch -> NAS Box
+                        spawnDataPulse('SwitchLAN', 'NAS_Box', COLORS.nas, () => {
+                            flashComponent('NAS_Box', COLORS.nas, () => { currentStep++; next(); });
+                        });
+                    }
+                } else { // SAN
+                    if (currentStep === 0) {
+                        // Servidor DB genera orden
+                        flashComponent('ServerDB', COLORS.laser, () => { currentStep++; next(); });
+                    } else if (currentStep === 1) {
+                        // Servidor DB -> Switch SAN
+                        spawnDataPulse('ServerDB', 'SwitchSAN', COLORS.san, () => { currentStep++; next(); });
+                    } else if (currentStep === 2) {
+                        // Switch SAN -> Cabina SAN
+                        spawnDataPulse('SwitchSAN', 'SANCabina', COLORS.san, () => { currentStep++; next(); });
+                    } else if (currentStep === 3) {
+                        // Cabina SAN responde de vuelta al Servidor DB
+                        flashComponent('SANCabina', COLORS.san, () => {
+                            spawnDataPulse('SANCabina', 'SwitchSAN', COLORS.laser, () => {
+                                spawnDataPulse('SwitchSAN', 'ServerDB', COLORS.laser, () => {
+                                    currentStep++; next();
+                                });
+                            });
+                        });
+                    }
+                }
+            }
+
+            next();
+        };
+
+        // Detener de inmediato cualquier simulación activa en el hilo 3D
+        window.stopThreeFlowAnimation = function () {
+            if (animationTimer) clearTimeout(animationTimer);
+            // Limpiar partículas activas
+            particles.forEach(p => scene.remove(p.mesh));
+            particles = [];
+        };
+
+        // Destello de color temporal para indicar procesamiento local de un servidor/disco
+        function flashComponent(key, colorHex, callback) {
+            const obj = components[key];
+            if (!obj) {
+                if (callback) callback();
+                return;
+            }
+
+            const originalColor = obj.material.color.getHex();
+            obj.material.color.setHex(colorHex);
+
+            // Temporizador de destello
+            animationTimer = setTimeout(() => {
+                obj.material.color.setHex(originalColor);
+                if (callback) callback();
+            }, 700);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('threejs-canvas');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // Inicializar todo al terminar de cargar la ventana
+        window.onload = function () {
+            initThreeJS();
+        };
+    </script>
+
+</body>
+
+</html>

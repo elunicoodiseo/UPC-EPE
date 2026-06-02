@@ -1,0 +1,2233 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoC: Arquitectura y Funcionamiento en Realidad Aumentada</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Orbitron & Inter -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;600;800;900&display=swap"
+        rel="stylesheet">
+    <!-- FontAwesome for Tech Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls for Three.js -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        tech: ['Orbitron', 'sans-serif'],
+                    },
+                    colors: {
+                        cyber: {
+                            bg: '#06060c',
+                            card: 'rgba(13, 13, 25, 0.7)',
+                            accent: '#00f0ff',
+                            purple: '#ab00ff',
+                            green: '#39ff14',
+                            orange: '#ff5e00',
+                            yellow: '#ffd700',
+                            border: 'rgba(0, 240, 255, 0.15)',
+                        }
+                    },
+                    boxShadow: {
+                        'neon-blue': '0 0 15px rgba(0, 240, 255, 0.45)',
+                        'neon-purple': '0 0 15px rgba(171, 0, 255, 0.45)',
+                        'neon-green': '0 0 15px rgba(57, 255, 20, 0.45)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #06060c;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #06060c;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #1b1b3a;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f0ff;
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(10, 10, 20, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .neon-border-blue {
+            border-color: rgba(0, 240, 255, 0.3);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);
+        }
+
+        .neon-border-blue:hover {
+            border-color: rgba(0, 240, 255, 0.8);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+        }
+
+        /* Keyframe Animations */
+        @keyframes scan {
+            0% {
+                transform: translateY(-100%);
+            }
+
+            100% {
+                transform: translateY(100%);
+            }
+        }
+
+        .scanner-line {
+            animation: scan 3s linear infinite;
+        }
+
+        @keyframes pulse-fast {
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .pulsing-dot {
+            animation: pulse-fast 1s infinite;
+        }
+    </style>
+</head>
+
+<body class="font-sans antialiased selection:bg-cyber-accent selection:text-black">
+
+    <!-- HEADER / NAVIGATION -->
+    <header
+        class="fixed top-0 left-0 right-0 z-50 glass-panel border-b border-cyber-border/40 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyber-accent to-cyber-purple flex items-center justify-center shadow-neon-blue">
+                    <i class="fa-solid fa-microchip text-black text-xl animate-pulse"></i>
+                </div>
+                <div>
+                    <span class="font-tech text-lg font-black tracking-widest text-white block">SoC EXPLORER</span>
+                    <span class="text-[10px] text-cyber-accent tracking-widest uppercase font-semibold">AR Interactive
+                        Lab</span>
+                </div>
+            </div>
+
+            <nav class="hidden md:flex items-center gap-6 text-sm font-medium tracking-wide">
+                <a href="#inicio" class="text-gray-300 hover:text-cyber-accent transition">Inicio</a>
+                <a href="#historia" class="text-gray-300 hover:text-cyber-accent transition">Historia</a>
+                <a href="#interactive-3d" class="text-gray-300 hover:text-cyber-accent transition">Modelo 3D</a>
+                <a href="#simulacion" class="text-gray-300 hover:text-cyber-accent transition">Simulaciones</a>
+                <a href="#comparativa" class="text-gray-300 hover:text-cyber-accent transition">SoC vs Tradicional</a>
+                <a href="#ejemplos" class="text-gray-300 hover:text-cyber-accent transition">Ejemplos</a>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <a href="#interactive-3d"
+                    class="bg-gradient-to-r from-cyber-accent to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-tech font-bold text-xs px-4 py-2.5 rounded-lg transition-all duration-300 flex items-center gap-2 tracking-wider shadow-neon-blue">
+                    <i class="fa-solid fa-vr-cardboard text-sm"></i> ENTRAR AL LAB 3D
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- SECTION 1: HERO / INICIO -->
+    <section id="inicio"
+        class="relative min-h-screen pt-24 pb-12 flex items-center justify-center overflow-hidden bg-gradient-to-b from-cyber-bg via-[#0a0a16] to-cyber-bg">
+        <!-- Tech Decorative Background Elements -->
+        <div class="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_center,rgba(0,240,255,0.06),transparent_60%)]">
+        </div>
+        <div class="absolute top-1/4 left-10 w-96 h-96 bg-cyber-purple/5 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-1/4 right-10 w-96 h-96 bg-cyber-accent/5 rounded-full blur-3xl"></div>
+
+        <div
+            class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <!-- Text Content -->
+            <div class="lg:col-span-7 space-y-6">
+                <div
+                    class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-panel border border-cyber-accent/30 text-cyber-accent text-xs font-semibold tracking-wider uppercase">
+                    <span class="w-2 h-2 rounded-full bg-cyber-accent animate-ping"></span>
+                    Educación Interactiva Avanzada
+                </div>
+
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black font-tech text-white leading-tight">
+                    System on Chip
+                    <span
+                        class="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-cyber-accent via-cyan-400 to-cyber-purple">
+                        El Cerebro Integrado
+                    </span>
+                </h1>
+
+                <p class="text-gray-300 text-lg leading-relaxed max-w-2xl">
+                    Un <strong class="text-cyber-accent">SoC (System on Chip)</strong> es un circuito integrado que
+                    reúne en un solo silicio ultracompacto todos los componentes esenciales de una computadora completa.
+                    En lugar de tener placas madre gigantes con partes separadas, el SoC integra todo para lograr la
+                    máxima eficiencia posible.
+                </p>
+
+                <!-- Comparison Interactive Widget -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                    <div
+                        class="glass-panel p-5 rounded-xl border border-red-500/20 relative overflow-hidden group hover:border-red-500/40 transition-all">
+                        <div
+                            class="absolute -top-10 -right-10 w-24 h-24 bg-red-500/5 rounded-full blur-xl group-hover:bg-red-500/10 transition-all">
+                        </div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <div
+                                class="w-8 h-8 rounded-lg bg-red-950/50 flex items-center justify-center border border-red-500/30">
+                                <i class="fa-solid fa-network-wired text-red-400"></i>
+                            </div>
+                            <h3 class="font-tech text-sm font-bold text-red-400 tracking-wide">ANTES (Separado)</h3>
+                        </div>
+                        <p class="text-xs text-gray-400">CPU, GPU, RAM, chip de red, audio y controladores ocupando gran
+                            espacio físico en tarjetas separadas con alta resistencia y retardo de comunicación.</p>
+                    </div>
+
+                    <div
+                        class="glass-panel p-5 rounded-xl border border-cyber-green/20 relative overflow-hidden group hover:border-cyber-green/40 transition-all shadow-neon-green/5">
+                        <div
+                            class="absolute -top-10 -right-10 w-24 h-24 bg-cyber-green/5 rounded-full blur-xl group-hover:bg-cyber-green/10 transition-all">
+                        </div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <div
+                                class="w-8 h-8 rounded-lg bg-emerald-950/50 flex items-center justify-center border border-cyber-green/30">
+                                <i class="fa-solid fa-microchip text-cyber-green animate-pulse"></i>
+                            </div>
+                            <h3 class="font-tech text-sm font-bold text-cyber-green tracking-wide">AHORA (SoC Integrado)
+                            </h3>
+                        </div>
+                        <p class="text-xs text-gray-400">Todo comprimido en una sola oblea de silicio de pocos
+                            milímetros cuadrados. Latencia mínima, velocidad de luz y consumo energético ínfimo.</p>
+                    </div>
+                </div>
+
+                <div
+                    class="p-4 bg-gradient-to-r from-blue-950/30 to-purple-950/30 border-l-4 border-cyber-accent rounded-r-xl glass-panel text-sm text-gray-300 italic">
+                    "Una SoC permite que dispositivos pequeños como smartphones, tablets, relojes inteligentes y
+                    sistemas IoT tengan una capacidad de procesamiento colosal con un consumo energético de apenas
+                    vatios."
+                </div>
+
+                <div class="pt-2 flex flex-wrap gap-4">
+                    <a href="#interactive-3d"
+                        class="px-6 py-3 rounded-xl bg-gradient-to-r from-cyber-accent to-blue-500 hover:scale-105 hover:shadow-neon-blue text-black font-tech font-bold transition-all flex items-center gap-3">
+                        <i class="fa-solid fa-compass-drafting"></i> Explorar en 3D/RA
+                    </a>
+                    <a href="#simulacion"
+                        class="px-6 py-3 rounded-xl glass-panel hover:bg-white/10 hover:border-cyber-accent text-white font-tech transition-all flex items-center gap-2 border border-white/10 text-sm">
+                        <i class="fa-solid fa-play text-cyber-accent"></i> Ver Caso de Uso Real
+                    </a>
+                </div>
+            </div>
+
+            <!-- Visual Representing Neon SoC Schematic -->
+            <div class="lg:col-span-5 flex justify-center relative">
+                <div
+                    class="relative w-80 h-80 sm:w-96 sm:h-96 rounded-2xl glass-panel border border-cyber-accent/40 flex items-center justify-center p-6 group shadow-neon-blue/10">
+                    <!-- Rotating Circuit Ring -->
+                    <div
+                        class="absolute inset-0 rounded-2xl border-2 border-dashed border-cyber-accent/20 animate-[spin_40s_linear_infinite] pointer-events-none">
+                    </div>
+                    <div
+                        class="absolute inset-4 rounded-xl border border-dashed border-cyber-purple/20 animate-[spin_20s_linear_infinite_reverse] pointer-events-none">
+                    </div>
+
+                    <!-- Decorative corner lights -->
+                    <span class="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-cyber-accent"></span>
+                    <span class="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-cyber-accent"></span>
+                    <span class="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-cyber-accent"></span>
+                    <span class="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-cyber-accent"></span>
+
+                    <!-- Main Glowing central chip graphic -->
+                    <div
+                        class="w-48 h-48 rounded-xl bg-gradient-to-br from-[#121226] to-[#0a0a14] border-2 border-cyber-accent/60 relative flex flex-col items-center justify-center shadow-[0_0_40px_rgba(0,240,255,0.2)] group-hover:scale-105 transition-all duration-500">
+                        <!-- Silicon Lines (Golden paths) -->
+                        <div
+                            class="absolute inset-0 opacity-40 bg-[radial-gradient(#00f0ff_1px,transparent_1px)] [background-size:16px_16px]">
+                        </div>
+
+                        <!-- Internal core segments mock -->
+                        <div class="grid grid-cols-2 gap-2 w-36 h-36 relative z-10">
+                            <div
+                                class="border border-cyber-accent/30 rounded bg-cyan-950/20 flex flex-col items-center justify-center p-1">
+                                <span class="text-[9px] font-tech text-cyber-accent font-bold">CPU</span>
+                                <div class="w-4 h-1 bg-cyber-accent/60 rounded mt-1 animate-pulse"></div>
+                            </div>
+                            <div
+                                class="border border-cyber-purple/30 rounded bg-purple-950/20 flex flex-col items-center justify-center p-1">
+                                <span class="text-[9px] font-tech text-cyber-purple font-bold">GPU</span>
+                                <div class="w-4 h-1 bg-cyber-purple/60 rounded mt-1 animate-pulse"></div>
+                            </div>
+                            <div
+                                class="border border-cyber-green/30 rounded bg-emerald-950/20 flex flex-col items-center justify-center p-1">
+                                <span class="text-[9px] font-tech text-cyber-green font-bold">NPU IA</span>
+                                <div class="w-4 h-1 bg-cyber-green/60 rounded mt-1 animate-pulse"></div>
+                            </div>
+                            <div
+                                class="border border-amber-500/30 rounded bg-amber-950/20 flex flex-col items-center justify-center p-1">
+                                <span class="text-[9px] font-tech text-amber-500 font-bold">CACHE</span>
+                                <div class="w-4 h-1 bg-amber-500/60 rounded mt-1 animate-pulse"></div>
+                            </div>
+                        </div>
+
+                        <div
+                            class="absolute -bottom-4 bg-cyber-accent text-black font-tech font-black text-[10px] px-3 py-1 rounded-full uppercase tracking-widest shadow-neon-blue">
+                            INTEGRADO
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 2: TIMELINE INTERACTIVA (HISTORIA) -->
+    <section id="historia" class="py-24 bg-gradient-to-b from-cyber-bg to-[#0b0b14] relative border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <h2 class="text-3xl sm:text-4xl font-tech font-black text-white uppercase tracking-wider">
+                    Evolución del SoC
+                </h2>
+                <div
+                    class="w-24 h-1 bg-gradient-to-r from-cyber-accent to-cyber-purple mx-auto mt-4 rounded-full shadow-neon-blue">
+                </div>
+                <p class="text-gray-400 mt-4">
+                    Desde circuitos integrados discretos hasta obleas moleculares con miles de millones de transistores
+                    y motores neuronales dedicados.
+                </p>
+            </div>
+
+            <!-- Timeline wrapper -->
+            <div class="relative wrap overflow-hidden p-10 h-full">
+                <!-- Center timeline line -->
+                <div
+                    class="border-2-2 absolute border-opacity-20 border-cyber-accent h-full border-l left-1/2 -ml-0.5 pointer-events-none hidden md:block">
+                </div>
+
+                <!-- Timeline Event 1: 70s & 80s (Left) -->
+                <div class="mb-12 flex justify-between items-center w-full md:flex-row-reverse group">
+                    <div class="w-full md:w-5/12"></div>
+                    <!-- Node -->
+                    <div
+                        class="z-20 flex items-center order-1 bg-cyber-bg border-2 border-red-500/50 w-10 h-10 rounded-full shadow-lg absolute left-1/2 -ml-5 hidden md:flex items-center justify-center">
+                        <i class="fa-solid fa-microchip text-red-500 text-sm"></i>
+                    </div>
+                    <!-- Card Content -->
+                    <div
+                        class="w-full md:w-5/12 glass-panel p-6 rounded-2xl border-l-4 border-red-500 group-hover:shadow-[0_0_20px_rgba(239,68,68,0.15)] transition-all duration-300">
+                        <span
+                            class="font-tech text-red-400 font-bold tracking-widest text-sm uppercase block mb-1">DÉCADAS
+                            1970 - 1980</span>
+                        <h3 class="text-xl font-bold font-tech text-white mb-2">Primeras integraciones y
+                            microprocesadores</h3>
+                        <p class="text-gray-300 text-sm leading-relaxed">
+                            Nace la miniaturización básica de componentes en silicio. Los primeros controladores y
+                            microprocesadores (como el Intel 4004) integran lógica aritmética en un solo silicio, pero
+                            el sistema global requería decenas de chips externos para RAM, almacenamiento e interfaces.
+                        </p>
+                        <div class="mt-3 flex gap-2">
+                            <span
+                                class="text-[10px] bg-red-950/40 border border-red-500/30 text-red-400 font-semibold px-2 py-0.5 rounded">Silicio
+                                temprano</span>
+                            <span
+                                class="text-[10px] bg-red-950/40 border border-red-500/30 text-red-400 font-semibold px-2 py-0.5 rounded">Chips
+                                discretos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline Event 2: 1990s (Right) -->
+                <div class="mb-12 flex justify-between items-center w-full group">
+                    <div class="w-full md:w-5/12"></div>
+                    <!-- Node -->
+                    <div
+                        class="z-20 flex items-center order-1 bg-cyber-bg border-2 border-orange-400 w-10 h-10 rounded-full shadow-lg absolute left-1/2 -ml-5 hidden md:flex items-center justify-center">
+                        <i class="fa-solid fa-network-wired text-orange-400 text-sm"></i>
+                    </div>
+                    <!-- Card Content -->
+                    <div
+                        class="w-full md:w-5/12 glass-panel p-6 rounded-2xl border-r-4 border-orange-400 group-hover:shadow-[0_0_20px_rgba(251,146,60,0.15)] transition-all duration-300 text-left md:text-right">
+                        <span
+                            class="font-tech text-orange-400 font-bold tracking-widest text-sm uppercase block mb-1">DÉCADA
+                            1990</span>
+                        <h3 class="text-xl font-bold font-tech text-white mb-2">Surgimiento del concepto "SoC"</h3>
+                        <p class="text-gray-300 text-sm leading-relaxed">
+                            Los microcontroladores avanzados comienzan a integrar controladores de E/S y pequeñas
+                            memorias caché en el mismo chip. Aparecen procesadores de propósito específico (ASICs) para
+                            sistemas embebidos, consolidando la meta teórica de "un sistema completo en un chip".
+                        </p>
+                        <div class="mt-3 flex gap-2 justify-start md:justify-end">
+                            <span
+                                class="text-[10px] bg-orange-950/40 border border-orange-500/30 text-orange-400 font-semibold px-2 py-0.5 rounded">Sistemas
+                                Embebidos</span>
+                            <span
+                                class="text-[10px] bg-orange-950/40 border border-orange-500/30 text-orange-400 font-semibold px-2 py-0.5 rounded">ASICs</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline Event 3: 2000s (Left) -->
+                <div class="mb-12 flex justify-between items-center w-full md:flex-row-reverse group">
+                    <div class="w-full md:w-5/12"></div>
+                    <!-- Node -->
+                    <div
+                        class="z-20 flex items-center order-1 bg-cyber-bg border-2 border-cyber-purple w-10 h-10 rounded-full shadow-lg absolute left-1/2 -ml-5 hidden md:flex items-center justify-center">
+                        <i class="fa-solid fa-mobile-screen text-cyber-purple text-sm"></i>
+                    </div>
+                    <!-- Card Content -->
+                    <div
+                        class="w-full md:w-5/12 glass-panel p-6 rounded-2xl border-l-4 border-cyber-purple group-hover:shadow-[0_0_20px_rgba(171,0,255,0.15)] transition-all duration-300">
+                        <span
+                            class="font-tech text-cyber-purple font-bold tracking-widest text-sm uppercase block mb-1">AÑOS
+                            2000</span>
+                        <h3 class="text-xl font-bold font-tech text-white mb-2">Consumo masivo y celulares</h3>
+                        <p class="text-gray-300 text-sm leading-relaxed">
+                            La llegada de la telefonía móvil multimedia y las consolas portátiles (como Game Boy
+                            Advance, Nintendo DS o reproductores de música) empujan al silicio a adoptar la arquitectura
+                            ARM. Se integra la CPU, un núcleo gráfico básico, códecs de audio y módem de red en silicios
+                            de alta eficiencia.
+                        </p>
+                        <div class="mt-3 flex gap-2">
+                            <span
+                                class="text-[10px] bg-purple-950/40 border border-cyber-purple/30 text-cyber-purple font-semibold px-2 py-0.5 rounded">Celulares
+                                Básicos</span>
+                            <span
+                                class="text-[10px] bg-purple-950/40 border border-cyber-purple/30 text-cyber-purple font-semibold px-2 py-0.5 rounded">Arquitectura
+                                ARM</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline Event 4: 2010s (Right) -->
+                <div class="mb-12 flex justify-between items-center w-full group">
+                    <div class="w-full md:w-5/12"></div>
+                    <!-- Node -->
+                    <div
+                        class="z-20 flex items-center order-1 bg-cyber-bg border-2 border-cyber-accent w-10 h-10 rounded-full shadow-lg absolute left-1/2 -ml-5 hidden md:flex items-center justify-center">
+                        <i class="fa-solid fa-wifi text-cyber-accent text-sm"></i>
+                    </div>
+                    <!-- Card Content -->
+                    <div
+                        class="w-full md:w-5/12 glass-panel p-6 rounded-2xl border-r-4 border-cyber-accent group-hover:shadow-[0_0_20px_rgba(0,240,255,0.15)] transition-all duration-300 text-left md:text-right">
+                        <span
+                            class="font-tech text-cyber-accent font-bold tracking-widest text-sm uppercase block mb-1">AÑOS
+                            2010</span>
+                        <h3 class="text-xl font-bold font-tech text-white mb-2">Revolución de los Smartphones e IoT</h3>
+                        <p class="text-gray-300 text-sm leading-relaxed">
+                            Aparecen gigantes de silicio como Qualcomm Snapdragon, Apple A-Series y Samsung Exynos. El
+                            SoC se convierte en el estándar de oro de la informática móvil. Procesadores de 4 a 8
+                            núcleos CPU se integran con GPUs de alto rendimiento móvil, ISPs avanzados para cámaras
+                            digitales y conectividad LTE / Wi-Fi integrada.
+                        </p>
+                        <div class="mt-3 flex gap-2 justify-start md:justify-end">
+                            <span
+                                class="text-[10px] bg-cyan-950/40 border border-cyber-accent/30 text-cyber-accent font-semibold px-2 py-0.5 rounded">Smartphones</span>
+                            <span
+                                class="text-[10px] bg-cyan-950/40 border border-cyber-accent/30 text-cyber-accent font-semibold px-2 py-0.5 rounded">Conectividad
+                                LTE</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline Event 5: 2020s (Left) -->
+                <div class="mb-12 flex justify-between items-center w-full md:flex-row-reverse group">
+                    <div class="w-full md:w-5/12"></div>
+                    <!-- Node -->
+                    <div
+                        class="z-20 flex items-center order-1 bg-cyber-bg border-2 border-cyber-green w-10 h-10 rounded-full shadow-lg absolute left-1/2 -ml-5 hidden md:flex items-center justify-center">
+                        <i class="fa-solid fa-brain text-cyber-green text-sm animate-pulse"></i>
+                    </div>
+                    <!-- Card Content -->
+                    <div
+                        class="w-full md:w-5/12 glass-panel p-6 rounded-2xl border-l-4 border-cyber-green group-hover:shadow-[0_0_20px_rgba(57,255,20,0.15)] transition-all duration-300">
+                        <span
+                            class="font-tech text-cyber-green font-bold tracking-widest text-sm uppercase block mb-1">AÑOS
+                            2020+</span>
+                        <h3 class="text-xl font-bold font-tech text-white mb-2">Aceleradores de IA (NPU) y Apple Silicon
+                        </h3>
+                        <p class="text-gray-300 text-sm leading-relaxed">
+                            Los SoCs escalan a computadoras de escritorio y servidores (como los chips M-Series de
+                            Apple). Se integran motores neuronales dedicados (NPUs) que ejecutan billones de operaciones
+                            por segundo para IA generativa local, conectividad 5G directa en el chip, coprocesadores de
+                            seguridad avanzados y memorias unificadas de ultra banda ancha.
+                        </p>
+                        <div class="mt-3 flex gap-2">
+                            <span
+                                class="text-[10px] bg-emerald-950/40 border border-cyber-green/30 text-cyber-green font-semibold px-2 py-0.5 rounded">Motores
+                                Neuronales (NPU)</span>
+                            <span
+                                class="text-[10px] bg-emerald-950/40 border border-cyber-green/30 text-cyber-green font-semibold px-2 py-0.5 rounded">IA
+                                Generativa Local</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: VISOR DE MODELO 3D & EXPLORACIÓN EN REALIDAD AUMENTADA -->
+    <section id="interactive-3d"
+        class="py-20 relative bg-gradient-to-b from-[#0b0b14] to-cyber-bg border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-10">
+                <h2 class="text-3xl sm:text-4xl font-tech font-black text-white uppercase tracking-wider">
+                    Laboratorio Interactivo 3D & RA
+                </h2>
+                <div
+                    class="w-24 h-1 bg-gradient-to-r from-cyber-accent to-cyber-purple mx-auto mt-4 rounded-full shadow-neon-blue">
+                </div>
+                <p class="text-gray-400 mt-4">
+                    Interactúa con el chip. Selecciona presets, levanta el encapsulado para explorar sus bloques y
+                    activa el simulador de cámara para proyectarlo en tu espacio de Realidad Aumentada.
+                </p>
+            </div>
+
+            <!-- Main Interactive Canvas and Dashboard Layout -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+
+                <!-- Left Sidebar: Selectors & Controls -->
+                <div class="lg:col-span-3 flex flex-col gap-4">
+                    <!-- Preset Selector Card -->
+                    <div class="glass-panel p-5 rounded-2xl border border-cyber-border/40">
+                        <h3 class="font-tech text-xs font-bold text-cyber-accent uppercase tracking-widest mb-4">
+                            <i class="fa-solid fa-sliders text-xs mr-2"></i> Tipo de Dispositivo (SoC)
+                        </h3>
+                        <div class="flex flex-col gap-2">
+                            <button onclick="setSoCPreset('smartphone')" id="btn-preset-smartphone"
+                                class="w-full text-left p-3 rounded-xl border border-cyber-accent bg-cyber-accent/10 text-white hover:bg-cyber-accent/10 transition-all font-semibold flex items-center justify-between text-sm shadow-neon-blue/20">
+                                <span><i class="fa-solid fa-mobile-screen mr-2 text-cyber-accent"></i> Smartphone</span>
+                                <span
+                                    class="text-[10px] bg-cyber-accent text-black font-bold px-1.5 py-0.5 rounded">ACTIVO</span>
+                            </button>
+                            <button onclick="setSoCPreset('pi')" id="btn-preset-pi"
+                                class="w-full text-left p-3 rounded-xl border border-white/5 bg-[#101026]/40 text-gray-300 hover:border-cyber-accent/40 transition-all font-semibold flex items-center justify-between text-sm">
+                                <span><i class="fa-solid fa-microchip mr-2 text-rose-500"></i> Raspberry Pi</span>
+                            </button>
+                            <button onclick="setSoCPreset('car')" id="btn-preset-car"
+                                class="w-full text-left p-3 rounded-xl border border-white/5 bg-[#101026]/40 text-gray-300 hover:border-cyber-accent/40 transition-all font-semibold flex items-center justify-between text-sm">
+                                <span><i class="fa-solid fa-car-tunnel mr-2 text-amber-500"></i> Auto Inteligente</span>
+                            </button>
+                            <button onclick="setSoCPreset('security')" id="btn-preset-security"
+                                class="w-full text-left p-3 rounded-xl border border-white/5 bg-[#101026]/40 text-gray-300 hover:border-cyber-accent/40 transition-all font-semibold flex items-center justify-between text-sm">
+                                <span><i class="fa-solid fa-video mr-2 text-cyber-purple"></i> Cámara de Seg. IA</span>
+                            </button>
+                            <button onclick="setSoCPreset('iot')" id="btn-preset-iot"
+                                class="w-full text-left p-3 rounded-xl border border-white/5 bg-[#101026]/40 text-gray-300 hover:border-cyber-accent/40 transition-all font-semibold flex items-center justify-between text-sm">
+                                <span><i class="fa-solid fa-seedling mr-2 text-cyber-green"></i> Dispositivo IoT</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Hardware Stats HUD -->
+                    <div class="glass-panel p-5 rounded-2xl border border-cyber-border/40 relative overflow-hidden">
+                        <!-- Neon background grid -->
+                        <div
+                            class="absolute inset-0 bg-[radial-gradient(#00f0ff_0.5px,transparent_0.5px)] [background-size:10px_10px] opacity-10">
+                        </div>
+
+                        <h3
+                            class="font-tech text-xs font-bold text-cyber-purple uppercase tracking-widest mb-4 relative z-10">
+                            <i class="fa-solid fa-gauge-high text-xs mr-2"></i> Telemetría Simulada
+                        </h3>
+                        <div class="space-y-3 relative z-10 text-xs">
+                            <div>
+                                <div class="flex justify-between text-gray-400 mb-1">
+                                    <span>Frecuencia CPU</span>
+                                    <span class="text-cyber-accent font-mono" id="hud-cpu">3.2 GHz</span>
+                                </div>
+                                <div class="w-full bg-black/50 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-cyber-accent h-full rounded-full transition-all duration-1000"
+                                        id="hud-cpu-bar" style="width: 85%;"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-gray-400 mb-1">
+                                    <span>Uso GPU</span>
+                                    <span class="text-cyber-purple font-mono" id="hud-gpu">45%</span>
+                                </div>
+                                <div class="w-full bg-black/50 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-cyber-purple h-full rounded-full transition-all duration-1000"
+                                        id="hud-gpu-bar" style="width: 45%;"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-gray-400 mb-1">
+                                    <span>Rendimiento NPU</span>
+                                    <span class="text-cyber-green font-mono" id="hud-npu">18 TOPS</span>
+                                </div>
+                                <div class="w-full bg-black/50 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-cyber-green h-full rounded-full transition-all duration-1000"
+                                        id="hud-npu-bar" style="width: 60%;"></div>
+                                </div>
+                            </div>
+                            <div class="pt-2 border-t border-white/5 flex justify-between text-[11px]">
+                                <span class="text-gray-500">TDP Consumo:</span>
+                                <span class="text-cyber-green font-bold" id="hud-tdp">~5W (Eficiente)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Center 3D Workspace -->
+                <div class="lg:col-span-6 flex flex-col gap-4 relative">
+                    <div id="canvas-container"
+                        class="relative w-full h-[500px] rounded-2xl glass-panel border border-cyber-accent/30 overflow-hidden shadow-neon-blue/5">
+
+                        <!-- Webcam Feed Background (for Simulated AR) -->
+                        <video id="webcam-feed"
+                            class="absolute inset-0 w-full h-full object-cover hidden pointer-events-none z-0" autoplay
+                            playsinline muted></video>
+
+                        <!-- Three.js Canvas Element -->
+                        <div id="threejs-canvas" class="absolute inset-0 z-10 w-full h-full"></div>
+
+                        <!-- AR Scanning overlay line -->
+                        <div id="scanner-line-el"
+                            class="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-cyber-accent to-transparent scanner-line pointer-events-none z-20 hidden">
+                        </div>
+
+                        <!-- AR Mode Toggle Overlay Buttons -->
+                        <div
+                            class="absolute bottom-4 left-4 right-4 z-30 flex flex-wrap gap-2 justify-between items-center pointer-events-none">
+                            <div class="flex gap-2 pointer-events-auto">
+                                <button onclick="toggleExplodedView()" id="btn-exploded"
+                                    class="bg-black/80 hover:bg-black border border-cyber-accent/40 hover:border-cyber-accent text-white hover:text-cyber-accent font-tech text-xs px-4 py-2.5 rounded-lg transition-all flex items-center gap-2">
+                                    <i class="fa-solid fa-arrow-up-down"></i> <span id="txt-exploded">VER POR
+                                        DENTRO</span>
+                                </button>
+                                <button onclick="toggleCameraAR()" id="btn-ar"
+                                    class="bg-black/80 hover:bg-black border border-cyber-purple/40 hover:border-cyber-purple text-white hover:text-cyber-purple font-tech text-xs px-4 py-2.5 rounded-lg transition-all flex items-center gap-2">
+                                    <i class="fa-solid fa-camera"></i> <span id="txt-ar">ACTIVAR CAMARA / AR</span>
+                                </button>
+                            </div>
+                            <div
+                                class="pointer-events-auto bg-black/70 px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2 text-[10px] text-gray-400">
+                                <i class="fa-solid fa-arrows-to-eye text-cyber-accent"></i> Usa mouse o touch para rotar
+                                y zoom
+                            </div>
+                        </div>
+
+                        <!-- Component Quick Click HUD labels floating -->
+                        <div class="absolute top-4 left-4 z-20 pointer-events-none">
+                            <div
+                                class="bg-black/70 px-3 py-1.5 rounded-lg border border-cyber-accent/30 text-xs text-white font-tech tracking-wide flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-sm bg-cyber-accent animate-pulse"></span>
+                                MODO: <span id="txt-current-mode" class="text-cyber-accent font-bold">SMARTPHONE
+                                    SoC</span>
+                            </div>
+                        </div>
+
+                        <!-- Component Selector Badges overlay top right -->
+                        <div
+                            class="absolute top-4 right-4 z-20 flex flex-col gap-1.5 pointer-events-auto items-end text-right">
+                            <span class="text-[9px] font-tech text-gray-400 uppercase tracking-widest">Bloques
+                                Internos</span>
+                            <div class="flex flex-wrap max-w-xs gap-1 justify-end">
+                                <button onclick="selectComponent('cpu')"
+                                    class="px-2 py-0.5 bg-blue-900/40 border border-blue-400/40 text-[10px] rounded text-white hover:bg-blue-950 transition">CPU</button>
+                                <button onclick="selectComponent('gpu')"
+                                    class="px-2 py-0.5 bg-orange-900/40 border border-orange-400/40 text-[10px] rounded text-white hover:bg-orange-950 transition">GPU</button>
+                                <button onclick="selectComponent('npu')"
+                                    class="px-2 py-0.5 bg-purple-900/40 border border-purple-400/40 text-[10px] rounded text-white hover:bg-purple-950 transition">NPU</button>
+                                <button onclick="selectComponent('isp')"
+                                    class="px-2 py-0.5 bg-teal-900/40 border border-teal-400/40 text-[10px] rounded text-white hover:bg-teal-950 transition">ISP</button>
+                                <button onclick="selectComponent('dsp')"
+                                    class="px-2 py-0.5 bg-yellow-900/40 border border-yellow-400/40 text-[10px] rounded text-white hover:bg-yellow-950 transition">DSP</button>
+                                <button onclick="selectComponent('cache')"
+                                    class="px-2 py-0.5 bg-cyan-900/40 border border-cyan-400/40 text-[10px] rounded text-white hover:bg-cyan-950 transition">CACHÉ</button>
+                                <button onclick="selectComponent('security')"
+                                    class="px-2 py-0.5 bg-pink-900/40 border border-pink-400/40 text-[10px] rounded text-white hover:bg-pink-950 transition">SEGURIDAD</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Sidebar: Interactive Info Display Panel -->
+                <div class="lg:col-span-3 flex flex-col">
+                    <div id="tech-details-card"
+                        class="glass-panel p-6 rounded-2xl border border-cyber-accent/40 flex-1 flex flex-col justify-between relative overflow-hidden transition-all duration-300">
+                        <span
+                            class="absolute top-0 right-0 p-4 font-tech text-[9px] text-cyber-accent/40 tracking-widest uppercase">DATALOG_V2.5</span>
+
+                        <!-- Info header block -->
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-3">
+                                <div id="info-icon-container"
+                                    class="w-12 h-12 rounded-xl bg-blue-950/60 border border-blue-400/40 flex items-center justify-center text-cyber-accent text-xl shadow-neon-blue/20">
+                                    <i class="fa-solid fa-microchip" id="info-icon"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs text-cyber-accent font-tech font-bold uppercase tracking-widest"
+                                        id="info-category">Componente Global</h4>
+                                    <h3 class="text-lg font-bold font-tech text-white leading-tight" id="info-title">
+                                        System on Chip (SoC)</h3>
+                                </div>
+                            </div>
+
+                            <hr class="border-white/5">
+
+                            <!-- Core explanation text -->
+                            <p class="text-sm text-gray-300 leading-relaxed" id="info-desc">
+                                El encapsulado exterior protege las múltiples capas microscópicas de silicio. Al
+                                presionar <strong>"Ver por dentro"</strong>, se levantará esta tapa para revelar la
+                                compleja geografía e interconexión interna de procesamiento paralelo. Haz clic en
+                                cualquiera de los bloques internos.
+                            </p>
+                        </div>
+
+                        <!-- Interactive Specs checklist / bullet items -->
+                        <div class="mt-6 pt-4 border-t border-white/5 space-y-2 text-xs" id="info-bullets">
+                            <div class="flex items-start gap-2 text-gray-400">
+                                <i class="fa-solid fa-shield-halved text-cyber-accent mt-0.5"></i>
+                                <span>Encapsulado multicapa hermético.</span>
+                            </div>
+                            <div class="flex items-start gap-2 text-gray-400">
+                                <i class="fa-solid fa-temperature-low text-cyber-accent mt-0.5"></i>
+                                <span>Distribución optimizada de calor térmico.</span>
+                            </div>
+                            <div class="flex items-start gap-2 text-gray-400">
+                                <i class="fa-solid fa-bolt text-cyber-accent mt-0.5"></i>
+                                <span>Buses de datos integrados de ultra baja latencia.</span>
+                            </div>
+                        </div>
+
+                        <!-- Static action to alert users -->
+                        <div
+                            class="mt-6 p-3 rounded-lg bg-cyber-purple/10 border border-cyber-purple/20 text-[11px] text-gray-300">
+                            <i class="fa-solid fa-lightbulb text-cyber-purple mr-1.5 animate-pulse"></i>
+                            Prueba el preset de <strong>Auto Inteligente</strong> para ver cómo cambia la arquitectura
+                            de sensores en tiempo real.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4: SIMULACIÓN INTERACTIVA EN TIEMPO REAL (CASOS DE USO REALES) -->
+    <section id="simulacion"
+        class="py-24 bg-gradient-to-b from-cyber-bg via-[#0c0c19] to-cyber-bg relative border-t border-white/5 overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(171,0,255,0.05),transparent_50%)]">
+        </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <h2 class="text-3xl sm:text-4xl font-tech font-black text-white uppercase tracking-wider">
+                    Simulación de Casos Reales
+                </h2>
+                <div
+                    class="w-24 h-1 bg-gradient-to-r from-cyber-purple to-cyber-accent mx-auto mt-4 rounded-full shadow-neon-purple">
+                </div>
+                <p class="text-gray-400 mt-4">
+                    Cuando realizas una acción en tu dispositivo, docenas de componentes especializados del SoC se
+                    comunican en milisegundos. Ejecuta estos flujos interactivos para ver los circuitos encenderse en
+                    vivo.
+                </p>
+            </div>
+
+            <!-- Simulations Grid Panels -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                <!-- Simulation Case A: Taking a Photo -->
+                <div
+                    class="glass-panel p-6 sm:p-8 rounded-2xl border border-cyber-accent/20 relative flex flex-col justify-between group hover:border-cyber-accent/40 transition-all duration-500">
+                    <div>
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-10 h-10 rounded-xl bg-cyan-950/60 border border-cyber-accent/30 flex items-center justify-center text-cyber-accent text-lg">
+                                    <i class="fa-solid fa-camera"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-tech text-lg font-bold text-white leading-tight">Captura de Foto
+                                        Inteligente</h3>
+                                    <p class="text-[10px] text-cyber-accent tracking-widest uppercase font-semibold">
+                                        Cámara y Procesamiento HDR</p>
+                                </div>
+                            </div>
+                            <span class="w-3 h-3 rounded-full bg-cyber-accent animate-ping"></span>
+                        </div>
+
+                        <p class="text-gray-300 text-sm leading-relaxed mb-6">
+                            Al oprimir el obturador, la lente de tu cámara absorbe datos crudos de luz (Raw data) que
+                            fluyen inmediatamente hacia el chip. Observa cómo el ISP, CPU, NPU y GPU se coordinan de
+                            forma síncrona.
+                        </p>
+
+                        <!-- Step tracker flow -->
+                        <div class="space-y-3 mb-6 text-xs text-gray-400" id="photo-steps">
+                            <div class="flex items-center gap-3 p-2 rounded bg-white/5 border border-white/5"
+                                id="step-photo-1">
+                                <span
+                                    class="w-5 h-5 rounded-full bg-cyan-950 border border-cyber-accent flex items-center justify-center font-bold text-cyber-accent font-tech">1</span>
+                                <span>La cámara captura los datos ópticos crudos y los transfiere al SoC.</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 rounded" id="step-photo-2">
+                                <span
+                                    class="w-5 h-5 rounded-full bg-black/50 border border-white/10 flex items-center justify-center font-bold font-tech">2</span>
+                                <span>El <strong>ISP</strong> procesa el color, balance de blancos, HDR y quita
+                                    ruido.</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 rounded" id="step-photo-3">
+                                <span
+                                    class="w-5 h-5 rounded-full bg-black/50 border border-white/10 flex items-center justify-center font-bold font-tech">3</span>
+                                <span>La <strong>NPU</strong> analiza la escena, optimiza rostros y resalta el fondo con
+                                    IA.</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 rounded" id="step-photo-4">
+                                <span
+                                    class="w-5 h-5 rounded-full bg-black/50 border border-white/10 flex items-center justify-center font-bold font-tech">4</span>
+                                <span>La <strong>GPU</strong> despliega la previsualización en pantalla y la
+                                    <strong>RAM</strong> almacena el archivo final.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="startSimulation('photo')"
+                        class="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyber-accent to-blue-500 hover:scale-[1.02] text-black font-tech font-bold transition-all tracking-wider flex items-center justify-center gap-3 shadow-neon-blue">
+                        <i class="fa-solid fa-bolt"></i> SIMULAR CAPTURA DE FOTO
+                    </button>
+                </div>
+
+                <!-- Simulation Case B: Facial Unlock -->
+                <div
+                    class="glass-panel p-6 sm:p-8 rounded-2xl border border-cyber-purple/20 relative flex flex-col justify-between group hover:border-cyber-purple/40 transition-all duration-500 shadow-neon-purple/5">
+                    <div>
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-10 h-10 rounded-xl bg-purple-950/60 border border-cyber-purple/30 flex items-center justify-center text-cyber-purple text-lg">
+                                    <i class="fa-solid fa-face-viewfinder"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-tech text-lg font-bold text-white leading-tight">Desbloqueo Facial
+                                        con IA</h3>
+                                    <p class="text-[10px] text-cyber-purple tracking-widest uppercase font-semibold">
+                                        Seguridad Criptográfica y Redes Neuronales</p>
+                                </div>
+                            </div>
+                            <span class="w-3 h-3 rounded-full bg-cyber-purple animate-ping"></span>
+                        </div>
+
+                        <p class="text-gray-300 text-sm leading-relaxed mb-6">
+                            Para desbloquear el teléfono en microsegundos, la cámara frontal escanea un mapa
+                            tridimensional de tu rostro. Este flujo requiere la participación de módulos de seguridad
+                            biométrica y aceleración neural.
+                        </p>
+
+                        <!-- Step tracker flow -->
+                        <div class="space-y-3 mb-6 text-xs text-gray-400" id="face-steps">
+                            <div class="flex items-center gap-3 p-2 rounded bg-white/5 border border-white/5"
+                                id="step-face-1">
+                                <span
+                                    class="w-5 h-5 rounded-full bg-purple-950 border border-cyber-purple flex items-center justify-center font-bold text-cyber-purple font-tech">1</span>
+                                <span>La cámara captura el mapa infrarrojo de profundidad facial del rostro.</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 rounded" id="step-face-2">
+                                <span
+                                    class="w-5 h-5 rounded-full bg-black/50 border border-white/10 flex items-center justify-center font-bold font-tech">2</span>
+                                <span>La <strong>NPU</strong> analiza los puntos nodales vectoriales usando redes
+                                    neuronales.</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 rounded" id="step-face-3">
+                                <span
+                                    class="w-5 h-5 rounded-full bg-black/50 border border-white/10 flex items-center justify-center font-bold font-tech">3</span>
+                                <span>La <strong>Unidad de Seguridad</strong> contrasta las claves con el enclave
+                                    cifrado.</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 rounded" id="step-face-4">
+                                <span
+                                    class="w-5 h-5 rounded-full bg-black/50 border border-white/10 flex items-center justify-center font-bold font-tech">4</span>
+                                <span>La <strong>CPU</strong> autoriza el acceso y la interfaz se desbloquea en
+                                    pantalla.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="startSimulation('face')"
+                        class="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyber-purple to-pink-500 hover:scale-[1.02] text-white font-tech font-bold transition-all tracking-wider flex items-center justify-center gap-3 shadow-neon-purple">
+                        <i class="fa-solid fa-shield-halved"></i> SIMULAR DESBLOQUEO BIOMÉTRICO
+                    </button>
+                </div>
+
+            </div>
+
+            <div
+                class="mt-8 p-5 rounded-2xl bg-[#090916] border border-white/5 max-w-4xl mx-auto flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                <div
+                    class="w-12 h-12 rounded-full bg-cyber-accent/10 flex items-center justify-center text-cyber-accent text-xl flex-shrink-0">
+                    <i class="fa-solid fa-bolt-lightning"></i>
+                </div>
+                <p class="text-sm text-gray-300">
+                    <strong class="text-white">Dato de Rendimiento:</strong> Cuando oprimiste cualquiera de estos
+                    botones, los datos viajaron internamente a la velocidad de bus de <strong
+                        class="text-cyber-accent">64 Gigabytes por segundo (GB/s)</strong>. Si utilizáramos una placa
+                    tradicional separada por cables o soldaduras exteriores, tardaría hasta 50 veces más.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 5: COMPARATIVA ARQUITECTÓNICA (ANIMACIÓN EXPERIMENTAL) -->
+    <section id="comparativa" class="py-24 bg-[#06060c] relative border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <h2 class="text-3xl sm:text-4xl font-tech font-black text-white uppercase tracking-wider">
+                    SoC vs Arquitectura Tradicional
+                </h2>
+                <div
+                    class="w-24 h-1 bg-gradient-to-r from-cyber-accent to-cyber-green mx-auto mt-4 rounded-full shadow-neon-green">
+                </div>
+                <p class="text-gray-400 mt-4">
+                    La diferencia entre una ciudad donde todos viven en el mismo rascacielos frente a una donde todos
+                    deben viajar en carreteras kilométricas para verse.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <!-- Visual comparison simulator (CSS Animated) -->
+                <div class="space-y-8 glass-panel p-6 sm:p-8 rounded-3xl border border-white/5">
+                    <h3 class="font-tech text-sm font-bold text-cyber-accent uppercase tracking-widest text-center">
+                        Velocidad de Flujo de Datos en Tiempo Real
+                    </h3>
+
+                    <!-- Diagram 1: Placa Tradicional -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-xs text-gray-400">
+                            <span>SISTEMA TRADICIONAL (Componentes Separados)</span>
+                            <span class="text-red-400 font-bold">ALTA LATENCIA / 15-30 vatios</span>
+                        </div>
+                        <div
+                            class="relative w-full h-16 bg-black/60 rounded-xl border border-red-500/20 flex items-center justify-between px-4 overflow-hidden">
+                            <span class="text-[10px] font-tech text-gray-500">CPU</span>
+
+                            <!-- Slow moving dots representing latency in board -->
+                            <div class="relative flex-1 h-1 bg-red-950 mx-4 rounded">
+                                <span
+                                    class="absolute w-2 h-2 rounded-full bg-red-500 animate-[ping_1.5s_infinite] left-0"></span>
+                                <span
+                                    class="absolute w-2 h-2 rounded-full bg-red-400 top-[-2px] animate-[slide_3s_linear_infinite]"
+                                    style="animation: slide-slow 4s linear infinite;"></span>
+                            </div>
+
+                            <span class="text-[10px] font-tech text-gray-500">RAM / GPU</span>
+                        </div>
+                    </div>
+
+                    <!-- Diagram 2: System on Chip -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-xs text-gray-400">
+                            <span>SISTEMA SoC (Todo en el mismo Silicio)</span>
+                            <span class="text-cyber-green font-bold">LATENCIA CERO / 1-5 vatios</span>
+                        </div>
+                        <div
+                            class="relative w-full h-16 bg-black/60 rounded-xl border border-cyber-green/20 flex items-center justify-between px-4 overflow-hidden">
+                            <span class="text-[10px] font-tech text-cyber-green">CPU</span>
+
+                            <!-- Ultra-fast moving neon dots -->
+                            <div class="relative flex-1 h-1 bg-emerald-950 mx-4 rounded">
+                                <span class="absolute w-2 h-2 rounded-full bg-cyber-green animate-ping left-1/2"></span>
+                                <span class="absolute w-2 h-2 rounded-full bg-cyber-green top-[-2px]"
+                                    style="animation: slide-fast 0.6s linear infinite;"></span>
+                            </div>
+
+                            <span class="text-[10px] font-tech text-cyber-green">RAM + GPU + NPU</span>
+                        </div>
+                    </div>
+
+                    <style>
+                        @keyframes slide-slow {
+                            0% {
+                                left: 0%;
+                            }
+
+                            100% {
+                                left: 100%;
+                            }
+                        }
+
+                        @keyframes slide-fast {
+                            0% {
+                                left: 0%;
+                            }
+
+                            100% {
+                                left: 100%;
+                            }
+                        }
+                    </style>
+                </div>
+
+                <!-- Text analysis points -->
+                <div class="space-y-6">
+                    <h3 class="text-2xl font-bold font-tech text-white">¿Por qué el SoC revolucionó el mundo?</h3>
+                    <p class="text-gray-300 text-sm leading-relaxed">
+                        En la arquitectura tradicional, la electricidad debe viajar por pistas de cobre físicas (buses)
+                        en la placa de circuito impreso (PCB). La resistencia y capacitancia física de estas pistas
+                        limitan la velocidad máxima y generan alta temperatura.
+                    </p>
+
+                    <!-- Bullet analysis list -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="flex items-start gap-3">
+                            <div
+                                class="w-6 h-6 rounded bg-red-950/40 border border-red-500/30 flex items-center justify-center text-red-400 text-xs mt-0.5">
+                                <i class="fa-solid fa-arrows-up-to-line"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white uppercase tracking-wide">Física del Espacio</h4>
+                                <p class="text-xs text-gray-400">Una placa madre tradicional es hasta 20 veces más
+                                    pesada y grande que un SoC.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-3">
+                            <div
+                                class="w-6 h-6 rounded bg-emerald-950/40 border border-cyber-green/30 flex items-center justify-center text-cyber-green text-xs mt-0.5">
+                                <i class="fa-solid fa-battery-three-quarters animate-pulse"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white uppercase tracking-wide">Consumo Eléctrico</h4>
+                                <p class="text-xs text-gray-400">La proximidad micrométrica de transistores ahorra hasta
+                                    un 90% de energía.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-3">
+                            <div
+                                class="w-6 h-6 rounded bg-cyan-950/40 border border-cyber-accent/30 flex items-center justify-center text-cyber-accent text-xs mt-0.5">
+                                <i class="fa-solid fa-gauge-high"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white uppercase tracking-wide">Ancho de Banda</h4>
+                                <p class="text-xs text-gray-400">La memoria unificada permite accesos simultáneos sin
+                                    cuellos de botella.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-3">
+                            <div
+                                class="w-6 h-6 rounded bg-purple-950/40 border border-cyber-purple/30 flex items-center justify-center text-cyber-purple text-xs mt-0.5">
+                                <i class="fa-solid fa-brain"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white uppercase tracking-wide">Silo de Silicio</h4>
+                                <p class="text-xs text-gray-400">La NPU procesa modelos de IA directamente, sin
+                                    latencias externas de red.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 6: CÓMO FUNCIONA INTERNAMENTE (EXPLICACIÓN CON METÁFORA DE CIUDAD) -->
+    <section class="py-24 bg-gradient-to-b from-cyber-bg to-[#0b0b14] relative border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="text-xs text-cyber-accent font-tech tracking-widest uppercase font-semibold">Conceptos
+                    Avanzados Simplificados</span>
+                <h2 class="text-3xl sm:text-4xl font-tech font-black text-white uppercase tracking-wider mt-2">
+                    Metáfora: El SoC como una Ciudad Inteligente
+                </h2>
+                <div
+                    class="w-24 h-1 bg-gradient-to-r from-cyber-accent to-cyber-purple mx-auto mt-4 rounded-full shadow-neon-blue">
+                </div>
+            </div>
+
+            <!-- Metaphor timeline flow cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                <!-- Card 1 -->
+                <div
+                    class="glass-panel p-6 rounded-2xl border border-white/5 hover:border-cyber-accent/30 transition-all duration-300 relative group">
+                    <div
+                        class="absolute top-4 right-4 text-4xl text-white/5 group-hover:text-cyber-accent/10 transition-all font-tech font-black">
+                        01</div>
+                    <div
+                        class="w-12 h-12 rounded-xl bg-blue-950/60 border border-cyber-accent/30 flex items-center justify-center text-cyber-accent text-xl mb-4">
+                        <i class="fa-solid fa-city"></i>
+                    </div>
+                    <h3 class="font-tech text-md font-bold text-white mb-2">La CPU es el Ayuntamiento</h3>
+                    <p class="text-xs text-gray-300 leading-relaxed">
+                        Toma las decisiones administrativas críticas, delega tareas de gran volumen y organiza las
+                        calles secundarias. Sin él, la ciudad no tiene dirección política.
+                    </p>
+                </div>
+
+                <!-- Card 2 -->
+                <div
+                    class="glass-panel p-6 rounded-2xl border border-white/5 hover:border-cyber-purple/30 transition-all duration-300 relative group">
+                    <div
+                        class="absolute top-4 right-4 text-4xl text-white/5 group-hover:text-cyber-purple/10 transition-all font-tech font-black">
+                        02</div>
+                    <div
+                        class="w-12 h-12 rounded-xl bg-purple-950/60 border border-cyber-purple/30 flex items-center justify-center text-cyber-purple text-xl mb-4">
+                        <i class="fa-solid fa-industry"></i>
+                    </div>
+                    <h3 class="font-tech text-md font-bold text-white mb-2">La GPU son las Fábricas de Acero</h3>
+                    <p class="text-xs text-gray-300 leading-relaxed">
+                        Un gran centro de mano de obra donde miles de obreros (núcleos sombreadores) realizan
+                        operaciones matemáticas idénticas y sencillas en paralelo a velocidades masivas.
+                    </p>
+                </div>
+
+                <!-- Card 3 -->
+                <div
+                    class="glass-panel p-6 rounded-2xl border border-white/5 hover:border-cyber-green/30 transition-all duration-300 relative group">
+                    <div
+                        class="absolute top-4 right-4 text-4xl text-white/5 group-hover:text-cyber-green/10 transition-all font-tech font-black">
+                        03</div>
+                    <div
+                        class="w-12 h-12 rounded-xl bg-emerald-950/60 border border-cyber-green/30 flex items-center justify-center text-cyber-green text-xl mb-4">
+                        <i class="fa-solid fa-brain"></i>
+                    </div>
+                    <h3 class="font-tech text-md font-bold text-white mb-2">La NPU es el Centro de Predicción</h3>
+                    <p class="text-xs text-gray-300 leading-relaxed">
+                        Un edificio hiperespecializado que solo calcula algoritmos probabilísticos y redes neuronales
+                        para predecir patrones de tráfico peatonal sin saturar el ayuntamiento.
+                    </p>
+                </div>
+
+                <!-- Card 4 -->
+                <div
+                    class="glass-panel p-6 rounded-2xl border border-white/5 hover:border-amber-500/30 transition-all duration-300 relative group">
+                    <div
+                        class="absolute top-4 right-4 text-4xl text-white/5 group-hover:text-amber-500/10 transition-all font-tech font-black">
+                        04</div>
+                    <div
+                        class="w-12 h-12 rounded-xl bg-amber-950/60 border border-amber-500/30 flex items-center justify-center text-amber-500 text-xl mb-4">
+                        <i class="fa-solid fa-truck-ramp-box"></i>
+                    </div>
+                    <h3 class="font-tech text-md font-bold text-white mb-2">La Caché es la Despensa Local</h3>
+                    <p class="text-xs text-gray-300 leading-relaxed">
+                        Pequeñas despensas ubicadas justo al lado de los trabajadores que guardan los suministros más
+                        necesitados del día, evitando viajes largos a las afueras (RAM externa).
+                    </p>
+                </div>
+
+                <!-- Card 5 -->
+                <div
+                    class="glass-panel p-6 rounded-2xl border border-white/5 hover:border-pink-500/30 transition-all duration-300 relative group">
+                    <div
+                        class="absolute top-4 right-4 text-4xl text-white/5 group-hover:text-pink-500/10 transition-all font-tech font-black">
+                        05</div>
+                    <div
+                        class="w-12 h-12 rounded-xl bg-pink-950/60 border border-pink-500/30 flex items-center justify-center text-pink-500 text-xl mb-4">
+                        <i class="fa-solid fa-vault"></i>
+                    </div>
+                    <h3 class="font-tech text-md font-bold text-white mb-2">La Unidad de Seguridad es la Bóveda</h3>
+                    <p class="text-xs text-gray-300 leading-relaxed">
+                        Un cuartel blindado aislado del resto de los habitantes con su propia puerta lógica para
+                        resguardar las firmas biométricas y evitar que espías se infiltren en el ayuntamiento.
+                    </p>
+                </div>
+
+                <!-- Card 6 -->
+                <div
+                    class="glass-panel p-6 rounded-2xl border border-white/5 hover:border-teal-500/30 transition-all duration-300 relative group">
+                    <div
+                        class="absolute top-4 right-4 text-4xl text-white/5 group-hover:text-teal-500/10 transition-all font-tech font-black">
+                        06</div>
+                    <div
+                        class="w-12 h-12 rounded-xl bg-teal-950/60 border border-teal-500/30 flex items-center justify-center text-teal-500 text-xl mb-4">
+                        <i class="fa-solid fa-bridge"></i>
+                    </div>
+                    <h3 class="font-tech text-md font-bold text-white mb-2">El I/O son las Aduanas Marítimas</h3>
+                    <p class="text-xs text-gray-300 leading-relaxed">
+                        Puertos que controlan los cargueros mercantes que entran y salen del chip trayendo información
+                        de la pantalla, los sensores externos y las tomas de corriente eléctrica.
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 7: EXPOSICIÓN DE EJEMPLOS REALES DE SOC -->
+    <section id="ejemplos" class="py-24 bg-gradient-to-b from-[#0b0b14] to-[#06060c] relative border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <h2 class="text-3xl sm:text-4xl font-tech font-black text-white uppercase tracking-wider">
+                    Titanes de Silicio de la Actualidad
+                </h2>
+                <div
+                    class="w-24 h-1 bg-gradient-to-r from-cyber-accent to-cyber-purple mx-auto mt-4 rounded-full shadow-neon-blue">
+                </div>
+                <p class="text-gray-400 mt-4">
+                    Conoce los chips SoC comerciales que definen la frontera del rendimiento tecnológico actual.
+                </p>
+            </div>
+
+            <!-- Grid Cards examples -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                <!-- Chip Card 1 -->
+                <div
+                    class="glass-panel p-5 rounded-2xl border border-white/5 hover:border-cyber-accent/30 transition-all flex flex-col justify-between group">
+                    <div>
+                        <div
+                            class="w-full h-32 rounded-xl bg-gradient-to-br from-black to-slate-900 border border-white/10 relative overflow-hidden flex items-center justify-center mb-4">
+                            <div
+                                class="absolute inset-0 bg-[radial-gradient(#00f0ff_1px,transparent_1px)] [background-size:12px_12px] opacity-20">
+                            </div>
+                            <span
+                                class="font-tech font-black text-2xl tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 z-10">M3
+                                / A17</span>
+                        </div>
+                        <h3 class="font-tech text-md font-bold text-white mb-1">Apple M-Series / Pro</h3>
+                        <p class="text-[10px] text-cyber-accent tracking-widest uppercase font-semibold mb-3">
+                            Computadoras y Móviles Premium</p>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Integración colosal usando microarquitectura ARM y litografía extrema de 3 nanómetros.
+                            Presenta memoria unificada ultrarrápida compartida directamente entre la GPU y CPU.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-white/5 text-[10px] text-gray-500">
+                        <i class="fa-solid fa-microchip text-cyber-accent mr-1"></i> Optimizado para: Edición de video y
+                        Cómputo local.
+                    </div>
+                </div>
+
+                <!-- Chip Card 2 -->
+                <div
+                    class="glass-panel p-5 rounded-2xl border border-white/5 hover:border-cyber-purple/30 transition-all flex flex-col justify-between group">
+                    <div>
+                        <div
+                            class="w-full h-32 rounded-xl bg-gradient-to-br from-black to-slate-900 border border-white/10 relative overflow-hidden flex items-center justify-center mb-4">
+                            <div
+                                class="absolute inset-0 bg-[radial-gradient(#ab00ff_1px,transparent_1px)] [background-size:12px_12px] opacity-20">
+                            </div>
+                            <span
+                                class="font-tech font-black text-2xl tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyber-purple to-pink-500 z-10">SNAPDRAGON</span>
+                        </div>
+                        <h3 class="font-tech text-md font-bold text-white mb-1">Qualcomm Snapdragon</h3>
+                        <p class="text-[10px] text-cyber-purple tracking-widest uppercase font-semibold mb-3">Celulares
+                            Android de Gama Alta</p>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            El estándar absoluto en teléfonos Android de última generación. Integra módems 5G de máxima
+                            transferencia inalámbrica, GPUs Adreno muy optimizadas para videojuegos y NPUs robustas.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-white/5 text-[10px] text-gray-500">
+                        <i class="fa-solid fa-microchip text-cyber-purple mr-1"></i> Optimizado para: Videojuegos
+                        móviles y redes móviles.
+                    </div>
+                </div>
+
+                <!-- Chip Card 3 -->
+                <div
+                    class="glass-panel p-5 rounded-2xl border border-white/5 hover:border-cyber-green/30 transition-all flex flex-col justify-between group">
+                    <div>
+                        <div
+                            class="w-full h-32 rounded-xl bg-gradient-to-br from-black to-slate-900 border border-white/10 relative overflow-hidden flex items-center justify-center mb-4">
+                            <div
+                                class="absolute inset-0 bg-[radial-gradient(#39ff14_1px,transparent_1px)] [background-size:12px_12px] opacity-20">
+                            </div>
+                            <span
+                                class="font-tech font-black text-2xl tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyber-green to-emerald-400 z-10">TENSOR</span>
+                        </div>
+                        <h3 class="font-tech text-md font-bold text-white mb-1">Google Tensor</h3>
+                        <p class="text-[10px] text-cyber-green tracking-widest uppercase font-semibold mb-3">Smartphones
+                            Pixel</p>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Diseñado específicamente para inteligencia artificial móvil. Integra aceleradores neurales
+                            dedicados TPU que habilitan la traducción simultánea sin internet y mejoras de fotos
+                            extremas.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-white/5 text-[10px] text-gray-500">
+                        <i class="fa-solid fa-microchip text-cyber-green mr-1"></i> Optimizado para: IA Conversacional y
+                        Procesamiento de fotos.
+                    </div>
+                </div>
+
+                <!-- Chip Card 4 -->
+                <div
+                    class="glass-panel p-5 rounded-2xl border border-white/5 hover:border-amber-500/30 transition-all flex flex-col justify-between group">
+                    <div>
+                        <div
+                            class="w-full h-32 rounded-xl bg-gradient-to-br from-black to-slate-900 border border-white/10 relative overflow-hidden flex items-center justify-center mb-4">
+                            <div
+                                class="absolute inset-0 bg-[radial-gradient(#ffd700_1px,transparent_1px)] [background-size:12px_12px] opacity-20">
+                            </div>
+                            <span
+                                class="font-tech font-black text-2xl tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-600 z-10">BCM2712</span>
+                        </div>
+                        <h3 class="font-tech text-md font-bold text-white mb-1">Broadcom (Raspberry Pi)</h3>
+                        <p class="text-[10px] text-amber-500 tracking-widest uppercase font-semibold mb-3">Sistemas
+                            Embebidos y Maker</p>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Diseño de costo optimizado y súper versátil. Concentra puertos USB directos, controladores
+                            de red Ethernet Gigabit, soporte para dos monitores 4K y pines programables GPIO.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-white/5 text-[10px] text-gray-500">
+                        <i class="fa-solid fa-microchip text-amber-500 mr-1"></i> Optimizado para: DIY, Servidores
+                        ligeros y Prototipado.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 8: QUIZ INTERACTIVO PARA EVALUAR CONOCIMIENTOS -->
+    <section class="py-24 bg-gradient-to-b from-[#06060c] to-[#0c0c19] relative border-t border-white/5">
+        <div class="max-w-4xl mx-auto px-4 relative z-10">
+            <div class="glass-panel p-8 rounded-3xl border border-cyber-accent/30 shadow-neon-blue/5">
+                <div class="text-center mb-8">
+                    <span class="text-cyber-accent font-tech text-xs tracking-widest uppercase font-bold">Comprueba lo
+                        Aprendido</span>
+                    <h2 class="text-2xl sm:text-3xl font-tech font-black text-white mt-1">
+                        Autoevaluación de Arquitectura SoC
+                    </h2>
+                    <p class="text-xs text-gray-400 mt-2">Pon a prueba tus conocimientos en hardware de computación
+                        avanzada.</p>
+                </div>
+
+                <!-- Quiz Interactive Container -->
+                <div id="quiz-box">
+                    <div class="mb-6 flex justify-between items-center text-xs text-gray-400">
+                        <span class="font-tech">Pregunta <span id="quiz-num">1</span> de 4</span>
+                        <span class="font-tech">Puntuación: <span id="quiz-score"
+                                class="text-cyber-accent font-bold">0</span></span>
+                    </div>
+
+                    <!-- Question Container -->
+                    <div class="mb-6 p-4 rounded-xl bg-black/40 border border-white/5">
+                        <h3 class="text-md font-semibold text-white" id="quiz-question">¿Cuál es el beneficio primordial
+                            de un System on Chip (SoC) en comparación con una arquitectura tradicional?</h3>
+                    </div>
+
+                    <!-- Answers Grid -->
+                    <div class="grid grid-cols-1 gap-3" id="quiz-answers">
+                        <button onclick="checkAnswer(0)"
+                            class="w-full text-left p-4 rounded-xl border border-white/10 hover:border-cyber-accent/50 bg-[#121226]/50 hover:bg-black/60 transition-all text-xs text-gray-200">
+                            A) Disminuir el ancho de banda general de comunicación interna.
+                        </button>
+                        <button onclick="checkAnswer(1)"
+                            class="w-full text-left p-4 rounded-xl border border-white/10 hover:border-cyber-accent/50 bg-[#121226]/50 hover:bg-black/60 transition-all text-xs text-gray-200">
+                            B) Unir múltiples componentes especializados en el mismo chip, minimizando latencias y
+                            consumo.
+                        </button>
+                        <button onclick="checkAnswer(2)"
+                            class="w-full text-left p-4 rounded-xl border border-white/10 hover:border-cyber-accent/50 bg-[#121226]/50 hover:bg-black/60 transition-all text-xs text-gray-200">
+                            C) Eliminar por completo el uso de memoria caché en los núcleos para ahorrar espacio.
+                        </button>
+                    </div>
+
+                    <!-- Navigation Action -->
+                    <div class="mt-6 flex justify-end">
+                        <button onclick="nextQuestion()" id="btn-next-quiz"
+                            class="hidden px-5 py-2.5 rounded-lg bg-cyber-accent text-black font-tech font-bold text-xs tracking-wider hover:scale-[1.02] transition-all">
+                            SIGUIENTE PREGUNTA <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Score screen result overlay hidden by default -->
+                <div id="quiz-results" class="hidden text-center py-8 space-y-6">
+                    <div
+                        class="w-20 h-20 rounded-full bg-cyber-green/10 border border-cyber-green/30 flex items-center justify-center text-cyber-green text-4xl mx-auto shadow-neon-green/20">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-tech font-black text-white">¡Evaluación Completada!</h3>
+                        <p class="text-sm text-gray-400 mt-2">Has respondido correctamente a <strong
+                                class="text-cyber-green" id="final-score">0</strong> de 4 preguntas.</p>
+                    </div>
+                    <button onclick="resetQuiz()"
+                        class="px-6 py-3 rounded-xl bg-gradient-to-r from-cyber-accent to-blue-500 text-black font-tech font-bold text-xs hover:scale-105 transition-all shadow-neon-blue">
+                        REALIZAR DE NUEVO EL QUIZ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-black py-12 border-t border-white/10 text-xs text-gray-500">
+        <div
+            class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-8 h-8 rounded-lg bg-cyber-accent/10 border border-cyber-accent/30 flex items-center justify-center text-cyber-accent">
+                    <i class="fa-solid fa-microchip"></i>
+                </div>
+                <div class="footer-inner">
+                    <p class="footer-copy" style="font-size: 12px; color: white; text-align: center;">© 2026 —
+                        Experiencia
+                        Técnica Interactiva. Fines educativos - Luis Torrejón Arias.
+                    </p>
+                </div>
+
+            </div>
+            <div class="flex gap-4">
+                <a href="#inicio" class="hover:text-cyber-accent transition">Volver arriba</a>
+                <span>•</span>
+                <span class="text-gray-600">Entorno web educativo con Realidad Aumentada interactiva.</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- INTERACTIVE SCRIPTING AND THREE.JS SIMULATOR -->
+    <script>
+        // Quiz Data
+        const quizQuestions = [
+            {
+                q: "¿Cuál es el beneficio primordial de un System on Chip (SoC) en comparación con una arquitectura tradicional?",
+                options: [
+                    "A) Disminuir el ancho de banda general de comunicación interna para ahorrar energía.",
+                    "B) Unir múltiples componentes especializados en el mismo chip, minimizando latencias y consumo físico.",
+                    "C) Eliminar por completo el uso de memoria caché en los núcleos para ahorrar espacio físico."
+                ],
+                correct: 1
+            },
+            {
+                q: "¿Qué componente del SoC procesa y mejora en tiempo real el color, HDR y ruido capturados por una cámara?",
+                options: [
+                    "A) El DSP (Digital Signal Processor).",
+                    "B) La NPU (Neural Processing Unit).",
+                    "C) El ISP (Image Signal Processor)."
+                ],
+                correct: 2
+            },
+            {
+                q: "¿Cuál es la función principal de la NPU en las arquitecturas SoC modernas de los años 2020?",
+                options: [
+                    "A) Acelerar de forma óptima los cálculos matemáticos para tareas de Inteligencia Artificial.",
+                    "B) Encriptar contraseñas de red y proteger los datos biométricos.",
+                    "C) Administrar el balanceo de carga de energía entre núcleos principales."
+                ],
+                correct: 0
+            },
+            {
+                q: "En nuestra metáfora de ciudad, ¿qué parte representaba la Bóveda Blindada aislada?",
+                options: [
+                    "A) Los controladores de entrada y salida (I/O).",
+                    "B) La Unidad de Seguridad de enclaves encriptados.",
+                    "C) La memoria caché compartida L1/L2."
+                ],
+                correct: 1
+            }
+        ];
+
+        let currentQuizIndex = 0;
+        let score = 0;
+
+        function loadQuizQuestion() {
+            const data = quizQuestions[currentQuizIndex];
+            document.getElementById('quiz-num').innerText = currentQuizIndex + 1;
+            document.getElementById('quiz-question').innerText = data.q;
+
+            const answersContainer = document.getElementById('quiz-answers');
+            answersContainer.innerHTML = '';
+
+            data.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-xl border border-white/10 hover:border-cyber-accent/50 bg-[#121226]/50 hover:bg-black/60 transition-all text-xs text-gray-200 flex items-center justify-between group";
+                btn.onclick = () => checkAnswer(idx);
+                btn.innerHTML = `<span>${opt}</span><i class="fa-regular fa-circle text-gray-500 group-hover:text-cyber-accent transition"></i>`;
+                answersContainer.appendChild(btn);
+            });
+            document.getElementById('btn-next-quiz').classList.add('hidden');
+        }
+
+        function checkAnswer(selectedIndex) {
+            const data = quizQuestions[currentQuizIndex];
+            const buttons = document.getElementById('quiz-answers').getElementsByTagName('button');
+
+            // Disable further clicks
+            for (let i = 0; i < buttons.length; i++) {
+                buttons[i].disabled = true;
+                if (i === data.correct) {
+                    buttons[i].classList.add('border-cyber-green', 'bg-emerald-950/20');
+                    buttons[i].querySelector('i').className = "fa-solid fa-circle-check text-cyber-green";
+                } else if (i === selectedIndex) {
+                    buttons[i].classList.add('border-red-500', 'bg-red-950/20');
+                    buttons[i].querySelector('i').className = "fa-solid fa-circle-xmark text-red-500";
+                }
+            }
+
+            if (selectedIndex === data.correct) {
+                score++;
+                document.getElementById('quiz-score').innerText = score;
+            }
+
+            document.getElementById('btn-next-quiz').classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentQuizIndex++;
+            if (currentQuizIndex < quizQuestions.length) {
+                loadQuizQuestion();
+            } else {
+                document.getElementById('quiz-box').classList.add('hidden');
+                document.getElementById('quiz-results').classList.remove('hidden');
+                document.getElementById('final-score').innerText = score;
+            }
+        }
+
+        function resetQuiz() {
+            currentQuizIndex = 0;
+            score = 0;
+            document.getElementById('quiz-score').innerText = '0';
+            document.getElementById('quiz-box').classList.remove('hidden');
+            document.getElementById('quiz-results').classList.add('hidden');
+            loadQuizQuestion();
+        }
+
+        // Initialize Quiz
+        loadQuizQuestion();
+
+
+        // THREE.JS IMPLEMENTATION (Interactive SoC Visualizer)
+        let scene, camera, renderer, controls;
+        let pcbMesh, casingMesh;
+        let componentsGroup = new THREE.Group();
+        let currentPreset = 'smartphone';
+        let isExploded = false;
+        let isCameraAROn = false;
+        let dataFlowParticles = [];
+        let simulationActive = null;
+        let simulationTimer = null;
+        const componentMeshes = {};
+
+        // Color definitions
+        const COLORS = {
+            pcb: 0x050510,
+            gold: 0xc19b35,
+            casing: 0x222230,
+            cpu: 0x00a8ff,
+            gpu: 0xff5e00,
+            npu: 0xab00ff,
+            isp: 0x00ffcc,
+            dsp: 0xffd700,
+            cache: 0x00f0ff,
+            security: 0xff3366,
+            modem: 0x39ff14,
+            io: 0x990000
+        };
+
+        const SoC_DATA = {
+            smartphone: {
+                title: "Smartphone SoC",
+                desc: "Integración extrema optimizada para batería y redes móviles. Posee un fuerte motor NPU para Inteligencia Artificial conversacional/fotográfica y módems integrados LTE/5G de bajo consumo.",
+                freq: "3.2 GHz",
+                temp: "38°C",
+                tdp: "5W",
+                activeBlocks: ['cpu', 'gpu', 'npu', 'isp', 'dsp', 'cache', 'security', 'modem', 'io'],
+                blockScales: { cpu: [2.2, 0.4, 2.2], gpu: [2.0, 0.4, 2.0], npu: [1.6, 0.4, 1.6] }
+            },
+            pi: {
+                title: "Raspberry Pi SoC",
+                desc: "Optimizado para la modularidad e interfaces físicas IO. No incluye NPU dedicada de fábrica, pero posee un fuerte controlador de periféricos GPIO y decodificadores de video multimedia.",
+                freq: "2.4 GHz",
+                temp: "45°C",
+                tdp: "12W",
+                activeBlocks: ['cpu', 'gpu', 'cache', 'io'],
+                blockScales: { cpu: [3.0, 0.4, 3.0], gpu: [1.8, 0.4, 1.8], cache: [1.5, 0.4, 1.5] }
+            },
+            car: {
+                title: "Automotive SoC",
+                desc: "Diseñado para la seguridad redundante vial y procesamiento en tiempo real de múltiples cámaras vehiculares. Cuenta con aceleradores de seguridad extremos y DSP de múltiples sensores de radar.",
+                freq: "2.8 GHz",
+                temp: "52°C",
+                tdp: "35W",
+                activeBlocks: ['cpu', 'gpu', 'npu', 'isp', 'dsp', 'security', 'io'],
+                blockScales: { cpu: [2.0, 0.4, 2.0], security: [2.4, 0.4, 2.4], dsp: [2.2, 0.4, 2.2] }
+            },
+            security: {
+                title: "Cámara Inteligente SoC",
+                desc: "Optimizado para la visión computarizada económica de baja potencia. Integra una NPU dedicada a clasificar objetos e identificar intrusos junto con un ISP de alta sensibilidad nocturna.",
+                freq: "1.6 GHz",
+                temp: "32°C",
+                tdp: "2W",
+                activeBlocks: ['cpu', 'npu', 'isp', 'cache', 'security', 'io'],
+                blockScales: { npu: [2.5, 0.4, 2.5], isp: [2.5, 0.4, 2.5] }
+            },
+            iot: {
+                title: "Dispositivo IoT SoC",
+                desc: "Microcontrolador de poquísimos milímetros de escala. Su CPU trabaja en frecuencias bajas de microvatios para estirar la vida útil de baterías recargables durante años, comunicándose solo por radioenlace.",
+                freq: "120 MHz",
+                temp: "24°C",
+                tdp: "0.1W",
+                activeBlocks: ['cpu', 'cache', 'security', 'modem'],
+                blockScales: { cpu: [1.5, 0.4, 1.5], modem: [2.5, 0.4, 2.5] }
+            }
+        };
+
+        const COMPONENTS_DESCRIPTIONS = {
+            cpu: {
+                category: "Lógica Principal",
+                title: "CPU (Central Processing Unit)",
+                desc: "El núcleo principal de procesamiento de propósito general. Ejecuta las instrucciones secuenciales complejas del sistema operativo y coordina todos los demás aceleradores.",
+                bullets: ["Unidades de cálculo lógico y aritmético (ALU)", "Manejo de saltos y algoritmos del kernel", "Núcleos de rendimiento y de eficiencia energética mixtos"]
+            },
+            gpu: {
+                category: "Gráficos y Cómputo",
+                title: "GPU (Graphics Processing Unit)",
+                desc: "Especializada en el cálculo de matrices en paralelo. Esencial para desplegar la interfaz móvil, renderizar videojuegos en alta resolución y procesar física visual sin saturar la CPU.",
+                bullets: ["Procesamiento simultáneo de millones de vértices", "Aceleración de renderizado y trazado de rayos", "Cómputo paralelo matemático para simulación"]
+            },
+            npu: {
+                category: "Inteligencia Artificial",
+                title: "NPU (Neural Processing Unit)",
+                desc: "Arquitectura dedicada exclusivamente a multiplicar matrices de tensores para redes neuronales profundas de forma ultra eficiente. Permite ejecutar modelos de visión artificial y traducción.",
+                bullets: ["Reconocimiento y optimización facial en milisegundos", "Procesamiento del lenguaje natural local", "Eficiencia de energía hasta 100 veces superior a CPU"]
+            },
+            isp: {
+                category: "Procesador de Imagen",
+                title: "ISP (Image Signal Processor)",
+                desc: "Hardware dedicado que procesa el flujo masivo de datos crudos enviado por el sensor de imagen físico de la cámara, balanceando blancos, reduciendo el ruido y mejorando el brillo.",
+                bullets: ["Eliminación de ruido digital en la fotografía", "Enfoque automático veloz y mapeo tonal HDR", "Estabilización electrónica de video"]
+            },
+            dsp: {
+                category: "Señales de Audio / Sensores",
+                title: "DSP (Digital Signal Processor)",
+                desc: "Especializado en procesar flujos analógicos y señales digitales continuas en tiempo real, tales como ondas acústicas del micrófono, cancelación de ruido activa y telemetría giroscópica.",
+                bullets: ["Cancelación activa de ruido ambiental en llamadas", "Procesamiento instantáneo de comandos de voz", "Bajísimo consumo al estar siempre encendido"]
+            },
+            cache: {
+                category: "Memoria de Ultra Alta Velocidad",
+                title: "Memoria Caché del Sistema",
+                desc: "Conjunto de celdas SRAM de altísima velocidad dispuestas justo al lado de la CPU. Almacena las instrucciones y datos que más se usan para evitar ir a buscarlos a la memoria RAM externa.",
+                bullets: ["Latencia de nanosegundos", "Caché de nivel 1 (L1), 2 (L2) y caché unificada L3", "Evita cuellos de botella de la memoria del sistema"]
+            },
+            security: {
+                category: "Protección Biométrica",
+                title: "Unidad de Seguridad Criptográfica",
+                desc: "Sub-chip totalmente aislado a nivel de hardware. Protege los datos biométricos del reconocimiento dactilar/facial y guarda de forma privada las claves secretas bancarias.",
+                bullets: ["Cifrado simétrico y asimétrico por hardware", "Almacenamiento protegido e infranqueable", "Aislado lógicamente de ataques del sistema"]
+            },
+            modem: {
+                category: "Comunicaciones Inalámbricas",
+                title: "Módulo de Conectividad (Wi-Fi, 5G, BT)",
+                desc: "Reúne los transceptores de radiofrecuencia integrados que permiten enviar y recibir datos mediante antenas externas en bandas 5G, redes Wi-Fi hogareñas y conexiones de audífonos Bluetooth.",
+                bullets: ["Sintonización veloz de espectros electromagnéticos", "Bajo consumo de potencia inalámbrica", "GPS / Localización integrada"]
+            },
+            io: {
+                category: "Entradas y Salidas",
+                title: "Controlador de E/S (Input / Output)",
+                desc: "El intermediario que se conecta con la pantalla táctil, los puertos USB, las tarjetas de memoria externas y las baterías para canalizar los voltajes y peticiones hacia los procesadores.",
+                bullets: ["Controlador del bus PCIe de alta velocidad", "Control de pantallas externas y puertos rápidos", "Lectores de tarjetas internas"]
+            }
+        };
+
+        function init3D() {
+            const container = document.getElementById('threejs-canvas');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // Setup Scene
+            scene = new THREE.Scene();
+
+            // Setup Camera
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+            camera.position.set(0, 10, 14);
+
+            // Setup Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Add Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 15, 8);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            scene.add(dirLight);
+
+            // Neon cyan point lights for high tech glow
+            const techLight1 = new THREE.PointLight(COLORS.cpu, 2, 10);
+            techLight1.position.set(-3, 1, 3);
+            scene.add(techLight1);
+
+            const techLight2 = new THREE.PointLight(COLORS.npu, 2, 10);
+            techLight2.position.set(3, 1, -3);
+            scene.add(techLight2);
+
+            // Setup Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2; // Prevent going underground
+            controls.minDistance = 5;
+            controls.maxDistance = 25;
+
+            // Build base PCB
+            buildPCB();
+
+            // Build dynamic SoC internal components inside the group
+            scene.add(componentsGroup);
+            buildSoCComponents();
+
+            // Build casing (Hermetic Outer cover)
+            buildCasing();
+
+            // Start Animating Frame Loop
+            animate3D();
+
+            // Resize listener
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function buildPCB() {
+            // Main dark PCB board plate
+            const pcbGeo = new THREE.BoxGeometry(8, 0.3, 8);
+            const pcbMat = new THREE.MeshStandardMaterial({
+                color: COLORS.pcb,
+                roughness: 0.8,
+                metalness: 0.2
+            });
+            pcbMesh = new THREE.Mesh(pcbGeo, pcbMat);
+            pcbMesh.receiveShadow = true;
+            scene.add(pcbMesh);
+
+            // Decorative gold tracks on PCB base
+            const trackGeo = new THREE.BoxGeometry(7.6, 0.02, 0.05);
+            const goldMat = new THREE.MeshStandardMaterial({
+                color: COLORS.gold,
+                roughness: 0.1,
+                metalness: 0.9,
+                emissive: COLORS.gold,
+                emissiveIntensity: 0.1
+            });
+
+            for (let i = -3.5; i <= 3.5; i += 0.8) {
+                const trackX = new THREE.Mesh(trackGeo, goldMat);
+                trackX.position.set(0, 0.16, i);
+                pcbMesh.add(trackX);
+
+                const trackZ = trackX.clone();
+                trackZ.rotation.y = Math.PI / 2;
+                pcbMesh.add(trackZ);
+            }
+        }
+
+        function buildSoCComponents() {
+            // Clear existing components inside the group
+            while (componentsGroup.children.length > 0) {
+                componentsGroup.remove(componentsGroup.children[0]);
+            }
+
+            // Define grid positions of internal components inside the die
+            const layout = [
+                { id: 'cpu', color: COLORS.cpu, pos: [-1.8, 0.25, 1.8], label: 'CPU' },
+                { id: 'gpu', color: COLORS.gpu, pos: [1.8, 0.25, 1.8], label: 'GPU' },
+                { id: 'npu', color: COLORS.npu, pos: [-1.8, 0.25, -1.8], label: 'NPU IA' },
+                { id: 'isp', color: COLORS.isp, pos: [1.8, 0.25, -1.8], label: 'ISP' },
+                { id: 'dsp', color: COLORS.dsp, pos: [0, 0.25, 1.8], label: 'DSP' },
+                { id: 'cache', color: COLORS.cache, pos: [0, 0.25, 0], label: 'CACHE' },
+                { id: 'security', color: COLORS.security, pos: [-1.8, 0.25, 0], label: 'SEC' },
+                { id: 'modem', color: COLORS.modem, pos: [1.8, 0.25, 0], label: 'MODEM 5G' },
+                { id: 'io', color: COLORS.io, pos: [0, 0.25, -1.8], label: 'I/O' }
+            ];
+
+            const preset = SoC_DATA[currentPreset];
+
+            layout.forEach(item => {
+                // Render component only if active in current preset configuration
+                if (preset.activeBlocks.includes(item.id)) {
+                    // Decide custom size scales based on preset
+                    const sizeScale = preset.blockScales?.[item.id] || [1.5, 0.4, 1.5];
+                    const compGeo = new THREE.BoxGeometry(sizeScale[0], sizeScale[1], sizeScale[2]);
+
+                    // High emission neon materials for tech effect
+                    const compMat = new THREE.MeshStandardMaterial({
+                        color: item.color,
+                        roughness: 0.3,
+                        metalness: 0.8,
+                        emissive: item.color,
+                        emissiveIntensity: 0.4
+                    });
+
+                    const mesh = new THREE.Mesh(compGeo, compMat);
+                    mesh.position.set(item.pos[0], item.pos[1], item.pos[2]);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    mesh.userData = { id: item.id, label: item.label, baseColor: item.color };
+
+                    componentsGroup.add(mesh);
+                    componentMeshes[item.id] = mesh;
+                }
+            });
+        }
+
+        function buildCasing() {
+            // Metallic Outer Casing Lid/Cap covering the entire core area
+            const casingGeo = new THREE.BoxGeometry(6.5, 0.6, 6.5);
+            const casingMat = new THREE.MeshStandardMaterial({
+                color: COLORS.casing,
+                roughness: 0.4,
+                metalness: 0.9,
+                transparent: true,
+                opacity: 0.85
+            });
+            casingMesh = new THREE.Mesh(casingGeo, casingMat);
+            casingMesh.position.set(0, 0.6, 0);
+            casingMesh.castShadow = true;
+            scene.add(casingMesh);
+
+            // Laser Etched Silicon Core brand emblem on center of cover
+            const plateGeo = new THREE.BoxGeometry(4.5, 0.02, 4.5);
+            const plateMat = new THREE.MeshStandardMaterial({
+                color: 0x0a0a0f,
+                roughness: 0.2,
+                metalness: 0.9
+            });
+            const plateMesh = new THREE.Mesh(plateGeo, plateMat);
+            plateMesh.position.set(0, 0.31, 0);
+            casingMesh.add(plateMesh);
+
+            // Add inner neon logo graphic inside plate
+            const logoGeo = new THREE.RingGeometry(0.8, 1.0, 32);
+            const logoMat = new THREE.MeshBasicMaterial({ color: COLORS.cpu, side: THREE.DoubleSide });
+            const logoMesh = new THREE.Mesh(logoGeo, logoMat);
+            logoMesh.rotation.x = Math.PI / 2;
+            logoMesh.position.set(0, 0.02, 0);
+            plateMesh.add(logoMesh);
+        }
+
+        function toggleExplodedView() {
+            isExploded = !isExploded;
+            const btn = document.getElementById('btn-exploded');
+            const txt = document.getElementById('txt-exploded');
+
+            if (isExploded) {
+                btn.classList.add('bg-cyber-accent', 'text-black', 'shadow-neon-blue');
+                txt.innerText = "CERRAR ENCAPSULADO";
+
+                // Lift casing cap up dramatically (Explode)
+                animateMove(casingMesh.position, { y: 3.5 }, 500);
+            } else {
+                btn.classList.remove('bg-cyber-accent', 'text-black', 'shadow-neon-blue');
+                txt.innerText = "VER POR DENTRO";
+
+                // Lower casing cap back to hermetic seal
+                animateMove(casingMesh.position, { y: 0.6 }, 500);
+            }
+        }
+
+        // Animated move utility using standard requestAnimationFrame internally
+        function animateMove(obj, targetProps, duration) {
+            const startProps = {};
+            const startTime = performance.now();
+
+            for (let prop in targetProps) {
+                startProps[prop] = obj[prop];
+            }
+
+            function update() {
+                const now = performance.now();
+                const progress = Math.min((now - startTime) / duration, 1);
+
+                // Ease out cubic
+                const ease = 1 - Math.pow(1 - progress, 3);
+
+                for (let prop in targetProps) {
+                    obj[prop] = startProps[prop] + (targetProps[prop] - startProps[prop]) * ease;
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+            requestAnimationFrame(update);
+        }
+
+        // AR Real Camera feed activations
+        async function toggleCameraAR() {
+            isCameraAROn = !isCameraAROn;
+            const video = document.getElementById('webcam-feed');
+            const btn = document.getElementById('btn-ar');
+            const txt = document.getElementById('txt-ar');
+            const scanner = document.getElementById('scanner-line-el');
+
+            if (isCameraAROn) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: "environment" },
+                        audio: false
+                    });
+                    video.srcObject = stream;
+                    video.classList.remove('hidden');
+                    scanner.classList.remove('hidden');
+
+                    btn.classList.add('bg-cyber-purple', 'text-white', 'shadow-neon-purple');
+                    txt.innerText = "DESACTIVAR AR";
+
+                    // Adjust renderer clear color alpha transparency so webcam is seen background
+                    renderer.setClearColor(0x000000, 0);
+                } catch (err) {
+                    console.error("Camera access failed for AR simulation: ", err);
+                    alert("No se pudo acceder a la cámara trasera para el modo Realidad Aumentada. Asegúrate de otorgar los permisos necesarios.");
+                    isCameraAROn = false;
+                }
+            } else {
+                if (video.srcObject) {
+                    const tracks = video.srcObject.getTracks();
+                    tracks.forEach(track => track.stop());
+                }
+                video.classList.add('hidden');
+                scanner.classList.add('hidden');
+                btn.classList.remove('bg-cyber-purple', 'text-white', 'shadow-neon-purple');
+                txt.innerText = "ACTIVAR CAMARA / AR";
+
+                // Reset renderer black deep tech clear color
+                renderer.setClearColor(0x06060c, 1);
+            }
+        }
+
+        function setSoCPreset(presetId) {
+            currentPreset = presetId;
+            const preset = SoC_DATA[presetId];
+
+            // Update layout classes active selector border UI
+            const presets = ['smartphone', 'pi', 'car', 'security', 'iot'];
+            presets.forEach(p => {
+                const btn = document.getElementById(`btn-preset-${p}`);
+                if (p === presetId) {
+                    btn.className = "w-full text-left p-3 rounded-xl border border-cyber-accent bg-cyber-accent/10 text-white transition-all font-semibold flex items-center justify-between text-sm shadow-neon-blue/20";
+                    btn.innerHTML = `<span><i class="fa-solid ${getPresetIcon(p)} mr-2 text-cyber-accent"></i> ${getPresetName(p)}</span><span class="text-[10px] bg-cyber-accent text-black font-bold px-1.5 py-0.5 rounded">ACTIVO</span>`;
+                } else {
+                    btn.className = "w-full text-left p-3 rounded-xl border border-white/5 bg-[#101026]/40 text-gray-300 hover:border-cyber-accent/40 transition-all font-semibold flex items-center justify-between text-sm";
+                    btn.innerHTML = `<span><i class="fa-solid ${getPresetIcon(p)} mr-2 text-gray-400"></i> ${getPresetName(p)}</span>`;
+                }
+            });
+
+            // Update main mode description card UI
+            document.getElementById('txt-current-mode').innerText = preset.title.toUpperCase();
+            document.getElementById('info-category').innerText = "Preset de Silicio";
+            document.getElementById('info-title').innerText = preset.title;
+            document.getElementById('info-desc').innerText = preset.desc;
+            document.getElementById('info-icon').className = "fa-solid " + getPresetIcon(presetId);
+            document.getElementById('info-icon-container').className = "w-12 h-12 rounded-xl bg-blue-950/60 border border-blue-400/40 flex items-center justify-center text-cyber-accent text-xl shadow-neon-blue/20";
+
+            // Update dynamic Telemetry metrics in HUD
+            document.getElementById('hud-cpu').innerText = preset.freq;
+            document.getElementById('hud-cpu-bar').style.width = presetId === 'iot' ? '20%' : (presetId === 'smartphone' ? '85%' : '65%');
+
+            document.getElementById('hud-gpu').innerText = presetId === 'iot' ? '0% (Sin GPU)' : (presetId === 'smartphone' ? '45%' : '75%');
+            document.getElementById('hud-gpu-bar').style.width = presetId === 'iot' ? '0%' : (presetId === 'smartphone' ? '45%' : '75%');
+
+            document.getElementById('hud-npu').innerText = presetId === 'iot' || presetId === 'pi' ? '0 TOPS (Sin NPU)' : (presetId === 'smartphone' ? '18 TOPS' : '30 TOPS');
+            document.getElementById('hud-npu-bar').style.width = presetId === 'iot' || presetId === 'pi' ? '0%' : (presetId === 'smartphone' ? '60%' : '90%');
+
+            document.getElementById('hud-tdp').innerText = `~${preset.tdp} (Energía)`;
+
+            // Update Bullets Specs Checklist
+            const bullets = document.getElementById('info-bullets');
+            bullets.innerHTML = `
+                <div class="flex items-start gap-2 text-gray-400">
+                    <i class="fa-solid fa-gauge-high text-cyber-accent mt-0.5"></i>
+                    <span>Optimizado para alta tasa de hercios: ${preset.freq}.</span>
+                </div>
+                <div class="flex items-start gap-2 text-gray-400">
+                    <i class="fa-solid fa-temperature-low text-cyber-accent mt-0.5"></i>
+                    <span>Firma térmica equilibrada para el factor de forma.</span>
+                </div>
+            `;
+
+            // Rebuild internal sub-components architecture geometry in 3D scene
+            buildSoCComponents();
+        }
+
+        function getPresetIcon(p) {
+            switch (p) {
+                case 'smartphone': return 'fa-mobile-screen';
+                case 'pi': return 'fa-microchip';
+                case 'car': return 'fa-car-tunnel';
+                case 'security': return 'fa-video';
+                case 'iot': return 'fa-seedling';
+            }
+        }
+
+        function getPresetName(p) {
+            switch (p) {
+                case 'smartphone': return 'Smartphone';
+                case 'pi': return 'Raspberry Pi';
+                case 'car': return 'Auto Inteligente';
+                case 'security': return 'Cámara de Seg. IA';
+                case 'iot': return 'Dispositivo IoT';
+            }
+        }
+
+        function selectComponent(id) {
+            // First check if casing is open, if not, open it automatically to see internal blocks
+            if (!isExploded) {
+                toggleExplodedView();
+            }
+
+            const data = COMPONENTS_DESCRIPTIONS[id];
+            if (!data) return;
+
+            // Flash Selected Component Mesh color inside the 3D scene
+            const mesh = componentMeshes[id];
+            if (mesh) {
+                mesh.material.emissiveIntensity = 2.0;
+                setTimeout(() => {
+                    mesh.material.emissiveIntensity = 0.4;
+                }, 500);
+            }
+
+            // Update details HUD Card
+            document.getElementById('info-category').innerText = data.category;
+            document.getElementById('info-title').innerText = data.title;
+            document.getElementById('info-desc').innerText = data.desc;
+
+            // Set details color based on component theme
+            let themeColor = "text-cyber-accent";
+            if (id === 'gpu') themeColor = "text-cyber-orange";
+            if (id === 'npu') themeColor = "text-cyber-purple";
+            if (id === 'isp') themeColor = "text-teal-400";
+            if (id === 'dsp') themeColor = "text-cyber-yellow";
+            if (id === 'security') themeColor = "text-pink-500";
+
+            document.getElementById('info-title').className = `text-lg font-bold font-tech text-white leading-tight`;
+            document.getElementById('info-category').className = `text-xs font-tech font-bold uppercase tracking-widest ${themeColor}`;
+
+            // Set icon
+            const iconMap = {
+                cpu: 'fa-microchip',
+                gpu: 'fa-gamepad',
+                npu: 'fa-brain',
+                isp: 'fa-camera',
+                dsp: 'fa-volume-high',
+                cache: 'fa-database',
+                security: 'fa-vault',
+                modem: 'fa-wifi',
+                io: 'fa-bridge'
+            };
+            document.getElementById('info-icon').className = "fa-solid " + iconMap[id];
+
+            // Bullets specs check items
+            const bulletsContainer = document.getElementById('info-bullets');
+            bulletsContainer.innerHTML = '';
+            data.bullets.forEach(bullet => {
+                bulletsContainer.innerHTML += `
+                    <div class="flex items-start gap-2 text-gray-400">
+                        <i class="fa-solid fa-circle-chevron-right text-cyber-accent mt-1 text-[9px]"></i>
+                        <span>${bullet}</span>
+                    </div>
+                `;
+            });
+        }
+
+        // Data flow simulations (Visual Neon particle lines flowing through chip)
+        function startSimulation(type) {
+            if (simulationActive) {
+                clearInterval(simulationTimer);
+                clearSimulationFlowParticles();
+            }
+
+            // Automatically open casing lid so simulation lines are visual inside SoC structure
+            if (!isExploded) {
+                toggleExplodedView();
+            }
+
+            simulationActive = type;
+            let currentStep = 1;
+
+            if (type === 'photo') {
+                // Flash steps list UI
+                updateSimulationStepsUI('photo', 1);
+                triggerFlowParticles('io', 'isp'); // Step 1: IO Camera data to ISP
+
+                simulationTimer = setInterval(() => {
+                    currentStep++;
+                    if (currentStep === 2) {
+                        updateSimulationStepsUI('photo', 2);
+                        triggerFlowParticles('isp', 'cache'); // Step 2: ISP processing, caching
+                    } else if (currentStep === 3) {
+                        updateSimulationStepsUI('photo', 3);
+                        triggerFlowParticles('cache', 'npu'); // Step 3: NPU analyzes neural photo
+                    } else if (currentStep === 4) {
+                        updateSimulationStepsUI('photo', 4);
+                        triggerFlowParticles('npu', 'gpu'); // Step 4: GPU previews screen
+                    } else if (currentStep > 4) {
+                        clearInterval(simulationTimer);
+                        simulationActive = null;
+                        // Reset highlighting of steps
+                        setTimeout(() => resetStepsUI('photo'), 3000);
+                    }
+                }, 2500);
+
+            } else if (type === 'face') {
+                updateSimulationStepsUI('face', 1);
+                triggerFlowParticles('io', 'isp'); // Step 1: Camera inputs raw map
+
+                simulationTimer = setInterval(() => {
+                    currentStep++;
+                    if (currentStep === 2) {
+                        updateSimulationStepsUI('face', 2);
+                        triggerFlowParticles('isp', 'npu'); // Step 2: NPU processes neural nodes
+                    } else if (currentStep === 3) {
+                        updateSimulationStepsUI('face', 3);
+                        triggerFlowParticles('npu', 'security'); // Step 3: Security checks encryption vault
+                    } else if (currentStep === 4) {
+                        updateSimulationStepsUI('face', 4);
+                        triggerFlowParticles('security', 'cpu'); // Step 4: CPU authorizes interface unlock
+                    } else if (currentStep > 4) {
+                        clearInterval(simulationTimer);
+                        simulationActive = null;
+                        setTimeout(() => resetStepsUI('face'), 3000);
+                    }
+                }, 2500);
+            }
+        }
+
+        function triggerFlowParticles(fromId, toId) {
+            const fromMesh = componentMeshes[fromId];
+            const toMesh = componentMeshes[toId];
+
+            if (!fromMesh || !toMesh) return;
+
+            // Spawn bright glowing sphere particle traveling from source block center to target block center
+            const pGeo = new THREE.SphereGeometry(0.12, 16, 16);
+            const pMat = new THREE.MeshBasicMaterial({
+                color: fromId === 'npu' ? COLORS.npu : (fromId === 'isp' ? COLORS.isp : COLORS.cpu)
+            });
+            const particle = new THREE.Mesh(pGeo, pMat);
+            particle.position.copy(fromMesh.position);
+            scene.add(particle);
+
+            // Add point light underneath particle for maximum cyber neon footprint
+            const light = new THREE.PointLight(pMat.color.getHex(), 3, 2);
+            particle.add(light);
+
+            const startPos = fromMesh.position.clone();
+            const endPos = toMesh.position.clone();
+            const startTime = performance.now();
+            const duration = 1500;
+
+            function update() {
+                const now = performance.now();
+                const progress = Math.min((now - startTime) / duration, 1);
+
+                // Linear motion + Bezier-like curve hop for beauty
+                particle.position.lerpVectors(startPos, endPos, progress);
+                particle.position.y = 0.25 + Math.sin(progress * Math.PI) * 0.8;
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    // Flash target block upon arrival
+                    toMesh.material.emissiveIntensity = 2.0;
+                    setTimeout(() => { toMesh.material.emissiveIntensity = 0.4; }, 300);
+
+                    scene.remove(particle);
+                }
+            }
+            requestAnimationFrame(update);
+        }
+
+        function clearSimulationFlowParticles() {
+            // Remove existing flowing entities
+            dataFlowParticles.forEach(p => scene.remove(p));
+            dataFlowParticles = [];
+        }
+
+        function updateSimulationStepsUI(type, stepNum) {
+            const prefix = type === 'photo' ? 'step-photo' : 'step-face';
+
+            for (let i = 1; i <= 4; i++) {
+                const stepEl = document.getElementById(`${prefix}-${i}`);
+                if (i === stepNum) {
+                    stepEl.className = `flex items-center gap-3 p-2 rounded bg-cyber-${type === 'photo' ? 'accent' : 'purple'}/20 border border-cyber-${type === 'photo' ? 'accent' : 'purple'}/40 text-white font-medium transition-all duration-300`;
+                    stepEl.querySelector('span').className = `w-5 h-5 rounded-full bg-black border border-cyber-${type === 'photo' ? 'accent' : 'purple'} flex items-center justify-center font-bold text-cyber-${type === 'photo' ? 'accent' : 'purple'} font-tech animate-pulse`;
+                } else {
+                    stepEl.className = "flex items-center gap-3 p-2 rounded text-gray-500 transition-all duration-300";
+                    stepEl.querySelector('span').className = "w-5 h-5 rounded-full bg-black/50 border border-white/10 flex items-center justify-center font-bold font-tech text-gray-600";
+                }
+            }
+        }
+
+        function resetStepsUI(type) {
+            const prefix = type === 'photo' ? 'step-photo' : 'step-face';
+            for (let i = 1; i <= 4; i++) {
+                const stepEl = document.getElementById(`${prefix}-${i}`);
+                if (i === 1) {
+                    stepEl.className = `flex items-center gap-3 p-2 rounded bg-white/5 border border-white/5 text-gray-300`;
+                    stepEl.querySelector('span').className = `w-5 h-5 rounded-full bg-${type === 'photo' ? 'cyan-950' : 'purple-950'} border border-cyber-${type === 'photo' ? 'accent' : 'purple'} flex items-center justify-center font-bold text-cyber-${type === 'photo' ? 'accent' : 'purple'} font-tech`;
+                } else {
+                    stepEl.className = "flex items-center gap-3 p-2 rounded text-gray-400";
+                    stepEl.querySelector('span').className = "w-5 h-5 rounded-full bg-black/50 border border-white/10 flex items-center justify-center font-bold font-tech";
+                }
+            }
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('threejs-canvas');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(width, height);
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+
+            // Subtle rotation and damping update for orbit controls
+            if (controls) controls.update();
+
+            // Hover waving of labels or components for tech vibe
+            if (componentsGroup) {
+                const time = Date.now() * 0.001;
+                componentsGroup.children.forEach(mesh => {
+                    // Small wave in Y pos to simulate magnetic levitation inside silicon
+                    mesh.position.y = 0.25 + Math.sin(time + mesh.position.x * 2) * 0.04;
+                });
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Initialize 3D Engine on DOM Content Load
+        window.onload = function () {
+            init3D();
+            setSoCPreset('smartphone');
+        };
+    </script>
+</body>
+
+</html>
