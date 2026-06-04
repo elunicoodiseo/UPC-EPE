@@ -634,7 +634,8 @@
                                 <h3 class="text-sm font-bold text-white">Estructura Física NAND Flash</h3>
                                 <p class="text-xs text-gray-400">Las lecturas/escrituras se realizan por <strong
                                         class="text-white">Páginas</strong>, pero los borrados solo se pueden hacer por
-                                    <strong class="text-white">Bloques</strong>.</p>
+                                    <strong class="text-white">Bloques</strong>.
+                                </p>
                             </div>
                             <!-- Leyendas de estado -->
                             <div class="flex flex-wrap gap-2 text-[10px] code-font">
@@ -1393,8 +1394,11 @@
     <!-- FOOTER -->
     <footer
         class="border-t border-gray-800 bg-cyber-bg/95 py-4 px-6 flex justify-between items-center text-xs text-gray-500">
-        <p>© 2026 Laboratorio Virtual de Arquitectura de Computadoras. Diseñado para estudiantes de ingeniería.</p>
-        <p class="code-font">v2.1-stable // WebGL-AR Engine Enabled</p>
+        <div class="footer-inner">
+            <p class="footer-copy" style="font-size: 12px; color: white; text-align: center;">© 2026 —
+                Experiencia Técnica Interactiva. Fines educativos - Luis Torrejón Arias.
+            </p>
+        </div>
     </footer>
 
     <!-- LOGICA JAVASCRIPT DEL SISTEMA -->
@@ -2941,12 +2945,16 @@
     </script>
 
     <!-- Modal de Imagen -->
-    <div id="image-modal" class="fixed inset-0 z-[100] hidden bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity" onclick="closeImageModal()">
+    <div id="image-modal"
+        class="fixed inset-0 z-[100] hidden bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity"
+        onclick="closeImageModal()">
         <div class="relative max-w-4xl max-h-full flex items-center justify-center" onclick="event.stopPropagation()">
-            <button onclick="closeImageModal()" class="absolute -top-12 right-0 text-white hover:text-cyan-400 transition-colors">
+            <button onclick="closeImageModal()"
+                class="absolute -top-12 right-0 text-white hover:text-cyan-400 transition-colors">
                 <i data-lucide="x" class="w-8 h-8"></i>
             </button>
-            <img id="image-modal-img" src="" class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl border border-gray-700">
+            <img id="image-modal-img" src=""
+                class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl border border-gray-700">
         </div>
     </div>
 </body>
