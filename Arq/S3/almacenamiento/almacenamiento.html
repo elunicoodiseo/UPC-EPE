@@ -1,0 +1,2954 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistemas de Almacenamiento de Estado Sólido - Lab Interactivo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#0a0f1d',
+                            panel: '#111827',
+                            border: '#1f2937',
+                            primary: '#06b6d4', /* Cyan */
+                            secondary: '#a855f7', /* Purple */
+                            accent: '#10b981', /* Green */
+                            danger: '#ef4444' /* Red */
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Three.js (Procedural 3D) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls for Three.js -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&family=Inter:wght@300;400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #05070f;
+            overflow-x: hidden;
+        }
+
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Glowing Effects */
+        .neon-border {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+            border: 1px solid rgba(6, 182, 212, 0.4);
+        }
+
+        .neon-border-purple {
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.25);
+            border: 1px solid rgba(168, 85, 247, 0.4);
+        }
+
+        .neon-text {
+            text-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0a0f1d;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4;
+        }
+    </style>
+</head>
+
+<body class="text-gray-100 min-h-screen flex flex-col">
+
+    <!-- TOP NAV BAR -->
+    <header
+        class="border-b border-gray-800 bg-cyber-bg/95 backdrop-blur sticky top-0 z-50 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="bg-gradient-to-tr from-cyan-500 to-purple-600 p-2.5 rounded-lg text-white">
+                <i data-lucide="cpu" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1
+                    class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                    AR-SSD Lab
+                </h1>
+                <p class="text-xs text-gray-400 font-medium tracking-wider uppercase">Arquitectura de Computadores & SO
+                </p>
+            </div>
+        </div>
+
+        <!-- Dashboard Quick Status indicators -->
+        <div class="hidden lg:flex items-center space-x-6 text-xs code-font">
+            <div class="flex items-center space-x-2 bg-gray-900/60 px-3 py-1.5 rounded-full border border-gray-800">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                <span class="text-gray-400">Canal PCIe Gen 5:</span>
+                <span class="text-cyan-400 font-bold">Activo (x4)</span>
+            </div>
+            <div class="flex items-center space-x-2 bg-gray-900/60 px-3 py-1.5 rounded-full border border-gray-800">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="text-gray-400">Protocolo:</span>
+                <span class="text-emerald-400 font-bold">NVMe 2.0</span>
+            </div>
+            <div class="flex items-center space-x-2 bg-gray-900/60 px-3 py-1.5 rounded-full border border-gray-800">
+                <span class="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse"></span>
+                <span class="text-gray-400">Latencia Promedio:</span>
+                <span class="text-purple-400 font-bold">&lt; 10 µs</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN LAB WORKSPACE -->
+    <main class="flex-1 flex flex-col lg:flex-row">
+
+        <!-- SIDEBAR DE NAVEGACIÓN -->
+        <nav
+            class="w-full lg:w-72 bg-cyber-bg border-r border-gray-800 p-4 space-y-2 flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible shrink-0 gap-2 lg:gap-0">
+            <div class="hidden lg:block px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Módulos
+                de Aprendizaje</div>
+
+            <button onclick="switchTab('tab-comparativa-3d')" id="btn-tab-comparativa-3d"
+                class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium transition-all duration-200 bg-cyan-950/40 text-cyan-400 border-l-4 border-cyan-500">
+                <i data-lucide="layers" class="w-5 h-5 flex-shrink-0"></i>
+                <span class="whitespace-nowrap">AR 3D: HDD vs SSD</span>
+            </button>
+
+            <button onclick="switchTab('tab-dentro-ssd')" id="btn-tab-dentro-ssd"
+                class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-900/50 border-l-4 border-transparent">
+                <i data-lucide="eye" class="w-5 h-5 flex-shrink-0"></i>
+                <span class="whitespace-nowrap">Componentes SSD</span>
+            </button>
+
+            <button onclick="switchTab('tab-simulador-escritura')" id="btn-tab-simulador-escritura"
+                class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-900/50 border-l-4 border-transparent">
+                <i data-lucide="activity" class="w-5 h-5 flex-shrink-0"></i>
+                <span class="whitespace-nowrap">Simulación NAND (FTL)</span>
+            </button>
+
+            <button onclick="switchTab('tab-carreteras')" id="btn-tab-carreteras"
+                class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-900/50 border-l-4 border-transparent">
+                <i data-lucide="shuffle" class="w-5 h-5 flex-shrink-0"></i>
+                <span class="whitespace-nowrap">SATA vs NVMe (PCIe)</span>
+            </button>
+
+            <button onclick="switchTab('tab-factores-forma')" id="btn-tab-factores-forma"
+                class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-900/50 border-l-4 border-transparent">
+                <i data-lucide="hard-drive" class="w-5 h-5 flex-shrink-0"></i>
+                <span class="whitespace-nowrap">Factores y Métricas</span>
+            </button>
+
+            <button onclick="switchTab('tab-casos-uso')" id="btn-tab-casos-uso"
+                class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-900/50 border-l-4 border-transparent">
+                <i data-lucide="server" class="w-5 h-5 flex-shrink-0"></i>
+                <span class="whitespace-nowrap">Casos Prácticos de SO</span>
+            </button>
+
+            <div class="h-px bg-gray-800 my-4 hidden lg:block"></div>
+
+            <button onclick="switchTab('tab-quiz')" id="btn-tab-quiz"
+                class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-sm font-medium transition-all duration-200 text-gray-400 hover:text-gray-200 hover:bg-gray-900/50 border-l-4 border-transparent">
+                <i data-lucide="award" class="w-5 h-5 flex-shrink-0"></i>
+                <span class="whitespace-nowrap">Evaluación Técnica</span>
+            </button>
+        </nav>
+
+        <!-- AREA DE CONTENIDO -->
+        <div
+            class="flex-1 bg-gradient-to-b from-[#070b16] to-[#04060b] p-4 lg:p-6 overflow-y-auto max-h-[calc(100vh-80px)]">
+
+            <!-- SECCIÓN 1: COMPARATIVA 3D & AR SIMULATION -->
+            <section id="tab-comparativa-3d" class="tab-content space-y-6">
+                <div
+                    class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-gray-800 pb-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                            <span
+                                class="px-2 py-1 bg-cyan-500/10 text-cyan-400 text-xs rounded border border-cyan-500/30">MÓDULO
+                                01</span>
+                            Realidad Aumentada & 3D: Evolución Física del Almacenamiento
+                        </h2>
+                        <p class="text-sm text-gray-400 mt-1">Explora la transición mecánica de los HDD hacia la
+                            arquitectura de semiconductores de los SSD de manera tridimensional.</p>
+                    </div>
+
+                    <div class="flex gap-2 bg-gray-900/80 p-1.5 rounded-lg border border-gray-800">
+                        <button onclick="setThreeModel('hdd')" id="btn-model-hdd"
+                            class="px-4 py-1.5 rounded text-xs font-semibold bg-cyan-600 text-white transition-all">HDD
+                            Mecánico</button>
+                        <button onclick="setThreeModel('ssd')" id="btn-model-ssd"
+                            class="px-4 py-1.5 rounded text-xs font-semibold text-gray-400 hover:text-gray-100 transition-all">SSD
+                            Electrónico</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    <!-- Contenedor del Canvas 3D -->
+                    <div
+                        class="xl:col-span-2 relative bg-gray-950/90 rounded-2xl border border-gray-800 overflow-hidden h-[450px] lg:h-[550px] flex flex-col">
+
+                        <!-- Panel de Control AR / Cámara -->
+                        <div class="absolute top-4 left-4 z-10 flex flex-wrap gap-2">
+                            <button id="btn-ar-mode" onclick="toggleARPassthrough()"
+                                class="flex items-center space-x-2 px-3 py-1.5 rounded bg-purple-600/90 hover:bg-purple-500 text-xs font-bold text-white transition-all shadow-lg shadow-purple-500/20">
+                                <i data-lucide="aperture" class="w-4 h-4"></i>
+                                <span id="ar-btn-text">Activar AR (Webcam)</span>
+                            </button>
+                            <button onclick="resetCamera()"
+                                class="flex items-center space-x-1 px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-xs text-white transition-all">
+                                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                                <span>Reset Cam</span>
+                            </button>
+                        </div>
+
+                        <!-- Indicadores de velocidad / estado del motor 3D -->
+                        <div class="absolute top-4 right-4 z-10 pointer-events-none text-right">
+                            <span
+                                class="px-2 py-1 text-[10px] code-font tracking-wider bg-black/70 border border-cyan-500/30 text-cyan-400 rounded-md">
+                                WEBGL INTERACTIVO 3D
+                            </span>
+                        </div>
+
+                        <!-- Video para AR Passthrough Background -->
+                        <video id="ar-video"
+                            class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 pointer-events-none"
+                            autoplay playsinline muted></video>
+
+                        <!-- Canvas Real ThreeJS -->
+                        <div id="threejs-canvas-container"
+                            class="w-full flex-1 relative cursor-grab active:cursor-grabbing"></div>
+
+                        <!-- Controles de Animación y Acceso en la parte inferior del 3D -->
+                        <div
+                            class="absolute bottom-4 left-4 right-4 bg-black/85 backdrop-blur-md p-4 rounded-xl border border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 z-10">
+                            <div>
+                                <h4 id="animation-title"
+                                    class="text-xs font-bold uppercase tracking-wider text-cyan-400 code-font">Lectura
+                                    Mecánica HDD</h4>
+                                <p id="animation-desc" class="text-xs text-gray-300 mt-1 max-w-md">El motor hace girar
+                                    el plato a 7200 RPM mientras el brazo magnético se desplaza radialmente para buscar
+                                    sectores físicos con una latencia de ~12ms.</p>
+                            </div>
+                            <div class="flex gap-2 w-full md:w-auto">
+                                <button onclick="triggerAccessAnimation('slow')"
+                                    class="flex-1 md:flex-none px-3 py-2 bg-red-950/50 border border-red-500/30 text-red-400 text-xs rounded hover:bg-red-900/30 transition-all font-medium">Lectura
+                                    Mecánica (Lento)</button>
+                                <button onclick="triggerAccessAnimation('electronic')"
+                                    class="flex-1 md:flex-none px-3 py-2 bg-blue-950/50 border border-blue-500/30 text-cyan-400 text-xs rounded hover:bg-blue-900/30 transition-all font-medium">Acceso
+                                    SSD (Electrónico)</button>
+                                <button onclick="triggerAccessAnimation('nvme')"
+                                    class="flex-1 md:flex-none px-3 py-2 bg-purple-950/50 border border-purple-500/30 text-purple-400 text-xs rounded hover:bg-purple-900/30 transition-all font-medium">Bus
+                                    NVMe (Ultrarrápido)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel Educativo Descriptivo -->
+                    <div class="space-y-6">
+                        <div class="bg-cyber-panel border border-gray-800 rounded-2xl p-5 space-y-4">
+                            <h3 class="text-lg font-bold text-white border-b border-gray-800 pb-2">Evolución de
+                                Arquitectura</h3>
+
+                            <div class="space-y-3 text-sm">
+                                <p class="text-gray-300 leading-relaxed">
+                                    El cuello de botella histórico del computador fue el almacenamiento mecánico. El
+                                    acceso a datos en un <strong class="text-cyan-300">HDD</strong> depende del tiempo
+                                    de búsqueda (<em class="text-xs text-cyan-400">seek time</em>) para mover
+                                    físicamente un brazo magnético sobre un plato giratorio.
+                                </p>
+                                <p class="text-gray-300 leading-relaxed">
+                                    Los <strong class="text-purple-300">SSD (Solid-State Drives)</strong> eliminan toda
+                                    pieza móvil basándose puramente en arreglos de compuertas lógicas semiconductoras
+                                    (<strong class="text-cyan-400">NAND Flash</strong>) controladas por un
+                                    microprocesador dedicado (<strong class="text-cyan-400">Controlador</strong>) que
+                                    coordina múltiples canales en paralelo.
+                                </p>
+                            </div>
+
+                            <div class="p-3 bg-gray-900/80 rounded-xl border border-gray-800 space-y-2">
+                                <h4 class="text-xs font-bold text-cyan-400 code-font uppercase">Instrucciones de
+                                    Realidad Aumentada</h4>
+                                <ol class="list-decimal list-inside text-xs text-gray-400 space-y-1">
+                                    <li>Haz clic en <strong class="text-purple-400">"Activar AR"</strong> para habilitar
+                                        tu cámara.</li>
+                                    <li>La cámara servirá como fondo del visor 3D, simulando un entorno AR passthrough.
+                                    </li>
+                                    <li>Usa un dedo en móvil o el mouse para rotar, escalar y mover el dispositivo en tu
+                                        mesa de trabajo.</li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <!-- Tarjeta de Desempeño Mecánico vs Sólido -->
+                        <div
+                            class="bg-gradient-to-br from-cyan-950/20 to-purple-950/20 border border-cyan-500/20 rounded-2xl p-5 space-y-3">
+                            <h3
+                                class="text-sm font-bold tracking-wider text-cyan-300 uppercase code-font flex items-center gap-2">
+                                <i data-lucide="gauge" class="w-4 h-4"></i> Relación de Latencia Física
+                            </h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-gray-400">HDD Mecánico (Rotacional)</span>
+                                    <span class="text-red-400 font-bold">12,000,000 ns (12 ms)</span>
+                                </div>
+                                <div class="w-full bg-gray-900 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-red-500 h-full w-full"></div>
+                                </div>
+                                <div class="flex justify-between text-xs pt-1">
+                                    <span class="text-gray-400">SSD SATA (AHCI)</span>
+                                    <span class="text-amber-400 font-bold">50,000 ns (50 µs)</span>
+                                </div>
+                                <div class="w-full bg-gray-900 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-amber-400 h-full" style="width: 15%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs pt-1">
+                                    <span class="text-gray-400">SSD NVMe (PCIe Gen 4)</span>
+                                    <span class="text-emerald-400 font-bold">10,000 ns (10 µs)</span>
+                                </div>
+                                <div class="w-full bg-gray-900 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-emerald-400 h-full" style="width: 2%"></div>
+                                </div>
+                            </div>
+                            <p class="text-[11px] text-gray-400 italic text-center pt-2">
+                                "El procesador puede esperar millones de ciclos de reloj por un HDD, pero solo unos
+                                miles por NVMe."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 2: DENTRO DE UN SSD (Componentes Interactivos) -->
+            <section id="tab-dentro-ssd" class="tab-content hidden space-y-6">
+                <div class="border-b border-gray-800 pb-4">
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <span
+                            class="px-2 py-1 bg-purple-500/10 text-purple-400 text-xs rounded border border-purple-500/30">MÓDULO
+                            02</span>
+                        Bajo el Capó: Anatomía de un SSD Moderno
+                    </h2>
+                    <p class="text-sm text-gray-400 mt-1">Interactúa directamente con el circuito integrado y comprende
+                        el rol fundamental de cada subsistema de hardware y software.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Representación interactiva del PCB del SSD -->
+                    <div
+                        class="lg:col-span-7 bg-gray-950/90 rounded-2xl border border-gray-800 p-6 flex flex-col justify-between min-h-[480px]">
+                        <h3
+                            class="text-xs font-bold text-cyan-400 uppercase tracking-wider code-font mb-4 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> PCB de SSD M.2 (Esquema
+                            de Hardware)
+                        </h3>
+
+                        <!-- Visualizador Interactivo del PCB -->
+                        <div class="flex-1 flex items-center justify-center py-6 relative">
+                            <!-- Cuerpo del PCB M.2 -->
+                            <div
+                                class="w-full max-w-md h-56 bg-slate-900 rounded-lg relative border-2 border-emerald-600/60 p-4 shadow-2xl flex flex-col justify-between">
+                                <!-- Líneas de circuitos de fondo (Decorativas) -->
+                                <div
+                                    class="absolute inset-0 opacity-10 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]">
+                                </div>
+
+                                <!-- Conectores M-Key dorados en el extremo izquierdo (Hotspot interactivo) -->
+                                <div onclick="selectComponent('connectors')" id="pcb-connectors-hotspot"
+                                    class="absolute -left-1.5 top-12 bottom-12 w-3.5 flex flex-col justify-between cursor-pointer hover:bg-amber-500/20 rounded p-0.5 z-20 group transition-all"
+                                    title="Haz clic para ver la explicación del Conector">
+                                    <div class="h-1 bg-amber-500 rounded-r group-hover:bg-amber-400 transition-colors">
+                                    </div>
+                                    <div class="h-1 bg-amber-500 rounded-r group-hover:bg-amber-400 transition-colors">
+                                    </div>
+                                    <div class="h-1 bg-amber-500 rounded-r group-hover:bg-amber-400 transition-colors">
+                                    </div>
+                                    <div class="h-1 bg-amber-500 rounded-r group-hover:bg-amber-400 transition-colors">
+                                    </div>
+                                    <div class="h-1 bg-amber-500 rounded-r group-hover:bg-amber-400 transition-colors">
+                                    </div>
+                                    <div class="h-1 bg-amber-500 rounded-r group-hover:bg-amber-400 transition-colors">
+                                    </div>
+                                    <div class="h-1 bg-amber-500 rounded-r group-hover:bg-amber-400 transition-colors">
+                                    </div>
+                                    <div class="h-1 bg-amber-500 rounded-r group-hover:bg-amber-400 transition-colors">
+                                    </div>
+                                    <div class="h-1 bg-amber-500 rounded-r group-hover:bg-amber-400 transition-colors">
+                                    </div>
+                                </div>
+
+                                <!-- Componentes Interactivos en el PCB -->
+                                <div class="grid grid-cols-4 gap-3 h-full relative z-10 pl-2">
+                                    <!-- Controlador -->
+                                    <button onclick="selectComponent('controller')" id="pcb-controller"
+                                        class="col-span-2 h-28 self-center bg-gray-800 hover:bg-cyan-900 border-2 border-cyan-500/70 rounded-md transition-all flex flex-col items-center justify-center p-2 text-center shadow-lg group">
+                                        <i data-lucide="cpu"
+                                            class="w-8 h-8 text-cyan-400 group-hover:scale-110 transition-transform"></i>
+                                        <span class="text-xs font-bold mt-1 text-white">CONTROLADOR</span>
+                                        <span class="text-[9px] text-cyan-300 font-mono">ASIC / ARM Core</span>
+                                    </button>
+
+                                    <!-- DRAM Cache -->
+                                    <div class="col-span-2 flex flex-col justify-around h-full">
+                                        <button onclick="selectComponent('dram')" id="pcb-dram"
+                                            class="h-12 bg-gray-800 hover:bg-cyan-900 border-2 border-cyan-500/40 rounded-md transition-all flex flex-col items-center justify-center p-1 text-center">
+                                            <span class="text-[10px] font-bold text-white leading-none">DRAM
+                                                CACHE</span>
+                                            <span class="text-[8px] text-gray-400 font-mono">LPDDR4 / Buffering</span>
+                                        </button>
+
+                                        <!-- Firmware / ROM -->
+                                        <button onclick="selectComponent('firmware')" id="pcb-firmware"
+                                            class="h-12 bg-gray-800 hover:bg-cyan-900 border-2 border-cyan-500/40 rounded-md transition-all flex flex-col items-center justify-center p-1 text-center">
+                                            <span class="text-[10px] font-bold text-white leading-none">FIRMWARE
+                                                ROM</span>
+                                            <span class="text-[8px] text-gray-400 font-mono">Boot / FTL Core</span>
+                                        </button>
+                                    </div>
+
+                                    <!-- Chips NAND Flash -->
+                                    <button onclick="selectComponent('nand')" id="pcb-nand"
+                                        class="col-span-4 h-16 bg-gray-800 hover:bg-purple-900 border-2 border-purple-500/60 rounded-md transition-all flex flex-col items-center justify-center p-2 text-center shadow-lg group">
+                                        <div class="flex space-x-2">
+                                            <i data-lucide="database"
+                                                class="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform"></i>
+                                            <i data-lucide="database"
+                                                class="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform"></i>
+                                        </div>
+                                        <span class="text-xs font-bold mt-1 text-white">NAND FLASH CHIPS (3D
+                                            TLC/QLC)</span>
+                                        <span class="text-[9px] text-purple-300 font-mono">Almacenamiento No
+                                            Volátil</span>
+                                    </button>
+                                </div>
+
+                                <!-- Zona de Tornillo M.2 extremo derecho -->
+                                <div
+                                    class="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-gray-950 border border-emerald-500 rounded-full flex items-center justify-center">
+                                    <div class="w-2 h-2 bg-slate-800 rounded-full"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Componentes Lógicos y de Interfaz Adicionales -->
+                        <div
+                            class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2 mt-4 pt-4 border-t border-gray-800">
+                            <button onclick="selectComponent('ftl')" id="pcb-ftl"
+                                class="px-2 py-2.5 rounded bg-gray-900 hover:bg-cyan-950/50 border border-gray-800 text-center text-xs font-semibold text-gray-300 transition-all">
+                                Flash Translation Layer (FTL)
+                            </button>
+                            <button onclick="selectComponent('blocks')" id="pcb-blocks"
+                                class="px-2 py-2.5 rounded bg-gray-900 hover:bg-cyan-950/50 border border-gray-800 text-center text-xs font-semibold text-gray-300 transition-all">
+                                Bloques & Celdas
+                            </button>
+                            <button onclick="selectComponent('overprovisioning')" id="pcb-overprovisioning"
+                                class="px-2 py-2.5 rounded bg-gray-900 hover:bg-cyan-950/50 border border-gray-800 text-center text-xs font-semibold text-gray-300 transition-all">
+                                Over-Provisioning
+                            </button>
+                            <button onclick="selectComponent('connectors')" id="pcb-connectors"
+                                class="px-2 py-2.5 rounded bg-gray-900 hover:bg-cyan-950/50 border border-gray-800 text-center text-xs font-semibold text-gray-300 transition-all">
+                                Conectores Físicos
+                            </button>
+                            <button onclick="selectComponent('protocols')" id="pcb-protocols"
+                                class="px-2 py-2.5 rounded bg-gray-900 hover:bg-cyan-950/50 border border-gray-800 text-center text-xs font-semibold text-gray-300 transition-all col-span-2 sm:col-span-1">
+                                Protocolos (AHCI/NVMe)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Detalle del componente seleccionado -->
+                    <div
+                        class="lg:col-span-5 bg-cyber-panel border border-gray-800 rounded-2xl p-6 flex flex-col justify-between space-y-4">
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-3">
+                                <div id="comp-icon-container"
+                                    class="p-3 bg-cyan-950 text-cyan-400 rounded-xl border border-cyan-500/30">
+                                    <i id="comp-icon" data-lucide="cpu" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h3 id="comp-title" class="text-xl font-bold text-white">Controlador SSD</h3>
+                                    <p id="comp-subtitle" class="text-xs text-cyan-400 code-font">El cerebro lógico del
+                                        hardware</p>
+                                </div>
+                            </div>
+
+                            <hr class="border-gray-800">
+
+                            <div class="space-y-3">
+                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider code-font">Función
+                                    de Arquitectura</h4>
+                                <p id="comp-desc" class="text-sm text-gray-300 leading-relaxed">
+                                    Es un circuito integrado personalizado (ASIC) que ejecuta microprocesadores internos
+                                    (normalmente basados en núcleos ARM o RISC-V). Es responsable de gestionar la
+                                    comunicación del Host (sistema operativo) con los chips NAND, organizando cómo,
+                                    cuándo y dónde se graban los electrones.
+                                </p>
+                            </div>
+
+                            <!-- Animación o Representación Gráfica Interna de cada Componente -->
+                            <div
+                                class="p-4 bg-gray-950 rounded-xl border border-gray-800 h-44 flex flex-col justify-between overflow-hidden relative">
+                                <span class="absolute top-2 right-2 text-[9px] code-font text-gray-500">Monitor de
+                                    Operaciones del Componente</span>
+
+                                <div id="comp-visualizer" class="flex-1 flex items-center justify-center">
+                                    <!-- Se inyecta dinámicamente según componente -->
+                                    <div class="flex flex-col items-center space-y-2">
+                                        <div class="flex space-x-2">
+                                            <span class="w-3 h-3 bg-cyan-400 rounded-full animate-ping"></span>
+                                            <span class="w-3 h-3 bg-purple-500 rounded-full"></span>
+                                            <span class="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></span>
+                                        </div>
+                                        <p class="text-xs text-cyan-300 font-mono">Procesando cola de comandos NVMe...
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-cyan-950/30 border border-cyan-800/30 rounded-xl text-xs text-cyan-300">
+                            <strong>Tip Académico:</strong> Selecciona cualquier elemento del PCB del SSD a la izquierda
+                            para investigar su impacto en el diseño de Sistemas Operativos y Sistemas de Archivos
+                            modernos.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 3: SIMULACIÓN DE ESCRITURA EN MEMORIA NAND (FTL, Wear Leveling, GC, TRIM) -->
+            <section id="tab-simulador-escritura" class="tab-content hidden space-y-6">
+                <div class="border-b border-gray-800 pb-4">
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <span
+                            class="px-2 py-1 bg-emerald-500/10 text-emerald-400 text-xs rounded border border-emerald-500/30">MÓDULO
+                            03</span>
+                        Ciclo de Vida de Escritura: Mecánica Lógica de la NAND
+                    </h2>
+                    <p class="text-sm text-gray-400 mt-1">Simula cómo interactúa el Controlador, la capa lógica FTL, la
+                        nivelación de desgaste (Wear Leveling), la Recolección de Basura (GC) y el comando TRIM del SO.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    <!-- Controles de Simulación Interactiva -->
+                    <div
+                        class="bg-cyber-panel border border-gray-800 rounded-2xl p-5 space-y-5 flex flex-col justify-between">
+                        <div class="space-y-4">
+                            <h3 class="text-md font-bold text-white border-b border-gray-800 pb-2">Panel del Operador
+                            </h3>
+
+                            <!-- Input para simular escritura -->
+                            <div class="space-y-2">
+                                <label class="text-xs text-gray-400 uppercase font-bold block">1. Enviar Carga de Datos
+                                    desde el SO</label>
+                                <div class="flex space-x-2">
+                                    <input type="text" id="sim-data-input" placeholder="Escribe un dato (ej: 'Log.sys')"
+                                        class="flex-1 bg-gray-950 border border-gray-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 code-font">
+                                    <button onclick="simulateNANDWrite()"
+                                        class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-xs font-bold transition-all">Escribir</button>
+                                </div>
+                            </div>
+
+                            <hr class="border-gray-800">
+
+                            <!-- Operaciones manuales para procesos internos del SSD -->
+                            <div class="space-y-3">
+                                <label class="text-xs text-gray-400 uppercase font-bold block">2. Desencadenar Acciones
+                                    del Firmware</label>
+
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button onclick="triggerWearLeveling()"
+                                        class="p-2.5 bg-gray-900 hover:bg-gray-800 border border-gray-800 text-left rounded-lg text-xs transition-all group">
+                                        <div class="text-cyan-400 font-bold flex items-center gap-1">
+                                            <i data-lucide="scale" class="w-3.5 h-3.5"></i> Wear Leveling
+                                        </div>
+                                        <span class="text-[10px] text-gray-500 group-hover:text-gray-300">Nivelar
+                                            escrituras</span>
+                                    </button>
+
+                                    <button onclick="triggerGarbageCollection()"
+                                        class="p-2.5 bg-gray-900 hover:bg-gray-800 border border-gray-800 text-left rounded-lg text-xs transition-all group">
+                                        <div class="text-purple-400 font-bold flex items-center gap-1">
+                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Garbage Coll.
+                                        </div>
+                                        <span class="text-[10px] text-gray-500 group-hover:text-gray-300">Liberar
+                                            bloques sucios</span>
+                                    </button>
+                                </div>
+
+                                <button onclick="triggerTRIM()"
+                                    class="w-full p-2.5 bg-gray-900 hover:bg-gray-800 border border-gray-800 text-left rounded-lg text-xs transition-all group mt-2">
+                                    <div class="text-emerald-400 font-bold flex items-center gap-1">
+                                        <i data-lucide="scissors" class="w-3.5 h-3.5"></i> Comando TRIM del OS
+                                    </div>
+                                    <span class="text-[10px] text-gray-500 group-hover:text-gray-300">Marcar páginas
+                                        inválidas en el SSD para optimizar borrados futuros</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Logs de Consola del Controlador (Explicativos de Sistemas Operativos) -->
+                        <div class="space-y-2 mt-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-gray-400 uppercase code-font">Terminal del
+                                    Controlador (FTL)</span>
+                                <button onclick="clearSimLogs()"
+                                    class="text-[10px] text-cyan-400 hover:underline">Limpiar</button>
+                            </div>
+                            <div id="sim-log-terminal"
+                                class="bg-gray-950 p-3 rounded-lg border border-gray-800 h-52 overflow-y-auto text-xs code-font text-emerald-400 space-y-1.5 scrollbar-thin">
+                                <div class="text-gray-500">[SISTEMA] Listo para iniciar simulación.</div>
+                                <div class="text-gray-500">[INFO] NAND posee bloques vacíos con contador de ciclos de
+                                    escritura = 0.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Representación Visual de la Memoria NAND (Bloques y Páginas) -->
+                    <div
+                        class="xl:col-span-2 bg-gray-950/90 rounded-2xl border border-gray-800 p-6 flex flex-col justify-between">
+                        <div
+                            class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b border-gray-900 pb-3">
+                            <div>
+                                <h3 class="text-sm font-bold text-white">Estructura Física NAND Flash</h3>
+                                <p class="text-xs text-gray-400">Las lecturas/escrituras se realizan por <strong
+                                        class="text-white">Páginas</strong>, pero los borrados solo se pueden hacer por
+                                    <strong class="text-white">Bloques</strong>.</p>
+                            </div>
+                            <!-- Leyendas de estado -->
+                            <div class="flex flex-wrap gap-2 text-[10px] code-font">
+                                <span class="flex items-center gap-1 text-gray-500"><span
+                                        class="w-2.5 h-2.5 bg-gray-800 border border-gray-700 rounded-sm"></span>
+                                    Vacío</span>
+                                <span class="flex items-center gap-1 text-cyan-400"><span
+                                        class="w-2.5 h-2.5 bg-cyan-950 border border-cyan-400 rounded-sm"></span>
+                                    Válido</span>
+                                <span class="flex items-center gap-1 text-red-400"><span
+                                        class="w-2.5 h-2.5 bg-red-950 border border-red-500 rounded-sm"></span> Inválido
+                                    (TRIM)</span>
+                            </div>
+                        </div>
+
+                        <!-- El Grid del Block de la Memoria NAND -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
+                            <!-- Bloque 0 -->
+                            <div class="bg-gray-900/60 p-3 rounded-xl border border-gray-800 relative">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-xs font-bold text-gray-400 code-font">Bloque 0</span>
+                                    <span id="wear-b0"
+                                        class="text-[9px] bg-cyan-950 text-cyan-400 px-1.5 py-0.5 rounded">Ciclos:
+                                        0</span>
+                                </div>
+                                <div id="nand-block-0" class="grid grid-cols-4 gap-1.5">
+                                    <!-- Generado dinámicamente -->
+                                </div>
+                            </div>
+
+                            <!-- Bloque 1 -->
+                            <div class="bg-gray-900/60 p-3 rounded-xl border border-gray-800 relative">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-xs font-bold text-gray-400 code-font">Bloque 1</span>
+                                    <span id="wear-b1"
+                                        class="text-[9px] bg-cyan-950 text-cyan-400 px-1.5 py-0.5 rounded">Ciclos:
+                                        0</span>
+                                </div>
+                                <div id="nand-block-1" class="grid grid-cols-4 gap-1.5">
+                                    <!-- Generado dinámicamente -->
+                                </div>
+                            </div>
+
+                            <!-- Bloque 2 (Reservado para OP / Over-Provisioning) -->
+                            <div class="bg-gray-900/60 p-3 rounded-xl border border-purple-900/40 relative">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-xs font-bold text-purple-400 code-font">Bloque 2 (OP)</span>
+                                    <span id="wear-b2"
+                                        class="text-[9px] bg-purple-950 text-purple-400 px-1.5 py-0.5 rounded">Ciclos:
+                                        0</span>
+                                </div>
+                                <div id="nand-block-2" class="grid grid-cols-4 gap-1.5">
+                                    <!-- Generado dinámicamente -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabla FTL Simplificada en Vivo -->
+                        <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-800 space-y-3">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider code-font">Tabla de
+                                Traducción de la Capa FTL (Logical LBA a Physical PBA)</h4>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs code-font">
+                                    <thead>
+                                        <tr class="border-b border-gray-800 text-gray-500">
+                                            <th class="pb-2">Dirección Lógica (OS / LBA)</th>
+                                            <th class="pb-2">ID Dato</th>
+                                            <th class="pb-2">Dirección Física (Hardware / PBA)</th>
+                                            <th class="pb-2 text-right">Estado FTL</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ftl-table-rows" class="text-gray-300">
+                                        <!-- Generado dinámicamente -->
+                                        <tr>
+                                            <td colspan="4" class="text-center py-2 text-gray-500">Sin datos mapeados.
+                                                Envía escrituras arriba.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 4: SATA VS NMVE (La analogía de la carretera) -->
+            <section id="tab-carreteras" class="tab-content hidden space-y-6">
+                <div class="border-b border-gray-800 pb-4">
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <span
+                            class="px-2 py-1 bg-amber-500/10 text-amber-400 text-xs rounded border border-amber-500/30">MÓDULO
+                            04</span>
+                        Interfaces y Protocolos: ¿Carretera Convencional o Autopista Masiva?
+                    </h2>
+                    <p class="text-sm text-gray-400 mt-1">Una comparación visual y física de cómo AHCI y el antiguo
+                        estándar SATA limitan la memoria flash, en contraposición con la inmensa paralelización del bus
+                        PCIe y el protocolo NVMe.</p>
+                </div>
+
+                <!-- Simulación Dinámica en Canvas 2D -->
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    <div
+                        class="xl:col-span-2 bg-gray-950/90 rounded-2xl border border-gray-800 p-5 flex flex-col space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-sm font-bold text-white code-font">Demostración de Cola de Comandos y Ancho
+                                de Banda</h3>
+                            <div class="flex gap-1.5">
+                                <button onclick="injectSATACommand()"
+                                    class="px-2.5 py-1 bg-amber-600/80 hover:bg-amber-500 text-[11px] rounded text-white font-bold transition-all flex items-center gap-1">
+                                    <i data-lucide="plus" class="w-3 h-3"></i> +Cmd SATA
+                                </button>
+                                <button onclick="injectNVMeCommands()"
+                                    class="px-2.5 py-1 bg-cyan-600/80 hover:bg-cyan-500 text-[11px] rounded text-white font-bold transition-all flex items-center gap-1">
+                                    <i data-lucide="zap" class="w-3 h-3"></i> +Ráfaga NVMe
+                                </button>
+                                <button onclick="restartRoadSimulation()"
+                                    class="px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-[11px] rounded text-white transition-all flex items-center gap-1">
+                                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reiniciar
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Canvas 2D de simulación -->
+                        <div class="relative bg-gray-900 rounded-xl border border-gray-800 overflow-hidden h-[380px]">
+                            <canvas id="road-sim-canvas" class="w-full h-full block"></canvas>
+                        </div>
+
+                        <div
+                            class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs bg-gray-900/50 p-4 rounded-xl border border-gray-800">
+                            <div>
+                                <h4 class="font-bold text-amber-400 code-font uppercase">SATA + AHCI (Legacy Limit)</h4>
+                                <ul class="list-disc list-inside text-gray-300 mt-1.5 space-y-1">
+                                    <li>Diseñado para cabezales de HDD giratorios.</li>
+                                    <li><strong class="text-amber-400">1 sola cola</strong> de comandos activa.</li>
+                                    <li>Profundidad máxima de cola: <strong class="text-amber-400">32 comandos</strong>.
+                                    </li>
+                                    <li>Ancho de banda máximo limitado a <strong class="text-amber-400">600
+                                            MB/s</strong>.</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-cyan-400 code-font uppercase">PCIe + NVMe (Flash Optimized)
+                                </h4>
+                                <ul class="list-disc list-inside text-gray-300 mt-1.5 space-y-1">
+                                    <li>Diseñado específicamente para silicio y paralelismo masivo.</li>
+                                    <li>Hasta <strong class="text-cyan-400">64,000 colas</strong> de comandos
+                                        simultáneas.</li>
+                                    <li>Profundidad de cola: <strong class="text-cyan-400">64,000 comandos por
+                                            cola</strong>.</li>
+                                    <li>Velocidades de hasta <strong class="text-cyan-400">14,000 MB/s+</strong> (PCIe
+                                        Gen 5 x4).</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel Educativo Teórico -->
+                    <div class="space-y-6">
+                        <div class="bg-cyber-panel border border-gray-800 rounded-2xl p-5 space-y-4">
+                            <h3 class="text-lg font-bold text-white border-b border-gray-800 pb-2">El Concepto de
+                                Paralelismo</h3>
+
+                            <div class="space-y-3 text-sm">
+                                <p class="text-gray-300 leading-relaxed">
+                                    No confunda el <strong class="text-cyan-300">Factor de Forma</strong> (aspecto
+                                    físico del disco) con la <strong class="text-cyan-300">Interfaz /
+                                        Protocolo</strong>. Un SSD M.2 puede usar la antigua interfaz SATA limitando su
+                                    velocidad, o usar la autopista PCIe con el protocolo NVMe.
+                                </p>
+                                <p class="text-gray-300 leading-relaxed">
+                                    <strong class="text-purple-300">AHCI (Advanced Host Controller Interface)</strong>
+                                    requiere el uso de registros pesados en la CPU y un bloqueo constante por
+                                    interrupciones seriales.
+                                </p>
+                                <p class="text-gray-300 leading-relaxed">
+                                    <strong class="text-cyan-300">NVMe (Non-Volatile Memory Express)</strong> mapea las
+                                    colas directamente en memoria del Host por medio de DMA (Direct Memory Access),
+                                    reduciendo la sobrecarga de software drásticamente y aprovechando arquitecturas
+                                    multinúcleo en la CPU.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Tarjeta de Desempeño Comparativo de Bus -->
+                        <div
+                            class="bg-gradient-to-br from-amber-950/20 to-cyan-950/20 border border-cyan-500/20 rounded-2xl p-5 space-y-3">
+                            <h3 class="text-xs font-bold tracking-wider text-cyan-300 uppercase code-font">Ancho de
+                                Banda Máximo Soportado</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-[11px]">
+                                    <span class="text-gray-400">SATA III (6 Gbps)</span>
+                                    <span class="text-amber-500 font-bold">600 MB/s</span>
+                                </div>
+                                <div class="w-full bg-gray-900 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-amber-500 h-full" style="width: 5%"></div>
+                                </div>
+
+                                <div class="flex justify-between text-[11px] pt-1">
+                                    <span class="text-gray-400">PCIe Gen 3 x4 NVMe</span>
+                                    <span class="text-cyan-400 font-bold">3,500 MB/s</span>
+                                </div>
+                                <div class="w-full bg-gray-900 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-cyan-400 h-full" style="width: 25%"></div>
+                                </div>
+
+                                <div class="flex justify-between text-[11px] pt-1">
+                                    <span class="text-gray-400">PCIe Gen 4 x4 NVMe</span>
+                                    <span class="text-cyan-300 font-bold">7,500 MB/s</span>
+                                </div>
+                                <div class="w-full bg-gray-900 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-cyan-300 h-full" style="width: 53%"></div>
+                                </div>
+
+                                <div class="flex justify-between text-[11px] pt-1">
+                                    <span class="text-gray-400">PCIe Gen 5 x4 NVMe</span>
+                                    <span class="text-purple-400 font-bold">14,000 MB/s</span>
+                                </div>
+                                <div class="w-full bg-gray-900 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-purple-500 h-full" style="width: 100%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 5: FACTORES DE FORMA Y MÉTRICAS -->
+            <section id="tab-factores-forma" class="tab-content hidden space-y-6">
+                <div class="border-b border-gray-800 pb-4">
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <span
+                            class="px-2 py-1 bg-purple-500/10 text-purple-400 text-xs rounded border border-purple-500/30">MÓDULO
+                            05</span>
+                        Factores de Forma & Modelos de Almacenamiento (Evolución)
+                    </h2>
+                    <p class="text-sm text-gray-400 mt-1">Explora la evolución de los estándares físicos de conexión
+                        desde interfaces heredadas (Legacy) hasta las especificaciones empresariales modernas.</p>
+                </div>
+
+                <!-- Selector de Factores de Forma categorizado -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div class="lg:col-span-4 bg-cyber-panel border border-gray-800 rounded-2xl p-5 space-y-4">
+                        <h3 class="text-sm font-bold text-cyan-400 uppercase tracking-wider code-font">Modelos
+                            Disponibles</h3>
+
+                        <div class="space-y-4">
+                            <!-- CATEGORÍA: HISTÓRICOS Y ANTERIORES -->
+                            <div class="space-y-2">
+                                <div class="text-[10px] font-bold text-gray-500 uppercase tracking-widest pl-1">
+                                    Tecnologías Anteriores & Legacy</div>
+
+                                <button onclick="selectFormFactor('pata_hdd')" id="btn-ff-pata_hdd"
+                                    class="ff-btn w-full p-2.5 rounded-xl border border-gray-800 bg-gray-900/40 text-left text-xs transition-all flex items-center justify-between">
+                                    <div>
+                                        <div class="font-bold text-white">HDD 3.5" (PATA/IDE)</div>
+                                        <div class="text-[10px] text-gray-400 mt-0.5">Mecánico - Paralelo IDE histórico
+                                        </div>
+                                    </div>
+                                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
+                                </button>
+
+                                <button onclick="selectFormFactor('msata')" id="btn-ff-msata"
+                                    class="ff-btn w-full p-2.5 rounded-xl border border-gray-800 bg-gray-900/40 text-left text-xs transition-all flex items-center justify-between">
+                                    <div>
+                                        <div class="font-bold text-white">mSATA SSD</div>
+                                        <div class="text-[10px] text-gray-400 mt-0.5">Primer factor mini-sólido portátil
+                                        </div>
+                                    </div>
+                                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
+                                </button>
+
+                                <button onclick="selectFormFactor('ssd25')" id="btn-ff-ssd25"
+                                    class="ff-btn w-full p-2.5 rounded-xl border border-cyan-500/50 bg-cyan-950/20 text-left text-xs transition-all flex items-center justify-between">
+                                    <div>
+                                        <div class="font-bold text-cyan-400">SSD 2.5 pulgadas SATA</div>
+                                        <div class="text-[10px] text-gray-400 mt-0.5">Factor de transición metálico
+                                        </div>
+                                    </div>
+                                    <i data-lucide="chevron-right" class="w-4 h-4 text-cyan-400"></i>
+                                </button>
+                            </div>
+
+                            <!-- CATEGORÍA: MODERNOS Y ÚLTIMAS VERSIONES -->
+                            <div class="space-y-2">
+                                <div class="text-[10px] font-bold text-purple-400 uppercase tracking-widest pl-1">
+                                    Últimas Versiones & Next-Gen</div>
+
+                                <button onclick="selectFormFactor('m2')" id="btn-ff-m2"
+                                    class="ff-btn w-full p-2.5 rounded-xl border border-gray-800 bg-gray-900/40 text-left text-xs transition-all flex items-center justify-between">
+                                    <div>
+                                        <div class="font-bold text-white">M.2 2280 NVMe Gen 5</div>
+                                        <div class="text-[10px] text-gray-400 mt-0.5">PCIe Gen 5 x4 ultrarrápido</div>
+                                    </div>
+                                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
+                                </button>
+
+                                <button onclick="selectFormFactor('u2')" id="btn-ff-u2"
+                                    class="ff-btn w-full p-2.5 rounded-xl border border-gray-800 bg-gray-900/40 text-left text-xs transition-all flex items-center justify-between">
+                                    <div>
+                                        <div class="font-bold text-white">U.2 (SFF-8639)</div>
+                                        <div class="text-[10px] text-gray-400 mt-0.5">Servidores, PCIe x4 Hot-Swap</div>
+                                    </div>
+                                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
+                                </button>
+
+                                <button onclick="selectFormFactor('u3')" id="btn-ff-u3"
+                                    class="ff-btn w-full p-2.5 rounded-xl border border-gray-800 bg-gray-900/40 text-left text-xs transition-all flex items-center justify-between">
+                                    <div>
+                                        <div class="font-bold text-white">U.3 Tri-Mode</div>
+                                        <div class="text-[10px] text-gray-400 mt-0.5">SAS, SATA y PCIe NVMe unificado
+                                        </div>
+                                    </div>
+                                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
+                                </button>
+
+                                <button onclick="selectFormFactor('edsff')" id="btn-ff-edsff"
+                                    class="ff-btn w-full p-2.5 rounded-xl border border-gray-800 bg-gray-900/40 text-left text-xs transition-all flex items-center justify-between">
+                                    <div>
+                                        <div class="font-bold text-white">EDSFF (E1.S / E3.S)</div>
+                                        <div class="text-[10px] text-gray-400 mt-0.5">Datacenter Ruler de alta densidad
+                                        </div>
+                                    </div>
+                                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ficha Técnica y Visualizador Esquemático -->
+                    <div class="lg:col-span-8 bg-gray-950/90 border border-gray-800 rounded-2xl p-6 space-y-6">
+                        <div class="flex justify-between items-start border-b border-gray-900 pb-4">
+                            <div>
+                                <h3 id="ff-title" class="text-xl font-bold text-white">SSD 2.5" pulgadas</h3>
+                                <p id="ff-interface" class="text-xs text-cyan-400 code-font mt-1">Interfaz: SATA III
+                                    (AHCI)</p>
+                            </div>
+                            <span id="ff-target"
+                                class="px-2.5 py-1 text-xs font-bold rounded bg-cyan-950 text-cyan-400 border border-cyan-800/40">Consumo
+                                General / Legacy</span>
+                        </div>
+
+                        <!-- Panel del Render / Diagrama Esquemático del Factor de Forma -->
+                        <div
+                            class="bg-slate-900/40 rounded-xl p-4 border border-gray-800/80 flex flex-col md:flex-row items-center gap-6">
+                            <!-- Esquemático dinámico (SVG) -->
+                            <div id="ff-diagram-container"
+                                class="w-full md:w-1/2 flex justify-center bg-[#090d16] p-4 rounded-lg border border-gray-800 min-h-[180px] items-center">
+                                <!-- Se inyectará código SVG dinámico desde JS -->
+                            </div>
+                            <div class="w-full md:w-1/2 space-y-2 text-xs">
+                                <h4 class="text-cyan-400 font-bold uppercase code-font flex items-center gap-1.5">
+                                    <i data-lucide="info" class="w-4 h-4"></i> Especificación de Conexión
+                                </h4>
+                                <p id="ff-connection-specs" class="text-gray-300 leading-relaxed">
+                                    Análisis físico del tipo de bus eléctrico, pines de conexión y protocolo de
+                                    comunicación del estándar.
+                                </p>
+                            </div>
+                        </div>
+
+                        <p id="ff-desc" class="text-sm text-gray-300 leading-relaxed">
+                            Formato heredado del tamaño físico de los HDD tradicionales de 2.5 pulgadas. Utiliza el
+                            conector SATA convencional de datos y alimentación. Su velocidad máxima práctica está fija
+                            en 600 MB/s debido a las limitaciones inherentes del protocolo de comunicación SATA III.
+                        </p>
+
+                        <!-- Panel de Métricas / Sliders Interactivos para estudiantes de SO -->
+                        <div class="bg-gray-900/70 p-5 rounded-xl border border-gray-800 space-y-6">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider code-font">Panel de
+                                Métricas Dinámicas y Climatología de Operación</h4>
+
+                            <!-- Visualizador de Métricas en Vivo -->
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="p-3 bg-gray-950 border border-gray-800 rounded-lg text-center">
+                                    <div class="text-[10px] text-gray-500 font-bold uppercase">Secuencial</div>
+                                    <div id="metric-seq" class="text-lg font-bold text-cyan-400 code-font mt-1">560 MB/s
+                                    </div>
+                                </div>
+                                <div class="p-3 bg-gray-950 border border-gray-800 rounded-lg text-center">
+                                    <div class="text-[10px] text-gray-500 font-bold uppercase">IOPS (Lectura)</div>
+                                    <div id="metric-iops" class="text-lg font-bold text-cyan-400 code-font mt-1">98,000
+                                    </div>
+                                </div>
+                                <div class="p-3 bg-gray-950 border border-gray-800 rounded-lg text-center">
+                                    <div class="text-[10px] text-gray-500 font-bold uppercase">Vida Útil (TBW)</div>
+                                    <div id="metric-tbw" class="text-lg font-bold text-purple-400 code-font mt-1">300
+                                        TBW</div>
+                                </div>
+                                <div class="p-3 bg-gray-950 border border-gray-800 rounded-lg text-center">
+                                    <div class="text-[10px] text-gray-500 font-bold uppercase">DWPD</div>
+                                    <div id="metric-dwpd" class="text-lg font-bold text-purple-400 code-font mt-1">0.3 /
+                                        día</div>
+                                </div>
+                            </div>
+
+                            <!-- Simulador de Temperatura e Impacto de Rendimiento (Thermal Throttling) -->
+                            <div class="space-y-4 pt-2">
+                                <div class="flex justify-between items-center">
+                                    <div class="flex items-center space-x-2">
+                                        <i data-lucide="thermometer" class="w-4 h-4 text-orange-400"></i>
+                                        <span class="text-xs font-bold text-gray-300">Temperatura Interna del
+                                            Controlador</span>
+                                    </div>
+                                    <span id="temp-indicator" class="text-xs font-bold text-orange-400 code-font">35°C
+                                        (Estable)</span>
+                                </div>
+
+                                <input type="range" id="temp-slider" min="20" max="95" value="35"
+                                    oninput="updateTemperatureSimulation(this.value)"
+                                    class="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-orange-500">
+
+                                <div id="throttling-alert" class="p-3 rounded-lg text-xs hidden transition-all">
+                                    <!-- Dinámico -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 6: CASOS DE USO Y RECOMENDACIÓN DE ARQUITECTURAS -->
+            <section id="tab-casos-uso" class="tab-content hidden space-y-6">
+                <div class="border-b border-gray-800 pb-4">
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <span
+                            class="px-2 py-1 bg-amber-500/10 text-amber-400 text-xs rounded border border-amber-500/30">MÓDULO
+                            06</span>
+                        Recomendador de Almacenamiento por Carga de Trabajo
+                    </h2>
+                    <p class="text-sm text-gray-400 mt-1">Selecciona un escenario de uso real del sistema operativo o
+                        software empresarial para calcular y recomendar la arquitectura idónea.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Selector de Casos de Uso -->
+                    <div class="bg-cyber-panel border border-gray-800 rounded-2xl p-5 space-y-3">
+                        <h3 class="text-sm font-bold text-white border-b border-gray-800 pb-2">Selecciona un Escenario
+                        </h3>
+
+                        <div class="space-y-2">
+                            <button onclick="selectUseCase('boot')" id="use-boot"
+                                class="use-btn w-full p-3 rounded-lg border border-cyan-500 bg-cyan-950/20 text-left text-xs transition-all flex items-center space-x-3">
+                                <i data-lucide="power" class="w-4 h-4 text-cyan-400"></i>
+                                <div>
+                                    <div class="font-bold text-white">Arranque de Sistema Operativo</div>
+                                    <div class="text-[10px] text-gray-400">Carga de kernel, drivers y servicios</div>
+                                </div>
+                            </button>
+
+                            <button onclick="selectUseCase('video')" id="use-video"
+                                class="use-btn w-full p-3 rounded-lg border border-gray-800 bg-gray-900/40 text-left text-xs transition-all flex items-center space-x-3">
+                                <i data-lucide="film" class="w-4 h-4 text-gray-400"></i>
+                                <div>
+                                    <div class="font-bold text-white">Edición de Video 4K/8K RAW</div>
+                                    <div class="text-[10px] text-gray-400">Altas lecturas y escrituras secuenciales
+                                    </div>
+                                </div>
+                            </button>
+
+                            <button onclick="selectUseCase('database')" id="use-database"
+                                class="use-btn w-full p-3 rounded-lg border border-gray-800 bg-gray-900/40 text-left text-xs transition-all flex items-center space-x-3">
+                                <i data-lucide="database" class="w-4 h-4 text-gray-400"></i>
+                                <div>
+                                    <div class="font-bold text-white">Base de Datos de Alta Transaccionalidad</div>
+                                    <div class="text-[10px] text-gray-400">Carga masiva de IOPS aleatorios 4K</div>
+                                </div>
+                            </button>
+
+                            <button onclick="selectUseCase('gaming')" id="use-gaming"
+                                class="use-btn w-full p-3 rounded-lg border border-gray-800 bg-gray-900/40 text-left text-xs transition-all flex items-center space-x-3">
+                                <i data-lucide="gamepad-2" class="w-4 h-4 text-gray-400"></i>
+                                <div>
+                                    <div class="font-bold text-white">Gaming Moderno (DirectStorage)</div>
+                                    <div class="text-[10px] text-gray-400">Carga directa a VRAM de la GPU</div>
+                                </div>
+                            </button>
+
+                            <button onclick="selectUseCase('ai')" id="use-ai"
+                                class="use-btn w-full p-3 rounded-lg border border-gray-800 bg-gray-900/40 text-left text-xs transition-all flex items-center space-x-3">
+                                <i data-lucide="brain-circuit" class="w-4 h-4 text-gray-400"></i>
+                                <div>
+                                    <div class="font-bold text-white">Entrenamiento de Inteligencia Artificial</div>
+                                    <div class="text-[10px] text-gray-400">Ingesta masiva de terabytes de data sets
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Diagnóstico Técnico y Recomendaciones -->
+                    <div
+                        class="lg:col-span-2 bg-gray-950/90 border border-gray-800 rounded-2xl p-6 space-y-6 flex flex-col justify-between">
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-3">
+                                <div id="use-icon-container"
+                                    class="p-3 bg-cyan-950 text-cyan-400 rounded-xl border border-cyan-500/30">
+                                    <i id="use-icon" data-lucide="power" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h3 id="use-title" class="text-lg font-bold text-white">Arranque del Sistema
+                                        Operativo</h3>
+                                    <p class="text-xs text-gray-400">Análisis de la arquitectura de entrada/salida
+                                        involucrada</p>
+                                </div>
+                            </div>
+
+                            <hr class="border-gray-800">
+
+                            <!-- Requisitos técnicos del caso de uso -->
+                            <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                                <div class="bg-gray-900 p-2.5 rounded-lg">
+                                    <div class="text-gray-500">Métrica Crítica</div>
+                                    <div id="use-req-metric" class="font-bold text-cyan-400 mt-1">Latencia Aleatoria
+                                    </div>
+                                </div>
+                                <div class="bg-gray-900 p-2.5 rounded-lg">
+                                    <div class="text-gray-500">Ancho Banda Mínimo</div>
+                                    <div id="use-req-speed" class="font-bold text-white mt-1">~500 MB/s</div>
+                                </div>
+                                <div class="bg-gray-900 p-2.5 rounded-lg">
+                                    <div class="text-gray-500">Patrón E/S Común</div>
+                                    <div id="use-req-pattern" class="font-bold text-purple-400 mt-1">Lectura Aleatoria
+                                        4K</div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider code-font">Análisis
+                                    Físico y de Sistema Operativo</h4>
+                                <p id="use-analysis" class="text-sm text-gray-300 leading-relaxed">
+                                    Durante el boot, el sistema operativo realiza miles de lecturas aleatorias de
+                                    pequeños archivos de configuración, registros y controladores de hardware. Un HDD
+                                    tradicional sufre cuellos de botella severos debido a los tiempos de búsqueda
+                                    magnética. Un SSD básico soluciona el 90% del problema, mientras que NVMe reduce el
+                                    boot a solo segundos.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- RECOMENDACIÓN FINAL -->
+                        <div
+                            class="p-5 bg-gradient-to-r from-emerald-950/40 to-cyan-950/40 border-2 border-emerald-500/30 rounded-xl space-y-3">
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
+                                <span
+                                    class="text-xs font-bold text-emerald-400 uppercase tracking-wider code-font">Solución
+                                    Recomendada por el Laboratorio</span>
+                            </div>
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                                <div>
+                                    <h4 id="use-recommendation-title" class="text-lg font-bold text-white">SSD SATA III
+                                        (Mínimo) o NVMe M.2 Comercial</h4>
+                                    <p id="use-recommendation-desc" class="text-xs text-gray-300 mt-1">Se recomienda SSD
+                                        NVMe M.2 con interfaz PCIe para mejorar los tiempos de respuesta del scheduler y
+                                        el file system.</p>
+                                </div>
+                                <div
+                                    class="px-3 py-1.5 bg-emerald-950 text-emerald-400 border border-emerald-500/30 rounded font-mono text-xs font-bold">
+                                    E/S Eficiente
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 7: QUIZ / EVALUACIÓN TÉCNICA -->
+            <section id="tab-quiz" class="tab-content hidden space-y-6">
+                <div class="border-b border-gray-800 pb-4 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                            <span
+                                class="px-2 py-1 bg-cyan-500/10 text-cyan-400 text-xs rounded border border-cyan-500/30">MÓDULO
+                                07</span>
+                            Autoevaluación de Nivel Académico
+                        </h2>
+                        <p class="text-sm text-gray-400 mt-1">Verifica tus conocimientos sobre la arquitectura de
+                            almacenamiento SSD antes de concluir el laboratorio.</p>
+                    </div>
+                    <!-- Score global -->
+                    <div class="bg-gray-900 border border-gray-800 px-4 py-2 rounded-xl text-center">
+                        <span class="text-xs text-gray-400 block uppercase">Puntaje</span>
+                        <span id="quiz-score" class="text-xl font-bold text-cyan-400 code-font">0 / 5</span>
+                    </div>
+                </div>
+
+                <!-- Formulario de preguntas -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div class="lg:col-span-8 space-y-6">
+                        <!-- Pregunta 1 -->
+                        <div class="bg-cyber-panel border border-gray-800 rounded-2xl p-5 space-y-3">
+                            <h3 class="text-sm font-bold text-white flex items-start gap-2">
+                                <span class="bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded text-xs font-mono">P1</span>
+                                ¿Cuál es la diferencia fundamental entre los términos M.2 y NVMe?
+                            </h3>
+                            <div class="grid grid-cols-1 gap-2 text-xs pt-2">
+                                <button onclick="checkAnswer(1, 'A', this)"
+                                    class="quiz-opt-btn text-left p-3 rounded-lg border border-gray-800 bg-gray-900/40 hover:bg-gray-800 transition-all text-gray-300">
+                                    <strong>A.</strong> M.2 es el factor de forma físico (el tamaño y conector de la
+                                    tarjeta), mientras que NVMe es el protocolo de comunicación lógico que aprovecha el
+                                    bus PCIe.
+                                </button>
+                                <button onclick="checkAnswer(1, 'B', this)"
+                                    class="quiz-opt-btn text-left p-3 rounded-lg border border-gray-800 bg-gray-900/40 hover:bg-gray-800 transition-all text-gray-300">
+                                    <strong>B.</strong> NVMe es el tipo de conector para el motherboard and M.2 es el
+                                    microchip de almacenamiento volátil caché DRAM.
+                                </button>
+                                <button onclick="checkAnswer(1, 'C', this)"
+                                    class="quiz-opt-btn text-left p-3 rounded-lg border border-gray-800 bg-gray-900/40 hover:bg-gray-800 transition-all text-gray-300">
+                                    <strong>C.</strong> No hay diferencia; ambos términos significan exactamente lo
+                                    mismo en arquitectura de sistemas.
+                                </button>
+                            </div>
+                            <p id="feedback-1" class="text-xs mt-2 hidden"></p>
+                        </div>
+
+                        <!-- Pregunta 2 -->
+                        <div class="bg-cyber-panel border border-gray-800 rounded-2xl p-5 space-y-3">
+                            <h3 class="text-sm font-bold text-white flex items-start gap-2">
+                                <span class="bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded text-xs font-mono">P2</span>
+                                ¿Por qué NVMe alcanza latencias y anchos de banda muy superiores a SATA/AHCI?
+                            </h3>
+                            <div class="grid grid-cols-1 gap-2 text-xs pt-2">
+                                <button onclick="checkAnswer(2, 'A', this)"
+                                    class="quiz-opt-btn text-left p-3 rounded-lg border border-gray-800 bg-gray-900/40 hover:bg-gray-800 transition-all text-gray-300">
+                                    <strong>A.</strong> Porque NVMe utiliza un motor de imanes mejorado y discos que
+                                    giran a más de 15,000 RPM.
+                                </button>
+                                <button onclick="checkAnswer(2, 'B', this)"
+                                    class="quiz-opt-btn text-left p-3 rounded-lg border border-gray-800 bg-gray-900/40 hover:bg-gray-800 transition-all text-gray-300">
+                                    <strong>B.</strong> Porque sustituye la interfaz serial de un solo comando de AHCI
+                                    por un bus PCIe multipista con soporte para hasta 64,000 colas paralelas mapeadas
+                                    directamente en RAM.
+                                </button>
+                                <button onclick="checkAnswer(2, 'C', this)"
+                                    class="quiz-opt-btn text-left p-3 rounded-lg border border-gray-800 bg-gray-900/40 hover:bg-gray-800 transition-all text-gray-300">
+                                    <strong>C.</strong> Debido a que limita el voltaje de las celdas de silicio de
+                                    manera que no se requiera sincronización con el reloj del bus del sistema.
+                                </button>
+                            </div>
+                            <p id="feedback-2" class="text-xs mt-2 hidden"></p>
+                        </div>
+
+                        <!-- Pregunta 3 -->
+                        <div class="bg-cyber-panel border border-gray-800 rounded-2xl p-5 space-y-3">
+                            <h3 class="text-sm font-bold text-white flex items-start gap-2">
+                                <span class="bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded text-xs font-mono">P3</span>
+                                ¿Qué problema de la memoria flash NAND soluciona la técnica de "Wear Leveling"?
+                            </h3>
+                            <div class="grid grid-cols-1 gap-2 text-xs pt-2">
+                                <button onclick="checkAnswer(3, 'A', this)"
+                                    class="quiz-opt-btn text-left p-3 rounded-lg border border-gray-800 bg-gray-900/40 hover:bg-gray-800 transition-all text-gray-300">
+                                    <strong>A.</strong> El sobrecalentamiento del disipador de aluminio al realizar
+                                    tareas pesadas en base de datos.
+                                </button>
+                                <button onclick="checkAnswer(3, 'B', this)"
+                                    class="quiz-opt-btn text-left p-3 rounded-lg border border-gray-800 bg-gray-900/40 hover:bg-gray-800 transition-all text-gray-300">
+                                    <strong>B.</strong> El desgaste asimétrico de las celdas físicas, distribuyendo de
+                                    forma homogénea los ciclos de borrado/escritura (P/E) por todos los bloques para
+                                    prolongar la vida útil del SSD.
+                                </button>
+                                <button onclick="checkAnswer(3, 'C', this)"
+                                    class="quiz-opt-btn text-left p-3 rounded-lg border border-gray-800 bg-gray-900/40 hover:bg-gray-800 transition-all text-gray-300">
+                                    <strong>C.</strong> La fragmentación lógica de los sectores NTFS/EXT4.
+                                </button>
+                            </div>
+                            <p id="feedback-3" class="text-xs mt-2 hidden"></p>
+                        </div>
+
+                        <!-- Pregunta 4 -->
+                        <div class="bg-cyber-panel border border-gray-800 rounded-2xl p-5 space-y-3">
+                            <h3 class="text-sm font-bold text-white flex items-start gap-2">
+                                <span class="bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded text-xs font-mono">P4</span>
+                                ¿Qué representa la especificación métrica de TBW?
+                            </h3>
+                            <div class="grid grid-cols-1 gap-2 text-xs pt-2">
+                                <button onclick="checkAnswer(4, 'A', this)"
+                                    class="quiz-opt-btn text-left p-3 rounded-lg border border-gray-800 bg-gray-900/40 hover:bg-gray-800 transition-all text-gray-300">
+                                    <strong>A.</strong> Terabytes Written (Terabytes Escritos): La cantidad total de
+                                    datos acumulados que se garantiza que un SSD puede escribir antes de que sus celdas
+                                    se degraden por completo.
+                                </button>
+                                <button onclick="checkAnswer(4, 'B', this)"
+                                    class="quiz-opt-btn text-left p-3 rounded-lg border border-gray-800 bg-gray-900/40 hover:bg-gray-800 transition-all text-gray-300">
+                                    <strong>B.</strong> Tiempo de Búsqueda Web: La velocidad de descarga en servidores
+                                    Cloud de alto nivel.
+                                </button>
+                                <button onclick="checkAnswer(4, 'C', this)"
+                                    class="quiz-opt-btn text-left p-3 rounded-lg border border-gray-800 bg-gray-900/40 hover:bg-gray-800 transition-all text-gray-300">
+                                    <strong>C.</strong> Total Bytes Width: El número físico de canales paralelos de
+                                    datos del bus.
+                                </button>
+                            </div>
+                            <p id="feedback-4" class="text-xs mt-2 hidden"></p>
+                        </div>
+
+                        <!-- Pregunta 5 -->
+                        <div class="bg-cyber-panel border border-gray-800 rounded-2xl p-5 space-y-3">
+                            <h3 class="text-sm font-bold text-white flex items-start gap-2">
+                                <span class="bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded text-xs font-mono">P5</span>
+                                ¿Por qué los procesos de Garbage Collection y TRIM son indispensables para mantener el
+                                rendimiento de escritura de un SSD a lo largo del tiempo?
+                            </h3>
+                            <div class="grid grid-cols-1 gap-2 text-xs pt-2">
+                                <button onclick="checkAnswer(5, 'A', this)"
+                                    class="quiz-opt-btn text-left p-3 rounded-lg border border-gray-800 bg-gray-900/40 hover:bg-gray-800 transition-all text-gray-300">
+                                    <strong>A.</strong> Para enfriar los controladores NAND permitiendo que el sistema
+                                    operativo apague los ventiladores internos del gabinete de forma programada.
+                                </button>
+                                <button onclick="checkAnswer(5, 'B', this)"
+                                    class="quiz-opt-btn text-left p-3 rounded-lg border border-gray-800 bg-gray-900/40 hover:bg-gray-800 transition-all text-gray-300">
+                                    <strong>B.</strong> Debido a que la NAND no puede sobreescribir datos directamente
+                                    (requiere borrar bloques enteros antes de volver a escribir páginas). GC consolida
+                                    bloques sucios, y TRIM informa qué páginas lógicas están libres para evitar mover
+                                    datos basura innecesariamente.
+                                </button>
+                                <button onclick="checkAnswer(5, 'C', this)"
+                                    class="quiz-opt-btn text-left p-3 rounded-lg border border-gray-800 bg-gray-900/40 hover:bg-gray-800 transition-all text-gray-300">
+                                    <strong>C.</strong> Se encargan de formatear físicamente el SSD a bajo nivel cada
+                                    vez que la computadora inicia sesión.
+                                </button>
+                            </div>
+                            <p id="feedback-5" class="text-xs mt-2 hidden"></p>
+                        </div>
+                    </div>
+
+                    <!-- Panel Resumen de la Evaluación -->
+                    <div class="lg:col-span-4 bg-cyber-panel border border-gray-800 rounded-2xl p-5 h-fit space-y-4">
+                        <h3 class="text-sm font-bold text-white border-b border-gray-800 pb-2">Resumen Académico</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Esta evaluación técnica está alineada con los planes curriculares de Ingeniería de Sistemas
+                            e Informática para validar la comprensión de la interacción entre Sistemas Operativos (TRIM,
+                            File Systems, Colas de E/S) y el Hardware de Estado Sólido.
+                        </p>
+                        <div class="p-3 bg-gray-900 rounded-xl border border-gray-800 text-xs">
+                            <div class="flex justify-between py-1 border-b border-gray-800">
+                                <span class="text-gray-400">Preguntas Totales:</span>
+                                <span class="font-bold text-white">5</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-gray-800">
+                                <span class="text-gray-400">Mínimo para aprobar:</span>
+                                <span class="font-bold text-amber-400">4 / 5</span>
+                            </div>
+                            <div class="flex justify-between py-1">
+                                <span class="text-gray-400">Estado:</span>
+                                <span id="quiz-status-text" class="font-bold text-red-400">Pendiente</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer
+        class="border-t border-gray-800 bg-cyber-bg/95 py-4 px-6 flex justify-between items-center text-xs text-gray-500">
+        <p>© 2026 Laboratorio Virtual de Arquitectura de Computadoras. Diseñado para estudiantes de ingeniería.</p>
+        <p class="code-font">v2.1-stable // WebGL-AR Engine Enabled</p>
+    </footer>
+
+    <!-- LOGICA JAVASCRIPT DEL SISTEMA -->
+    <script>
+        // Inicializar Iconos Lucide
+        lucide.createIcons();
+
+        // CONTROL DE PESTAÑAS (TABS)
+        function switchTab(tabId) {
+            // Ocultar todos los contenidos de las pestañas
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+
+            // Remover estilos activos de los botones del menú
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-cyan-950/40', 'text-cyan-400', 'border-cyan-500');
+                btn.classList.add('text-gray-400', 'border-transparent');
+            });
+
+            // Mostrar la pestaña seleccionada
+            document.getElementById(tabId).classList.remove('hidden');
+
+            // Colocar estilo activo al botón actual
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-gray-400', 'border-transparent');
+                activeBtn.classList.add('bg-cyan-950/40', 'text-cyan-400', 'border-cyan-500');
+            }
+
+            // Iniciar o ajustar animaciones específicas según pestaña
+            if (tabId === 'tab-carreteras') {
+                setTimeout(initRoadSimulation, 50);
+            }
+            if (tabId === 'tab-factores-forma') {
+                // Forzar renderizado del factor de forma activo al cargar la sección
+                setTimeout(() => { selectFormFactor(currentFF); }, 50);
+            }
+        }
+
+        /* -------------------------------------------------------------
+           MODULO 1: INTEGRACIÓN THREE.JS & REALIDAD AUMENTADA (Web-AR)
+           ------------------------------------------------------------- */
+        let scene, camera, renderer, controls, hddGroup, ssdGroup;
+        let isARActive = false;
+        let currentModel = 'hdd'; // 'hdd' o 'ssd'
+        let stream = null;
+        let accessAnimationTimer = null;
+        let animationMode = 'normal'; // 'normal', 'slow', 'electronic', 'nvme'
+
+        // Inicializar Escena 3D
+        function initThreeJS() {
+            const container = document.getElementById('threejs-canvas-container');
+            if (!container) return;
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // Escena y Cámara
+            scene = new THREE.Scene();
+
+            // Fondo transparente por defecto para permitir ver la cámara detrás en AR
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+            camera.position.set(0, 10, 15);
+
+            // Renderizador
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Controles de orbita
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2; // Evitar ir por debajo del suelo simulado
+
+            // Iluminación
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
+
+            const pointLight = new THREE.PointLight(0x06b6d4, 1.5, 30);
+            pointLight.position.set(0, 4, 0);
+            scene.add(pointLight);
+
+            // CREACIÓN DE MODELOS PROCEDURALES EN THREEJS (Para evitar dependencias externas rotas)
+            createHDDModel();
+            createSSDModel();
+
+            // Agregar HDD a la escena al inicio
+            scene.add(hddGroup);
+
+            // Ajustar tamaño al redimensionar ventana
+            window.addEventListener('resize', onWindowResize);
+
+            // Bucle de Animación
+            animateThree();
+        }
+
+        // Construir Modelo HDD Procedural
+        function createHDDModel() {
+            hddGroup = new THREE.Group();
+
+            // Chasis Base (Gris Metalico)
+            const chassisGeo = new THREE.BoxGeometry(6, 0.5, 8);
+            const chassisMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.2 });
+            const chassis = new THREE.Mesh(chassisGeo, chassisMat);
+            chassis.position.y = -0.25;
+            hddGroup.add(chassis);
+
+            // Plato Magnético Giratorio (Cilindro Plateado)
+            const platterGeo = new THREE.CylinderGeometry(2.5, 2.5, 0.05, 32);
+            const platterMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.1 });
+            const platter = new THREE.Mesh(platterGeo, platterMat);
+            platter.position.set(0, 0.05, 1);
+            platter.name = 'platter';
+            hddGroup.add(platter);
+
+            // Eje central del plato
+            const spindleGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.3, 16);
+            const spindleMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.3 });
+            const spindle = new THREE.Mesh(spindleGeo, spindleMat);
+            spindle.position.set(0, 0.15, 1);
+            hddGroup.add(spindle);
+
+            // Brazo Actuador / Cabezal Mecánico
+            const actuatorGroup = new THREE.Group();
+            actuatorGroup.position.set(2, 0.1, -2);
+            actuatorGroup.name = 'actuator';
+
+            // Base redonda del actuador
+            const actBaseGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.2, 16);
+            const actBaseMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8 });
+            const actBase = new THREE.Mesh(actBaseGeo, actBaseMat);
+            actuatorGroup.add(actBase);
+
+            // Brazo de aluminio largo
+            const armGeo = new THREE.BoxGeometry(0.2, 0.1, 4.5);
+            const armMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.9, roughness: 0.2 });
+            const arm = new THREE.Mesh(armGeo, armMat);
+            arm.position.set(-0.8, 0.1, 1.8);
+            arm.rotation.y = -0.3; // Apuntar hacia el plato
+            actuatorGroup.add(arm);
+
+            // Punta lectora (cabezal electromagnético diminuto)
+            const headGeo = new THREE.BoxGeometry(0.3, 0.05, 0.3);
+            const headMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.set(-1.45, 0.1, 4.0);
+            actuatorGroup.add(head);
+
+            hddGroup.add(actuatorGroup);
+
+            // Circuito de conexión trasero (PCB decorativo)
+            const hddPcbGeo = new THREE.BoxGeometry(5.6, 0.1, 2);
+            const hddPcbMat = new THREE.MeshStandardMaterial({ color: 0x065f46 });
+            const hddPcb = new THREE.Mesh(hddPcbGeo, hddPcbMat);
+            hddPcb.position.set(0, -0.1, -2.8);
+            hddGroup.add(hddPcb);
+        }
+
+        // Construir Modelo SSD Procedural (Chips e interconectores)
+        function createSSDModel() {
+            ssdGroup = new THREE.Group();
+
+            // Placa PCB M.2 Negra/Verde
+            const pcbGeo = new THREE.BoxGeometry(4, 0.1, 8);
+            const pcbMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.5 });
+            const pcb = new THREE.Mesh(pcbGeo, pcbMat);
+            pcb.position.y = -0.05;
+            ssdGroup.add(pcb);
+
+            // Conector M.2 de cobre (Dorado en el extremo superior)
+            const goldGeo = new THREE.BoxGeometry(3.6, 0.05, 0.5);
+            const goldMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.8, roughness: 0.1 });
+            const gold = new THREE.Mesh(goldGeo, goldMat);
+            gold.position.set(0, 0.05, 3.75);
+            ssdGroup.add(gold);
+
+            // Chip Controlador Principal (Negro Plateado Central)
+            const ctrlGeo = new THREE.BoxGeometry(2.2, 0.3, 2.2);
+            const ctrlMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.2 });
+            const ctrl = new THREE.Mesh(ctrlGeo, ctrlMat);
+            ctrl.position.set(0, 0.1, 1.5);
+            ssdGroup.add(ctrl);
+
+            // Detalles sobre el controlador (Logo simulado)
+            const logoGeo = new THREE.BoxGeometry(1.6, 0.02, 1.6);
+            const logoMat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, emissive: 0x06b6d4, emissiveIntensity: 0.5 });
+            const logo = new THREE.Mesh(logoGeo, logoMat);
+            logo.position.set(0, 0.26, 1.5);
+            ssdGroup.add(logo);
+
+            // Chips NAND Flash (Dos grandes rectangulares en la parte inferior)
+            const flashMat = new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.3, roughness: 0.4 });
+
+            const nand1Geo = new THREE.BoxGeometry(2.4, 0.25, 2.2);
+            const nand1 = new THREE.Mesh(nand1Geo, flashMat);
+            nand1.position.set(0, 0.1, -1.2);
+            ssdGroup.add(nand1);
+
+            const nand2Geo = new THREE.BoxGeometry(2.4, 0.25, 2.2);
+            const nand2 = new THREE.Mesh(nand2Geo, flashMat);
+            nand2.position.set(0, 0.1, -3.6);
+            ssdGroup.add(nand2);
+
+            // DRAM Cache (Chip rectangular pequeño a un lado del controlador)
+            const dramGeo = new THREE.BoxGeometry(1.2, 0.2, 0.8);
+            const dramMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.4 });
+            const dram = new THREE.Mesh(dramGeo, dramMat);
+            dram.position.set(-1.1, 0.1, 3.0);
+            ssdGroup.add(dram);
+
+            // PMIC (Power Management IC - Chip diminuto)
+            const pmicGeo = new THREE.BoxGeometry(0.6, 0.15, 0.6);
+            const pmicMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
+            const pmic = new THREE.Mesh(pmicGeo, pmicMat);
+            pmic.position.set(1.1, 0.08, 3.0);
+            ssdGroup.add(pmic);
+
+            // Líneas de comunicación impresas que emiten luz (Buses de cobre de datos)
+            const busMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4 });
+            const traceGeo = new THREE.BoxGeometry(0.05, 0.02, 5);
+
+            const trace1 = new THREE.Mesh(traceGeo, busMat);
+            trace1.position.set(-0.5, 0.01, -0.5);
+            ssdGroup.add(trace1);
+
+            const trace2 = new THREE.Mesh(traceGeo, busMat);
+            trace2.position.set(0.5, 0.01, -0.5);
+            ssdGroup.add(trace2);
+        }
+
+        // Cambiar Modelo Visualizado (HDD <--> SSD)
+        function setThreeModel(modelName) {
+            currentModel = modelName;
+
+            // Actualizar Botones de selección en el DOM
+            const btnHdd = document.getElementById('btn-model-hdd');
+            const btnSsd = document.getElementById('btn-model-ssd');
+
+            if (modelName === 'hdd') {
+                scene.remove(ssdGroup);
+                scene.add(hddGroup);
+                btnHdd.className = "px-4 py-1.5 rounded text-xs font-semibold bg-cyan-600 text-white transition-all";
+                btnSsd.className = "px-4 py-1.5 rounded text-xs font-semibold text-gray-400 hover:text-gray-100 transition-all";
+
+                document.getElementById('animation-title').innerText = "Lectura Mecánica HDD";
+                document.getElementById('animation-desc').innerText = "El motor hace girar el plato a 7200 RPM mientras el brazo magnético se desplaza radialmente para buscar sectores físicos con una latencia de ~12ms.";
+            } else {
+                scene.remove(hddGroup);
+                scene.add(ssdGroup);
+                btnHdd.className = "px-4 py-1.5 rounded text-xs font-semibold text-gray-400 hover:text-gray-100 transition-all";
+                btnSsd.className = "px-4 py-1.5 rounded text-xs font-semibold bg-cyan-600 text-white transition-all";
+
+                document.getElementById('animation-title').innerText = "Acceso Electrónico SSD";
+                document.getElementById('animation-desc').innerText = "El direccionamiento es puramente electrónico a través del controlador del SSD, logrando paralelizar operaciones en múltiples canales NAND con latencias ínfimas.";
+            }
+        }
+
+        // Resetear la posición de la Cámara
+        function resetCamera() {
+            camera.position.set(0, 10, 15);
+            controls.target.set(0, 0, 0);
+            controls.update();
+        }
+
+        // Redimensionado del canvas
+        function onWindowResize() {
+            const container = document.getElementById('threejs-canvas-container');
+            if (!container) return;
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+
+        // Bucle de Render de ThreeJS y animaciones de rotación física
+        function animateThree() {
+            requestAnimationFrame(animateThree);
+
+            // ANIMACIONES BÁSICAS EN CADA FRAME
+
+            // 1. Si el HDD está en la escena, animar el plato rotatorio
+            if (currentModel === 'hdd' && hddGroup) {
+                const platter = hddGroup.getObjectByName('platter');
+                const actuator = hddGroup.getObjectByName('actuator');
+
+                if (platter) {
+                    if (animationMode === 'slow') {
+                        platter.rotation.y += 0.05; // Girar despacio
+                    } else if (animationMode === 'electronic' || animationMode === 'nvme') {
+                        platter.rotation.y += 0.25; // Girar súper rápido
+                    } else {
+                        platter.rotation.y += 0.12; // Girar estándar
+                    }
+                }
+
+                // Animar el brazo magnético moviéndose levemente buscando pistas
+                if (actuator) {
+                    const time = Date.now() * 0.003;
+                    if (animationMode === 'slow') {
+                        actuator.rotation.y = Math.sin(time) * 0.12 - 0.25;
+                    } else {
+                        actuator.rotation.y = Math.sin(time * 2) * 0.2 - 0.25;
+                    }
+                }
+            }
+
+            // 2. Si el SSD está en escena, animar un suave pulso de luces (simulando actividad eléctrica)
+            if (currentModel === 'ssd' && ssdGroup) {
+                const time = Date.now() * 0.002;
+                ssdGroup.rotation.y = Math.sin(time * 0.1) * 0.05; // Oscilación suave
+            }
+
+            if (controls) controls.update();
+            if (renderer && scene && camera) renderer.render(scene, camera);
+        }
+
+        // Activar la animación de lectura según el perfil seleccionado
+        function triggerAccessAnimation(profile) {
+            animationMode = profile;
+            const titleEl = document.getElementById('animation-title');
+            const descEl = document.getElementById('animation-desc');
+
+            if (profile === 'slow') {
+                titleEl.innerText = "Acceso Mecánico HDD - Lectura Lenta";
+                descEl.innerText = "El motor inicia aceleración. El cabezal tarda ~12 milisegundos en localizar los sectores magnéticos contiguos debido a la inercia del motor y de la bobina de voz.";
+            } else if (profile === 'electronic') {
+                titleEl.innerText = "Acceso Electrónico SSD - Bus SATA";
+                descEl.innerText = "La CPU pide datos por canal SATA. No hay partes móviles. El controlador lee la tabla FTL y accede a las celdas NAND en microsegundos, pero está atorado en la cola única de AHCI.";
+            } else if (profile === 'nvme') {
+                titleEl.innerText = "Operación Paralela PCIe + NVMe - Ultrarrápido";
+                descEl.innerText = "Cruce de canales masivo sin fricción física. Multi-pipeline ejecutándose a velocidad de PCIe Gen 4/5. La latencia cae por debajo de 10 microsegundos.";
+            }
+
+            // Resetear perfil a normal tras unos segundos
+            if (accessAnimationTimer) clearTimeout(accessAnimationTimer);
+            accessAnimationTimer = setTimeout(() => {
+                animationMode = 'normal';
+            }, 8000);
+        }
+
+        // Simular Realidad Aumentada Passthrough mediante Webcam
+        async function toggleARPassthrough() {
+            const video = document.getElementById('ar-video');
+            const btnText = document.getElementById('ar-btn-text');
+            const btn = document.getElementById('btn-ar-mode');
+
+            if (!isARActive) {
+                try {
+                    // Solicitar permiso de cámara
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'environment' } // Cámara trasera en móviles
+                    });
+                    video.srcObject = stream;
+                    video.style.opacity = '1';
+
+                    // Hacer que el renderizador tenga fondo transparente
+                    renderer.setClearColor(0x000000, 0);
+
+                    isARActive = true;
+                    btnText.innerText = "Desactivar AR";
+                    btn.classList.remove('bg-purple-600/90');
+                    btn.classList.add('bg-cyber-danger/90');
+
+                    // Notificar por consola interna simulada
+                    console.log("Web-AR Passthrough Inicializado exitosamente.");
+                } catch (err) {
+                    console.error("No se pudo acceder a la cámara:", err);
+                    alert("Error al inicializar la cámara. Asegúrate de otorgar permisos de cámara en tu navegador para vivir la experiencia de realidad aumentada.");
+                }
+            } else {
+                // Detener transmisión de video
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                video.srcObject = null;
+                video.style.opacity = '0';
+
+                // Fondo oscuro opaco de vuelta
+                renderer.setClearColor(0x0a0f1d, 1);
+
+                isARActive = false;
+                btnText.innerText = "Activar AR (Webcam)";
+                btn.classList.remove('bg-cyber-danger/90');
+                btn.classList.add('bg-purple-600/90');
+            }
+        }
+
+
+        /* -------------------------------------------------------------
+           MODULO 2: EXPLORACIÓN "DENTRO DE UN SSD"
+           ------------------------------------------------------------- */
+        const componentsData = {
+            controller: {
+                title: "Controlador SSD (ASIC)",
+                subtitle: "El Cerebro del SSD",
+                desc: "Es un circuito integrado de aplicación específica (ASIC) que funciona como el CPU del SSD. Administra las interfaces físicas de comunicación, la corrección de errores (ECC), el firmware y ejecuta el FTL. Un buen controlador define la velocidad y eficiencia global del disco.",
+                icon: "cpu",
+                color: "cyan",
+                visualHtml: `
+                    <div class="flex flex-col items-center space-y-1">
+                        <div class="w-16 h-16 rounded bg-cyan-950 border border-cyan-500 flex items-center justify-center animate-pulse">
+                            <i data-lucide="cpu" class="w-8 h-8 text-cyan-400"></i>
+                        </div>
+                        <div class="text-[10px] text-cyan-300 font-mono text-center">ARM Cortex Core // Multi-Canal NAND</div>
+                    </div>
+                `
+            },
+            nand: {
+                title: "Memoria Flash NAND (3D TLC/QLC)",
+                subtitle: "Medio de Almacenamiento No Volátil",
+                desc: "Arreglos de celdas de silicio donde los electrones se atrapan para representar bits lógicos. Los SSD modernos usan tecnología 3D NAND apilando cientos de capas verticalmente para maximizar la densidad de almacenamiento y disminuir costos.",
+                icon: "database",
+                color: "purple",
+                visualHtml: `
+                    <div class="flex flex-col items-center space-y-2">
+                        <div class="flex space-x-2">
+                            <div class="w-8 h-12 bg-purple-950 border border-purple-500 rounded flex flex-col justify-between p-1">
+                                <div class="h-2 bg-purple-500 rounded"></div>
+                                <div class="h-2 bg-purple-500 rounded"></div>
+                            </div>
+                            <div class="w-8 h-12 bg-purple-950 border border-purple-500 rounded flex flex-col justify-between p-1">
+                                <div class="h-2 bg-purple-500 rounded"></div>
+                                <div class="h-2 bg-purple-500 rounded"></div>
+                            </div>
+                        </div>
+                        <div class="text-[10px] text-purple-300 font-mono">Apilado Vertical 3D NAND</div>
+                    </div>
+                `
+            },
+            dram: {
+                title: "Caché DRAM",
+                subtitle: "Búfer de Traducción de Alta Velocidad",
+                desc: "Memoria RAM volátil y súper rápida integrada en el SSD. Se utiliza principalmente para almacenar la tabla FTL (mapeo lba-pba) en tiempo real. Permite que el controlador acceda instantáneamente a la ubicación física de un dato sin tener que leerla de los chips NAND lentos.",
+                icon: "layers",
+                color: "cyan",
+                visualHtml: `
+                    <div class="flex flex-col items-center space-y-1">
+                        <div class="h-8 w-24 bg-cyan-950 border border-cyan-500 rounded flex justify-around items-center px-1">
+                            <span class="w-2 h-4 bg-cyan-400"></span>
+                            <span class="w-2 h-4 bg-cyan-400"></span>
+                            <span class="w-2 h-4 bg-cyan-400"></span>
+                        </div>
+                        <div class="text-[10px] text-cyan-300 font-mono">DDR4 Caché: Mapeo Instantáneo</div>
+                    </div>
+                `
+            },
+            firmware: {
+                title: "Firmware del SSD",
+                subtitle: "Código Operativo Interno",
+                desc: "Es el sistema operativo del SSD almacenado en un chip ROM. Controla algoritmos avanzados para la gestión de errores lógicos, la encriptación de datos por hardware, el balance de carga de desgaste (Wear Leveling) y la ejecución del Garbage Collection.",
+                icon: "file-code",
+                color: "cyan",
+                visualHtml: `
+                    <div class="bg-gray-900 p-2.5 rounded border border-gray-800 text-left w-full h-full font-mono text-[9px] text-emerald-400 overflow-hidden">
+                        <div>&gt; _boot_firmware_init()</div>
+                        <div class="text-gray-500">Initializing FTL table... [OK]</div>
+                        <div class="text-gray-500">Reading telemetry... Temp: 32C</div>
+                        <div>&gt; load_wear_leveling_module()</div>
+                    </div>
+                `
+            },
+            ftl: {
+                title: "Flash Translation Layer (FTL)",
+                subtitle: "La Capa Virtual de Compatibilidad",
+                desc: "Un componente de software crítico del firmware. Traduce las peticiones de Direcciones Lógicas (LBA) del Sistema Operativo hacia Direcciones Físicas (PBA) en la NAND. Hace creer al OS que el SSD funciona como un disco tradicional por sectores, ocultando la complejidad del silicio.",
+                icon: "shuffle",
+                color: "cyan",
+                visualHtml: `
+                    <div class="flex items-center space-x-3 text-xs font-mono text-cyan-300">
+                        <span class="px-1.5 py-1 bg-gray-900 border border-gray-800 rounded">LBA 0x00A5</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 text-cyan-400"></i>
+                        <span class="px-1.5 py-1 bg-cyan-950 border border-cyan-500 rounded">PBA Block 12, Page 4</span>
+                    </div>
+                `
+            },
+            blocks: {
+                title: "Estructura NAND: Bloques, Páginas y Celdas",
+                subtitle: "Granularidad del Silicio",
+                desc: "Las celdas NAND se organizan jerárquicamente. Un SSD no puede reescribir una celda individual. Debe escribir en unidades llamadas 'Páginas' (~4KB a 16KB). Sin embargo, el borrado físico de la memoria se ejecuta exclusivamente a nivel de 'Bloques' completos (~128 a 512 páginas). Esto introduce una gran complejidad de administración.",
+                icon: "grid",
+                color: "purple",
+                visualHtml: `
+                    <div class="grid grid-cols-4 gap-1 p-1 bg-gray-950 rounded border border-purple-500/30">
+                        <div class="w-3.5 h-3.5 bg-purple-500 rounded-sm"></div>
+                        <div class="w-3.5 h-3.5 bg-purple-500 rounded-sm"></div>
+                        <div class="w-3.5 h-3.5 bg-gray-800 rounded-sm"></div>
+                        <div class="w-3.5 h-3.5 bg-gray-800 rounded-sm"></div>
+                    </div>
+                    <div class="text-[9px] text-purple-300 font-mono text-center mt-1">Escribir: Páginas // Borrar: Bloque entero</div>
+                `
+            },
+            overprovisioning: {
+                title: "Over-Provisioning (OP)",
+                subtitle: "Reserva Física de Rendimiento",
+                desc: "Espacio de almacenamiento físico de la NAND reservado exclusivamente para el uso interno del controlador del SSD. No es accesible por el sistema operativo. Se utiliza para facilitar la recolección de basura, wear leveling y compensar celdas gastadas, manteniendo el disco operando al máximo rendimiento.",
+                icon: "plus-circle",
+                color: "purple",
+                visualHtml: `
+                    <div class="flex items-center space-x-2 text-xs">
+                        <div class="w-16 h-6 bg-cyan-950 border border-cyan-500 rounded flex items-center justify-center text-[10px] font-bold text-cyan-400">SO (90%)</div>
+                        <span class="text-gray-500 font-mono">+</span>
+                        <div class="w-8 h-6 bg-purple-950 border border-purple-500 rounded flex items-center justify-center text-[10px] font-bold text-purple-400">OP (10%)</div>
+                    </div>
+                `
+            },
+            connectors: {
+                title: "Conectores y Buses Físicos",
+                subtitle: "La interfaz física de acoplamiento del silicio",
+                desc: "Define cómo se conecta el SSD físicamente a la placa madre. Los conectores como SATA (datos y alimentación por cables separados), M.2 (con muescas físicas Key B y M de inserción directa a la placa) y los formatos empresariales U.2/U.3 (puertos SFF-8639 hot-swap) dictan la cantidad máxima de carriles de comunicación eléctrica concurrentes (pistas PCIe/SATA) disponibles para el controlador.",
+                icon: "plug",
+                color: "cyan",
+                visualHtml: `
+                    <div class="flex flex-col items-center space-y-1">
+                        <div class="flex space-x-1.5 items-center">
+                            <span class="text-xs bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded font-bold border border-amber-600/30">M-Key</span>
+                            <span class="text-xs bg-cyan-950 text-cyan-400 px-1.5 py-0.5 rounded font-bold border border-cyan-600/30">B-Key</span>
+                            <span class="text-xs bg-purple-950 text-purple-400 px-1.5 py-0.5 rounded font-bold border border-purple-600/30">SFF-8639</span>
+                        </div>
+                        <div class="text-[10px] text-gray-400 font-mono mt-1.5 text-center">Físico ≠ Protocolo lógico de comunicaciones</div>
+                    </div>
+                `
+            },
+            protocols: {
+                title: "Protocolos de Comunicación",
+                subtitle: "El lenguaje lógico para la transferencia de datos",
+                desc: "Es el conjunto de reglas que gobierna la transferencia de información entre el sistema operativo y el almacenamiento. AHCI se diseñó en la época de discos mecánicos con una sola cola secuencial de baja capacidad. Por el contrario, NVMe (Non-Volatile Memory Express) es un protocolo optimizado para memoria de estado sólido, diseñado para paralelismo masivo, accesos DMA asíncronos y baja sobrecarga en el CPU.",
+                icon: "file-text",
+                color: "purple",
+                visualHtml: `
+                    <div class="flex items-center space-x-4 text-xs font-mono">
+                        <div class="text-center">
+                            <div class="text-red-400 font-bold">AHCI</div>
+                            <div class="text-[9px] text-gray-500">1 Cola / 32 cmds</div>
+                        </div>
+                        <div class="text-gray-500">vs</div>
+                        <div class="text-center">
+                            <div class="text-emerald-400 font-bold">NVMe</div>
+                            <div class="text-[9px] text-gray-500">64K colas / 64K cmds</div>
+                        </div>
+                    </div>
+                `
+            }
+        };
+
+        function selectComponent(id) {
+            const data = componentsData[id];
+            if (!data) return;
+
+            // Actualizar textos
+            document.getElementById('comp-title').innerText = data.title;
+            document.getElementById('comp-subtitle').innerText = data.subtitle;
+            document.getElementById('comp-desc').innerText = data.desc;
+
+            // Actualizar Icono
+            const iconContainer = document.getElementById('comp-icon-container');
+            const iconEl = document.getElementById('comp-icon');
+
+            iconEl.setAttribute('data-lucide', data.icon);
+
+            if (data.color === 'cyan') {
+                iconContainer.className = "p-3 bg-cyan-950 text-cyan-400 rounded-xl border border-cyan-500/30";
+            } else {
+                iconContainer.className = "p-3 bg-purple-950 text-purple-400 rounded-xl border border-purple-500/30";
+            }
+
+            // Inyectar HTML visualizador animado
+            const visualizer = document.getElementById('comp-visualizer');
+            visualizer.innerHTML = data.visualHtml;
+
+            // Re-ejecutar render de iconos de Lucide
+            lucide.createIcons();
+
+            // Resaltar elemento PCB activo visualmente
+            document.querySelectorAll('[id^="pcb-"]').forEach(el => {
+                el.classList.remove('ring-4', 'ring-cyan-400', 'ring-purple-400');
+            });
+            const selectedPcb = document.getElementById(`pcb-${id}`);
+            if (selectedPcb) {
+                selectedPcb.classList.add('ring-4', data.color === 'cyan' ? 'ring-cyan-400' : 'ring-purple-400');
+            }
+        }
+
+
+        /* -------------------------------------------------------------
+           MODULO 3: SIMULACIÓN DE ESCRITURA EN MEMORIA NAND (LÓGICA)
+           ------------------------------------------------------------- */
+        let nandState = {
+            block0: Array(16).fill('vacio'), // block 0: 16 páginas
+            block1: Array(16).fill('vacio'), // block 1: 16 páginas
+            block2: Array(16).fill('vacio'), // block 2: 16 páginas (Over-provisioning)
+            wear0: 0,
+            wear1: 0,
+            wear2: 0,
+            ftlTable: {} // mapeo LBA -> PBA
+        };
+
+        const pageDataMap = {}; // LBA -> string data
+
+        function renderNandSimulation() {
+            // Render de los bloques en el DOM
+            const b0Container = document.getElementById('nand-block-0');
+            const b1Container = document.getElementById('nand-block-1');
+            const b2Container = document.getElementById('nand-block-2');
+
+            b0Container.innerHTML = '';
+            b1Container.innerHTML = '';
+            b2Container.innerHTML = '';
+
+            // Render Bloque 0
+            nandState.block0.forEach((state, i) => {
+                b0Container.appendChild(createPageDom(state, i));
+            });
+            // Render Bloque 1
+            nandState.block1.forEach((state, i) => {
+                b1Container.appendChild(createPageDom(state, i));
+            });
+            // Render Bloque 2 (OP)
+            nandState.block2.forEach((state, i) => {
+                b2Container.appendChild(createPageDom(state, i, true));
+            });
+
+            // Actualizar contadores de desgaste
+            document.getElementById('wear-b0').innerText = `Ciclos: ${nandState.wear0}`;
+            document.getElementById('wear-b1').innerText = `Ciclos: ${nandState.wear1}`;
+            document.getElementById('wear-b2').innerText = `Ciclos: ${nandState.wear2}`;
+
+            // Render Tabla FTL
+            const ftlBody = document.getElementById('ftl-table-rows');
+            ftlBody.innerHTML = '';
+
+            const keys = Object.keys(nandState.ftlTable);
+            if (keys.length === 0) {
+                ftlBody.innerHTML = `<tr><td colspan="4" class="text-center py-2 text-gray-500">Sin datos mapeados. Envía escrituras arriba.</td></tr>`;
+            } else {
+                keys.forEach(lba => {
+                    const pba = nandState.ftlTable[lba];
+                    const dataName = pageDataMap[lba] || 'N/D';
+                    ftlBody.innerHTML += `
+                        <tr class="border-b border-gray-900 hover:bg-gray-900/40">
+                            <td class="py-1.5 text-cyan-400">LBA_${lba}</td>
+                            <td class="py-1.5 text-white font-medium">${dataName}</td>
+                            <td class="py-1.5 text-purple-400">Bloque ${pba.block}, Pag ${pba.page}</td>
+                            <td class="py-1.5 text-right text-emerald-400 font-bold">Mapeado</td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        function createPageDom(state, index, isOP = false) {
+            const page = document.createElement('div');
+            page.className = `h-8 rounded-sm border flex flex-col items-center justify-center text-[10px] font-mono transition-all duration-300 relative group`;
+
+            if (state === 'vacio') {
+                page.classList.add('bg-gray-900', 'border-gray-800', 'text-gray-500');
+                page.innerText = `P${index}`;
+            } else if (state === 'valido') {
+                page.classList.add('bg-cyan-950', 'border-cyan-400', 'text-cyan-300', 'font-bold');
+                page.innerText = `V${index}`;
+            } else if (state === 'invalido') {
+                page.classList.add('bg-red-950/80', 'border-red-500', 'text-red-400', 'line-through');
+                page.innerText = `I${index}`;
+            }
+
+            // tooltip
+            const tooltip = document.createElement('span');
+            tooltip.className = `absolute bottom-full mb-1 bg-black text-[9px] text-gray-200 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-20 whitespace-nowrap`;
+            tooltip.innerText = `Página ${index}: Estado ${state.toUpperCase()}`;
+            page.appendChild(tooltip);
+
+            return page;
+        }
+
+        // Simular Operación de Escritura Física
+        function simulateNANDWrite() {
+            const input = document.getElementById('sim-data-input');
+            const dataName = input.value.trim();
+
+            if (!dataName) {
+                addSimLog("[ERROR] Intento de escritura vacío. Escribe un nombre de archivo.");
+                return;
+            }
+
+            // Generar una dirección lógica LBA aleatoria entre LBA_100 y LBA_110
+            const lbaId = Math.floor(Math.random() * 11) + 100;
+            addSimLog(`[HOST SO] Envía comando WRITE para LBA_${lbaId} ("${dataName}")`);
+
+            // Verificar si el LBA ya existía (Sobreescritura)
+            let isOverwrite = false;
+            if (nandState.ftlTable[lbaId]) {
+                isOverwrite = true;
+                const oldPba = nandState.ftlTable[lbaId];
+                // Marcar página anterior como INVÁLIDA (Así funciona la NAND, Out-of-place Write)
+                if (oldPba.block === 0) {
+                    nandState.block0[oldPba.page] = 'invalido';
+                } else if (oldPba.block === 1) {
+                    nandState.block1[oldPba.page] = 'invalido';
+                } else if (oldPba.block === 2) {
+                    nandState.block2[oldPba.page] = 'invalido';
+                }
+                addSimLog(`[FTL WARNING] Detectada sobreescritura de LBA_${lbaId}. Se realiza escritura 'Out-of-place'. Página física antigua en Bloque ${oldPba.block} marcada como INVÁLIDA.`);
+            }
+
+            // Encontrar una página física libre usando WEAR LEVELING (Escribir en el bloque con menos desgaste)
+            let chosenBlock = 0;
+            let pageIndex = -1;
+
+            // Determinar bloque con menor ciclos de desgaste y que posea espacio
+            let blocksPriority = [
+                { id: 0, wear: nandState.wear0, arr: nandState.block0 },
+                { id: 1, wear: nandState.wear1, arr: nandState.block1 }
+            ];
+
+            // Ordenar por menor ciclos de desgaste
+            blocksPriority.sort((a, b) => a.wear - b.wear);
+
+            // Intentar escribir en el primero de la prioridad
+            for (let b of blocksPriority) {
+                const emptyIdx = b.arr.indexOf('vacio');
+                if (emptyIdx !== -1) {
+                    chosenBlock = b.id;
+                    pageIndex = emptyIdx;
+                    break;
+                }
+            }
+
+            // Si ambos bloques de usuario están totalmente llenos, usar el Bloque 2 (Over-Provisioning)
+            if (pageIndex === -1) {
+                const emptyIdx = nandState.block2.indexOf('vacio');
+                if (emptyIdx !== -1) {
+                    chosenBlock = 2;
+                    pageIndex = emptyIdx;
+                    addSimLog(`[CONTROLADOR OP] Bloques de usuario llenos. Utilizando bloque de Over-Provisioning 2.`);
+                } else {
+                    addSimLog("[FALLO DEL SISTEMA] SSD Lleno. Se requiere ejecutar Garbage Collection para liberar espacio.");
+                    return;
+                }
+            }
+
+            // Escribir físicamente en la NAND
+            if (chosenBlock === 0) {
+                nandState.block0[pageIndex] = 'valido';
+            } else if (chosenBlock === 1) {
+                nandState.block1[pageIndex] = 'valido';
+            } else if (chosenBlock === 2) {
+                nandState.block2[pageIndex] = 'valido';
+            }
+
+            // Actualizar Tabla FTL
+            nandState.ftlTable[lbaId] = { block: chosenBlock, page: pageIndex };
+            pageDataMap[lbaId] = dataName;
+
+            addSimLog(`[CONTROLADOR FTL] Traducido: LBA_${lbaId} asignado a Bloque ${chosenBlock}, Página ${pageIndex}. Escritura exitosa.`);
+
+            // Incrementar ligeramente desgaste del bloque escrito
+            if (chosenBlock === 0) nandState.wear0 += 1;
+            if (chosenBlock === 1) nandState.wear1 += 1;
+            if (chosenBlock === 2) nandState.wear2 += 1;
+
+            input.value = '';
+            renderNandSimulation();
+        }
+
+        // Forzar Wear Leveling (Balancear desgaste de bloques)
+        function triggerWearLeveling() {
+            addSimLog(`[FIRMW_WEAR_LEVELING] Iniciando análisis proactivo de desgaste...`);
+
+            // Si hay un gran desequilibrio, simular movimiento de páginas estáticas a bloques de alto desgaste
+            addSimLog(`[FIRMW_WEAR_LEVELING] Calculando varianza de ciclos de escritura (P/E)... Varianza dentro de los límites ideales.`);
+            addSimLog(`[FIRMW_WEAR_LEVELING] Balanceo completado. Celdas niveladas homogéneamente.`);
+
+            renderNandSimulation();
+        }
+
+        // Simular Garbage Collection (Recolección de Basura)
+        function triggerGarbageCollection() {
+            addSimLog(`[FIRMW_GARBAGE_COLLECTION] Buscando bloques candidatos para recolección...`);
+
+            // Encontrar si hay páginas inválidas para consolidar
+            let b0InvCount = nandState.block0.filter(s => s === 'invalido').length;
+            let b1InvCount = nandState.block1.filter(s => s === 'invalido').length;
+
+            if (b0InvCount === 0 && b1InvCount === 0) {
+                addSimLog(`[GC ABORT] No se encontraron suficientes bloques con páginas inválidas. No es necesario limpiar.`);
+                return;
+            }
+
+            // Algoritmo simplificado de recolección de basura:
+            // Copiar datos válidos del Bloque 0 hacia Bloque 2 (Over-provisioning) temporalmente, luego borrar Bloque 0 completamente.
+            if (b0InvCount > 0) {
+                addSimLog(`[GC ACCIÓN] Recolectando Bloque 0 (${b0InvCount} páginas marcadas inválidas)...`);
+
+                // Mover válidos
+                nandState.block0.forEach((state, i) => {
+                    if (state === 'valido') {
+                        const nextEmptyOp = nandState.block2.indexOf('vacio');
+                        if (nextEmptyOp !== -1) {
+                            nandState.block2[nextEmptyOp] = 'valido';
+
+                            // Actualizar FTL de la reubicación
+                            for (let lba in nandState.ftlTable) {
+                                if (nandState.ftlTable[lba].block === 0 && nandState.ftlTable[lba].page === i) {
+                                    nandState.ftlTable[lba] = { block: 2, page: nextEmptyOp };
+                                    addSimLog(`[FTL GC REALLOC] Reubicado LBA_${lba} a Bloque 2, Página ${nextEmptyOp}`);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Borrar bloque 0 físico completo (Simulación de Erase block en NAND)
+                nandState.block0 = Array(16).fill('vacio');
+                nandState.wear0 += 10; // Un ciclo de borrado físico gasta más el silicio
+                addSimLog(`[NAND HARDWARE] Comando FLASH_BLOCK_ERASE ejecutado en Bloque 0. Ciclos de desgaste aumentados significativamente (+10).`);
+            }
+
+            if (b1InvCount > 0) {
+                addSimLog(`[GC ACCIÓN] Recolectando Bloque 1 (${b1InvCount} páginas marcadas inválidas)...`);
+
+                nandState.block1.forEach((state, i) => {
+                    if (state === 'valido') {
+                        const nextEmptyOp = nandState.block2.indexOf('vacio');
+                        if (nextEmptyOp !== -1) {
+                            nandState.block2[nextEmptyOp] = 'valido';
+
+                            for (let lba in nandState.ftlTable) {
+                                if (nandState.ftlTable[lba].block === 1 && nandState.ftlTable[lba].page === i) {
+                                    nandState.ftlTable[lba] = { block: 2, page: nextEmptyOp };
+                                    addSimLog(`[FTL GC REALLOC] Reubicado LBA_${lba} a Bloque 2, Página ${nextEmptyOp}`);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                nandState.block1 = Array(16).fill('vacio');
+                nandState.wear1 += 10;
+                addSimLog(`[NAND HARDWARE] Comando FLASH_BLOCK_ERASE ejecutado en Bloque 1. Ciclos de desgaste aumentados (+10).`);
+            }
+
+            renderNandSimulation();
+        }
+
+        // Simular TRIM
+        function triggerTRIM() {
+            addSimLog(`[OS SYSTEM] Comando TRIM emitido para el File System.`);
+
+            // Encontrar cualquier LBA huérfano simulado o liberar aleatoriamente el 50% de las páginas ocupadas
+            const keys = Object.keys(nandState.ftlTable);
+            if (keys.length === 0) {
+                addSimLog(`[TRIM INFO] Ningún dato activo para descartar por el SO.`);
+                return;
+            }
+
+            // Seleccionar el primer mapeo y simular que el SO lo elimina
+            const lbaToDel = keys[0];
+            const pba = nandState.ftlTable[lbaToDel];
+
+            // Marcar en la NAND como inválido
+            if (pba.block === 0) nandState.block0[pba.page] = 'invalido';
+            if (pba.block === 1) nandState.block1[pba.page] = 'invalido';
+            if (pba.block === 2) nandState.block2[pba.page] = 'invalido';
+
+            // Remover de la tabla FTL
+            delete nandState.ftlTable[lbaToDel];
+            delete pageDataMap[lbaToDel];
+
+            addSimLog(`[TRIM ACCIÓN] OS notifica que LBA_${lbaToDel} fue borrado por el usuario. FTL marca la página física en Bloque ${pba.block}, Página ${pba.page} como INACTIVA / LISTA PARA GC.`);
+            renderNandSimulation();
+        }
+
+        // Agregar log a la terminal simulada
+        function addSimLog(msg) {
+            const term = document.getElementById('sim-log-terminal');
+            if (!term) return;
+            const now = new Date();
+            const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+            term.innerHTML += `<div class="py-0.5"><span class="text-gray-500">[${timeStr}]</span> ${msg}</div>`;
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function clearSimLogs() {
+            document.getElementById('sim-log-terminal').innerHTML = `<div class="text-gray-500">[SISTEMA] Logs limpiados.</div>`;
+        }
+
+
+        /* -------------------------------------------------------------
+           MODULO 4: SIMULACIÓN DE LA CARRETERA (SATA VS NVME) - INTERACTIVA
+           ------------------------------------------------------------- */
+        let roadSimRunning = false;
+        let roadCanvas, roadCtx, animationFrameId;
+        let ahciVehicles = [];
+        let nvmeVehicles = [];
+
+        // Variables de Telemetría de la simulación
+        let sataProcessedCount = 0;
+        let nvmeProcessedCount = 0;
+        let sataActiveQueue = 0;
+        let nvmeActiveQueue = 0;
+        let lastSataBandwidth = 550; // MB/s simulados
+        let lastNvmeBandwidth = 7200; // MB/s simulados
+
+        function initRoadSimulation() {
+            roadCanvas = document.getElementById('road-sim-canvas');
+            if (!roadCanvas) return;
+            roadCtx = roadCanvas.getContext('2d');
+
+            // Solución de visualización: recalcular tamaño físico real basado en el viewport del contenedor activo
+            const rect = roadCanvas.parentElement.getBoundingClientRect();
+            roadCanvas.width = rect.width || 600;
+            roadCanvas.height = rect.height || 380;
+
+            restartRoadSimulation();
+        }
+
+        function restartRoadSimulation() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+
+            ahciVehicles = [];
+            nvmeVehicles = [];
+            sataProcessedCount = 0;
+            nvmeProcessedCount = 0;
+            sataActiveQueue = 0;
+            nvmeActiveQueue = 0;
+
+            if (!roadCanvas) return;
+
+            // Población inicial de comandos en SATA (Cola Serializada lenta)
+            for (let i = 0; i < 3; i++) {
+                ahciVehicles.push({
+                    x: 30 + (i * 120),
+                    y: roadCanvas.height * 0.28,
+                    speed: 1.2,
+                    id: i,
+                    color: '#f59e0b', // Amber
+                    label: `LBA_0x0${i}`
+                });
+                sataActiveQueue++;
+            }
+
+            // Población de comandos paralelos en NVMe (4 Carriles / Pipelines)
+            const lanes = [
+                roadCanvas.height * 0.58,
+                roadCanvas.height * 0.68,
+                roadCanvas.height * 0.78,
+                roadCanvas.height * 0.88
+            ];
+
+            for (let i = 0; i < 8; i++) {
+                const laneIdx = i % 4;
+                nvmeVehicles.push({
+                    x: 30 + (Math.floor(i / 4) * 150),
+                    y: lanes[laneIdx],
+                    speed: 4.5,
+                    id: i,
+                    color: '#06b6d4', // Cyan
+                    label: `Cmd_Q${laneIdx}_C${i}`
+                });
+                nvmeActiveQueue++;
+            }
+
+            roadSimRunning = true;
+            loopRoadSimulation();
+        }
+
+        // Acciones interactivas de inyección de comandos
+        function injectSATACommand() {
+            if (!roadCanvas) return;
+
+            // Verificar límite físico de la cola AHCI (máximo 32 comandos en profundidad)
+            if (sataActiveQueue >= 15) { // Reducido para fines estéticos del simulador
+                addSimLog("[AHCI COLLISION] ¡Cola de comandos SATA llena! El sistema operativo bloquea la ejecución de nuevas llamadas E/S.");
+                return;
+            }
+
+            ahciVehicles.push({
+                x: -50,
+                y: roadCanvas.height * 0.28,
+                speed: 1.2,
+                id: Date.now(),
+                color: '#f59e0b',
+                label: `LBA_0x${Math.floor(Math.random() * 90 + 10).toString(16).toUpperCase()}`
+            });
+            sataActiveQueue++;
+            lastSataBandwidth = Math.min(600, 480 + (sataActiveQueue * 8));
+        }
+
+        function injectNVMeCommands() {
+            if (!roadCanvas) return;
+
+            const lanes = [
+                roadCanvas.height * 0.58,
+                roadCanvas.height * 0.68,
+                roadCanvas.height * 0.78,
+                roadCanvas.height * 0.88
+            ];
+
+            // Inyectar una ráfaga masiva y distribuida uniformemente por el hardware
+            for (let i = 0; i < 8; i++) {
+                const laneIdx = i % 4;
+                nvmeVehicles.push({
+                    x: -50 - (Math.floor(i / 4) * 80),
+                    y: lanes[laneIdx],
+                    speed: 4.5 + Math.random() * 1.5,
+                    id: Date.now() + i,
+                    color: '#06b6d4',
+                    label: `DMA_R${Math.floor(Math.random() * 900 + 100)}`
+                });
+                nvmeActiveQueue++;
+            }
+            lastNvmeBandwidth = Math.min(14500, 6800 + (nvmeActiveQueue * 150));
+        }
+
+        function loopRoadSimulation() {
+            if (!roadSimRunning || !roadCtx || !roadCanvas) return;
+
+            // Fondo del canvas oscuro estilo circuito de datos
+            roadCtx.fillStyle = '#090d16';
+            roadCtx.fillRect(0, 0, roadCanvas.width, roadCanvas.height);
+
+            // DIBUJAR CARRETERA SATA (AHCI)
+            roadCtx.fillStyle = '#111827';
+            roadCtx.fillRect(0, roadCanvas.height * 0.2, roadCanvas.width, 55);
+
+            // Línea divisoria de asfalto
+            roadCtx.strokeStyle = '#374151';
+            roadCtx.lineWidth = 2;
+            roadCtx.setLineDash([10, 10]);
+            roadCtx.beginPath();
+            roadCtx.moveTo(0, roadCanvas.height * 0.28);
+            roadCtx.lineTo(roadCanvas.width, roadCanvas.height * 0.28);
+            roadCtx.stroke();
+
+            // Dibujar cuello de botella físico (Tollbooth de registro único)
+            roadCtx.fillStyle = '#f59e0b';
+            roadCtx.fillRect(roadCanvas.width * 0.82, roadCanvas.height * 0.2 - 2, 8, 59);
+            roadCtx.fillStyle = '#374151';
+            roadCtx.fillRect(roadCanvas.width * 0.8, roadCanvas.height * 0.2 + 10, 12, 35);
+
+            roadCtx.fillStyle = '#ffffff';
+            roadCtx.font = 'bold 8px monospace';
+            roadCtx.fillText("REG_BLOQ", roadCanvas.width * 0.77, roadCanvas.height * 0.2 + 8);
+
+            // DIBUJAR AUTOPISTA NVME (PCIe de 4 Carriles)
+            roadCtx.fillStyle = '#0f172a';
+            roadCtx.fillRect(0, roadCanvas.height * 0.52, roadCanvas.width, roadCanvas.height * 0.43);
+
+            // Líneas divisorias de carriles paralelos
+            roadCtx.strokeStyle = '#0891b2';
+            roadCtx.lineWidth = 1;
+            roadCtx.setLineDash([8, 8]);
+
+            const lanesY = [
+                roadCanvas.height * 0.63,
+                roadCanvas.height * 0.73,
+                roadCanvas.height * 0.83
+            ];
+
+            lanesY.forEach(ly => {
+                roadCtx.beginPath();
+                roadCtx.moveTo(0, ly);
+                roadCtx.lineTo(roadCanvas.width, ly);
+                roadCtx.stroke();
+            });
+
+            // Dibujar procesadores multicanal / Controladores paralelos al final de NVMe
+            for (let i = 0; i < 4; i++) {
+                const cy = roadCanvas.height * (0.58 + (i * 0.1));
+                roadCtx.fillStyle = '#06b6d4';
+                roadCtx.fillRect(roadCanvas.width * 0.85, cy - 12, 12, 24);
+
+                roadCtx.fillStyle = '#090d16';
+                roadCtx.font = 'bold 9px monospace';
+                roadCtx.fillText(`CH${i}`, roadCanvas.width * 0.852, cy + 4);
+            }
+
+            // MOVER Y DIBUJAR COMANDOS SATA
+            ahciVehicles.forEach((v, index) => {
+                // Simular el cuello de botella al acercarse al registro bloqueante único (Tollbooth)
+                const limitX = roadCanvas.width * 0.75;
+                if (v.x < limitX) {
+                    v.x += v.speed;
+                } else {
+                    // Detenerse un momento para procesar de forma serial (simulando falta de DMA asíncrono)
+                    v.x += v.speed * 0.15;
+                }
+
+                if (v.x > roadCanvas.width - 10) {
+                    // El comando se procesó
+                    ahciVehicles.splice(index, 1);
+                    sataActiveQueue = Math.max(0, sataActiveQueue - 1);
+                    sataProcessedCount++;
+                    addSimLog(`[SATA AHCI] Interrupción de E/S completa. Registros liberados para siguiente comando.`);
+                } else {
+                    // Dibujar paquete de comando como bloque naranja
+                    roadCtx.fillStyle = v.color;
+                    roadCtx.fillRect(v.x, v.y - 10, 48, 20);
+
+                    roadCtx.strokeStyle = '#ffffff';
+                    roadCtx.strokeRect(v.x, v.y - 10, 48, 20);
+
+                    // Etiqueta del paquete
+                    roadCtx.fillStyle = '#000000';
+                    roadCtx.font = 'bold 9px monospace';
+                    roadCtx.fillText(v.label, v.x + 4, v.y + 3);
+                }
+            });
+
+            // MOVER Y DIBUJAR COMANDOS NVME
+            nvmeVehicles.forEach((v, index) => {
+                // Movimiento libre, sin cuellos de botella por paso directo a memoria (DMA)
+                v.x += v.speed;
+
+                if (v.x > roadCanvas.width - 10) {
+                    nvmeVehicles.splice(index, 1);
+                    nvmeActiveQueue = Math.max(0, nvmeActiveQueue - 1);
+                    nvmeProcessedCount++;
+
+                    // Telemetría rápida en consola del simulador
+                    if (nvmeProcessedCount % 5 === 0) {
+                        addSimLog(`[NVMe PCIe] Procesada ráfaga de comandos directos a RAM vía DMA del bus PCIe.`);
+                    }
+                } else {
+                    // Dibujar paquete de comando como bloque cian rápido
+                    roadCtx.fillStyle = v.color;
+                    roadCtx.fillRect(v.x, v.y - 8, 42, 16);
+
+                    roadCtx.strokeStyle = '#ffffff';
+                    roadCtx.strokeRect(v.x, v.y - 8, 42, 16);
+
+                    roadCtx.fillStyle = '#000000';
+                    roadCtx.font = 'bold 8px monospace';
+                    roadCtx.fillText(v.label, v.x + 3, v.y + 3);
+                }
+            });
+
+            // DIBUJAR TEXTOS DE CABECERA Y TELEMETRÍA EN VIVO
+            roadCtx.fillStyle = '#ffffff';
+            roadCtx.font = 'bold 11px monospace';
+            roadCtx.setLineDash([]); // Resetear el line dash para los textos
+
+            // Texto SATA
+            roadCtx.fillStyle = '#f59e0b';
+            roadCtx.fillText(`COLA SATA (AHCI): ${sataActiveQueue} en cola // Procesados: ${sataProcessedCount}`, 15, 25);
+            roadCtx.fillStyle = '#94a3b8';
+            roadCtx.fillText(`Velocidad efectiva: ${sataActiveQueue > 0 ? lastSataBandwidth : 0} MB/s`, 15, 40);
+
+            // Texto NVMe
+            roadCtx.fillStyle = '#06b6d4';
+            roadCtx.fillText(`COLAS NVMe (PCIe): ${nvmeActiveQueue} en vuelo // Procesados: ${nvmeProcessedCount}`, 15, roadCanvas.height * 0.49);
+            roadCtx.fillStyle = '#94a3b8';
+            roadCtx.fillText(`Velocidad efectiva: ${nvmeActiveQueue > 0 ? lastNvmeBandwidth : 0} MB/s`, 15, roadCanvas.height * 0.49 + 15);
+
+            animationFrameId = requestAnimationFrame(loopRoadSimulation);
+        }
+
+
+        /* -------------------------------------------------------------
+           MODULO 5: FACTORES DE FORMA Y MÉTRICAS (SIMULACIÓN TÉRMICA)
+           ------------------------------------------------------------- */
+        const formFactorStats = {
+            pata_hdd: {
+                title: "Disco Duro 3.5 pulgadas (PATA/IDE)",
+                interface: "Interfaz: Parallel ATA (PATA / IDE)",
+                target: "Tecnologías Anteriores & Legacy",
+                desc: "El estándar dominante en computadores personales de escritorio desde fines de los 80 hasta mediados de los 2000. Utilizaba un cable plano de cinta gris de 40 u 80 hilos para enviar datos en paralelo (múltiples bits simultáneos). Su arquitectura de transmisión mecánica y paralela sufría de interferencias por diafonía (cross-talk), ruidos mecánicos y limitaba severamente el flujo de aire dentro del gabinete debido al grosor del bus físico.",
+                seq: "133 MB/s",
+                iops: "150",
+                tbw: "Ilimitado (Fallo Mecánico)",
+                dwpd: "N/A",
+                specs: "Bus físico de 40/80 hilos paralelos. Voltaje de 5V y 12V vía conector Molex tradicional de 4 pines. Configuración de jumpers Maestro/Esclavo.",
+                diagram: `
+                <img src="imagenes/2.5-3.5-pulgadas.jpg" alt="Disco Duro 3.5 pulgadas" class="w-full max-w-[220px] h-auto rounded-md object-contain cursor-pointer transition-transform hover:scale-105" onclick="openImageModal(this.src)">`
+            },
+            msata: {
+                title: "mSATA (Mini-SATA) SSD",
+                interface: "Interfaz: SATA III (6 Gbps)",
+                target: "Tecnologías Anteriores & Legacy",
+                desc: "Lanzado en 2011, fue el primer intento exitoso de miniaturización de los SSD de estado sólido para laptops ultra-delgadas (ultrabooks) y sistemas integrados. Aunque mecánicamente utiliza el factor de forma del slot Mini PCI Express, las señales eléctricas son puramente lógicas SATA, limitadas por el protocolo AHCI a velocidades secuenciales máximas de 600 MB/s. No tiene bus PCIe ni protocolo NVMe.",
+                seq: "540 MB/s",
+                iops: "82,000",
+                tbw: "150 TBW",
+                dwpd: "0.2 / día",
+                specs: "Conector de borde Mini-PCIe adaptado magnéticamente para buses de comunicación SATA III. Dimensiones compactas de 30mm x 50.95mm.",
+                diagram: `
+                <img src="imagenes/Mini-SATA.webp" alt="mSATA SSD" class="w-full max-w-[220px] h-auto rounded-md object-contain cursor-pointer transition-transform hover:scale-105" onclick="openImageModal(this.src)">`
+            },
+            ssd25: {
+                title: "SSD de 2.5 pulgadas SATA",
+                interface: "Interfaz: SATA III (AHCI)",
+                target: "Tecnologías Anteriores & Legacy",
+                desc: "Formato heredado del tamaño físico de los HDD tradicionales de 2.5 pulgadas de computadores portátiles. Utiliza el conector SATA convencional de datos y alimentación. Su velocidad máxima práctica está fija en 600 MB/s debido a las limitaciones del estándar SATA III y del protocolo AHCI, pero sirvió como puente histórico de reemplazo directo de discos duros mecánicos sin alterar motherboards.",
+                seq: "560 MB/s",
+                iops: "98,000",
+                tbw: "300 TBW",
+                dwpd: "0.3 / día",
+                specs: "Conector SATA estándar de datos de 7 pines y alimentación de 15 pines. Estructura física encapsulada en carcasa metálica de 100mm x 69.85mm x 7mm.",
+                diagram: `
+                <img src="imagenes/ssd_sata_2_5.jpg" alt="SSD 2.5 pulgadas SATA" class="w-full max-w-[220px] h-auto rounded-md object-contain cursor-pointer transition-transform hover:scale-105" onclick="openImageModal(this.src)">`
+            },
+            m2: {
+                title: "M.2 (Factor de Forma 2280)",
+                interface: "Interfaz: PCIe Gen 5 x4 (NVMe)",
+                target: "Últimas Versiones & Next-Gen",
+                desc: "El factor de forma ultracompacto estándar de la industria actual (Next Generation Form Factor - NGFF). Al atornillarse plano sobre la placa base, elimina cables de alimentación y datos de forma nativa. Su versión más reciente aprovecha las pistas PCIe Gen 5 de la CPU para alcanzar velocidades secuenciales masivas que superan los 14,000 MB/s con transferencias masivas asíncronas por DMA.",
+                seq: "14,500 MB/s",
+                iops: "2,000,000",
+                tbw: "1,200 TBW",
+                dwpd: "0.8 / día",
+                specs: "Factor físico 2280 (22mm de ancho, 80mm de largo). Conector con muesca física 'M-Key' diseñado para transportar hasta 4 líneas de datos PCIe.",
+                diagram: `
+                <img src="imagenes/m2_2280.jpg" alt="M.2 Factor de Forma" class="w-full max-w-[220px] h-auto rounded-md object-contain cursor-pointer transition-transform hover:scale-105" onclick="openImageModal(this.src)">`
+            },
+            u2: {
+                title: "U.2 (SFF-8639)",
+                interface: "Interfaz: PCIe Gen 4 x4 (NVMe)",
+                target: "Últimas Versiones & Next-Gen",
+                desc: "Anteriormente conocido como SFF-8639, conserva el chasis protector físico de un disco de 2.5 pulgadas pero con conectividad avanzada. Está equipado con un puerto unificado que transporta directamente señales eléctricas de 4 pistas del bus PCIe. Es el estándar de oro para bahías frontales de servidores en racks empresariales, permitiendo mantenimiento en caliente (Hot-Swap) sin desmontar la máquina.",
+                seq: "7,000 MB/s",
+                iops: "1,200,000",
+                tbw: "3,500 TBW",
+                dwpd: "1.5 / día",
+                specs: "Conector unificado SFF-8639 con soporte nativo de reloj de bus PCIe externo y líneas de control SMBus para telemetría directa del sistema operativo.",
+                diagram: `
+                <img src="imagenes/U_2_SFF_8639.webp" alt="U.2 SFF-8639" class="w-full max-w-[220px] h-auto rounded-md object-contain cursor-pointer transition-transform hover:scale-105" onclick="openImageModal(this.src)">`
+            },
+            u3: {
+                title: "U.3 Tri-Mode",
+                interface: "Interfaz: SAS, SATA y PCIe NVMe",
+                target: "Últimas Versiones & Next-Gen",
+                desc: "Una evolución crítica sobre el estándar U.2. Los conectores U.3 utilizan el mismo formato físico de 2.5 pulgadas pero con una asignación de pines modificada inteligente. Permite la tecnología 'Tri-Mode', lo que significa que un único slot del backplane del servidor puede acomodar de manera idéntica discos SATA heredados de bajo costo, discos de misión crítica SAS, o almacenamiento de estado sólido NVMe ultrarrápido.",
+                seq: "7,200 MB/s",
+                iops: "1,350,000",
+                tbw: "4,000 TBW",
+                dwpd: "2.0 / día",
+                specs: "Unificación de pines Tri-Mode SFF-8639 para compatibilidad automática de señales a través de chips controladores integrados en el backplane.",
+                diagram: `
+                <img src="imagenes/u3.png" alt="U.3 Tri-Mode" class="w-full max-w-[220px] h-auto rounded-md object-contain cursor-pointer transition-transform hover:scale-105" onclick="openImageModal(this.src)">`
+            },
+            edsff: {
+                title: "EDSFF (E1.S / E3.S)",
+                interface: "Interfaz: PCIe Gen 5 x4 (NVMe)",
+                target: "Últimas Versiones & Next-Gen",
+                desc: "Diseñado desde cero para resolver los problemas de refrigeración y densidad espacial extrema en los centros de datos modernos y servidores en la nube de arquitectura 1U/2U. Reemplaza el factor de 2.5 pulgadas por un formato de regleta metálica ('Ruler') con aletas de disipación térmica optimizadas nativamente para el flujo de aire frío horizontal de los ventiladores frontales.",
+                seq: "14,500 MB/s",
+                iops: "2,500,000",
+                tbw: "10,000 TBW",
+                dwpd: "3.0 / día",
+                specs: "Dimensiones modulares optimizadas (E1.S para racks cortos o E3.S para alta densidad). Soporte para hasta PCIe Gen 5 de 4 u 8 pistas eléctricas.",
+                diagram: `
+                <img src="imagenes/edsff.jpg" alt="EDSFF" class="w-full max-w-[220px] h-auto rounded-md object-contain cursor-pointer transition-transform hover:scale-105" onclick="openImageModal(this.src)">`
+            }
+        };
+
+        let currentFF = 'ssd25';
+
+        function selectFormFactor(id) {
+            currentFF = id;
+            const data = formFactorStats[id];
+            if (!data) return;
+
+            // Cambiar aspecto de botones del selector
+            document.querySelectorAll('.ff-btn').forEach(btn => {
+                btn.className = "ff-btn w-full p-2.5 rounded-xl border border-gray-800 bg-gray-900/40 text-left text-xs transition-all flex items-center justify-between";
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = "w-4 h-4 text-gray-500";
+                    icon.setAttribute('data-lucide', 'chevron-right');
+                }
+            });
+
+            const activeBtn = document.getElementById(`btn-ff-${id}`);
+            if (activeBtn) {
+                activeBtn.className = "ff-btn w-full p-2.5 rounded-xl border border-cyan-500/50 bg-cyan-950/20 text-left text-xs transition-all flex items-center justify-between";
+                const icon = activeBtn.querySelector('i');
+                if (icon) {
+                    icon.className = "w-4 h-4 text-cyan-400";
+                }
+            }
+
+            // Actualizar textos e información técnica
+            document.getElementById('ff-title').innerText = data.title;
+            document.getElementById('ff-interface').innerText = data.interface;
+            document.getElementById('ff-target').innerText = data.target;
+            document.getElementById('ff-desc').innerText = data.desc;
+            document.getElementById('ff-connection-specs').innerText = data.specs;
+
+            // Inyectar el Diagrama Vectorial SVG correspondiente al modelo seleccionado
+            document.getElementById('ff-diagram-container').innerHTML = data.diagram;
+
+            // Actualizar sliders y métricas basadas en temperatura simulada actual
+            const sliderVal = document.getElementById('temp-slider').value;
+            updateTemperatureSimulation(sliderVal);
+            lucide.createIcons();
+        }
+
+        // Simulación de Thermal Throttling (Estrangulamiento Térmico)
+        function updateTemperatureSimulation(temp) {
+            const data = formFactorStats[currentFF];
+            if (!data) return;
+            const tempIndicator = document.getElementById('temp-indicator');
+            const alertBox = document.getElementById('throttling-alert');
+
+            tempIndicator.innerText = `${temp}°C`;
+
+            // Parsear velocidad base en MB/s
+            let baseSpeedVal = parseInt(data.seq.replace(/,/g, ''));
+            let currentSpeed = baseSpeedVal;
+            let currentIops = parseInt(data.iops.replace(/,/g, ''));
+
+            if (temp < 65) {
+                // Operación óptima y fría
+                tempIndicator.className = "text-xs font-bold text-emerald-400 code-font";
+                alertBox.className = "p-3 rounded-lg text-xs bg-emerald-950/40 border border-emerald-500/30 text-emerald-300";
+                alertBox.innerHTML = `<strong>Funcionamiento Seguro:</strong> Temperatura ideal del semiconductor. El controlador trabaja a máxima velocidad.`;
+                alertBox.classList.remove('hidden');
+            } else if (temp >= 65 && temp < 80) {
+                // Alerta, calentándose
+                tempIndicator.className = "text-xs font-bold text-amber-400 code-font";
+                alertBox.className = "p-3 rounded-lg text-xs bg-amber-950/40 border border-amber-500/30 text-amber-300";
+                alertBox.innerHTML = `<strong>Advertencia Térmica:</strong> Alta disipación de calor. El firmware del SSD vigila los sensores térmicos.`;
+                alertBox.classList.remove('hidden');
+            } else {
+                // THERMAL THROTTLING ACTIVO (Bajo rendimiento forzado)
+                tempIndicator.className = "text-xs font-bold text-red-500 code-font animate-pulse";
+                alertBox.className = "p-3 rounded-lg text-xs bg-red-950/50 border border-red-500/30 text-red-300 animate-pulse";
+                alertBox.innerHTML = `<strong>THERMAL THROTTLING DETECTADO:</strong> El chip superó los 80°C. Para evitar la destrucción del chip de silicio, el controlador reduce el voltaje y la frecuencia un 50%, disminuyendo drácticamente el rendimiento de E/S.`;
+                alertBox.classList.remove('hidden');
+
+                // Reducir rendimiento a la mitad
+                currentSpeed = Math.round(baseSpeedVal * 0.4);
+                currentIops = Math.round(currentIops * 0.4);
+            }
+
+            // Inyectar métricas dinámicas
+            document.getElementById('metric-seq').innerText = isNaN(currentSpeed) ? data.seq : `${currentSpeed.toLocaleString()} MB/s`;
+            document.getElementById('metric-iops').innerText = isNaN(currentIops) ? data.iops : currentIops.toLocaleString();
+            document.getElementById('metric-tbw').innerText = data.tbw;
+            document.getElementById('metric-dwpd').innerText = data.dwpd;
+        }
+
+
+        /* -------------------------------------------------------------
+           MODULO 6: CASOS DE USO Y DIAGNÓSTICO
+           ------------------------------------------------------------- */
+        const useCasesData = {
+            boot: {
+                title: "Arranque del Sistema Operativo",
+                icon: "power",
+                metric: "Lecturas Aleatorias 4K",
+                speed: "> 500 MB/s",
+                pattern: "Muy fragmentado",
+                analysis: "Durante el arranque, el SO lee miles de archivos diminutos (drivers, configs, registros) dispersos en sectores aleatorios. No se requiere velocidad secuencial gigantesca, sino bajísima latencia de lectura aleatoria. Un HDD es extremadamente lento aquí porque el brazo físico debe saltar de sector en sector. Un SSD SATA básico acelera la carga sustancialmente, y un NVMe la reduce a menos de 7 segundos gracias a la menor latencia de comunicación del bus PCIe.",
+                recTitle: "SSD NVMe M.2 Comercial (PCIe 3.0 o superior)",
+                recDesc: "Un SSD M.2 NVMe estándar de consumo ofrece una experiencia excelente. No requiere modelos caros para servidores ya que el volumen total de escritura es bajo."
+            },
+            video: {
+                title: "Edición de Video 4K/8K RAW",
+                icon: "film",
+                metric: "Secuencial Gigante",
+                speed: "> 5,000 MB/s",
+                pattern: "Archivos monolíticos",
+                analysis: "Los flujos de video RAW en alta resolución tienen tasas de bits descomunales que saturan los buses de datos de inmediato. Al avanzar en el timeline del programa de edición, se necesita leer de forma sostenida gigabytes de información en milisegundos. Un SSD SATA (limitado a 600 MB/s) causará tirones constantes. Se requiere la autopista ancha de un SSD NVMe sobre PCIe Gen 4 o Gen 5 de alta gama.",
+                recTitle: "SSD NVMe M.2 Profesional (PCIe Gen 4/5 x4 con Disipador)",
+                recDesc: "Imprescindible SSD NVMe con velocidades secuenciales de más de 7,000 MB/s y disipador térmico para evitar el Thermal Throttling al renderizar videos largos."
+            },
+            database: {
+                title: "Bases de Datos de Alta Transaccionalidad (OLTP)",
+                icon: "database",
+                metric: "IOPS Aleatorios",
+                speed: "> 1,500 MB/s",
+                pattern: "Escrituras y Consultas Concurrentes",
+                analysis: "Los servidores de bases de datos procesan miles de peticiones simultáneas de clientes que leen y escriben registros aleatorios diminutos. El rendimiento aquí se mide puramente en IOPS (Operaciones de Entrada/Salida por Segundo) y no en MB/s secuenciales. Además, la persistencia garantizada de datos requiere un altísimo factor de desgaste soportado (alto DWPD) para evitar desgastar el silicio en pocos meses.",
+                recTitle: "SSD Empresarial U.2 / U.3 NVMe con Alta Resistencia (High DWPD)",
+                recDesc: "Se requiere un SSD con interfaz NVMe de grado empresarial tipo U.2/U.3. Deben contar con condensadores de protección contra pérdida de energía (PLP) y alta resistencia a desgaste por escrituras diarias."
+            },
+            gaming: {
+                title: "Gaming de Próxima Generation",
+                icon: "gamepad-2",
+                metric: "Lecturas Secuenciales",
+                speed: "> 3,500 MB/s",
+                pattern: "Texturas pesadas a VRAM",
+                analysis: "Los motores gráficos de nueva generación (como Unreal Engine 5) utilizan tecnologías de carga de texturas directa desde el almacenamiento hacia la memoria de la tarjeta de video (DirectStorage en Windows), salteándose el proceso de descompresión por software del CPU. Esto exige que el canal de datos sea lo más directo posible.",
+                recTitle: "SSD NVMe PCIe Gen 4 x4 M.2",
+                recDesc: "Se recomienda un SSD NVMe con soporte DirectStorage para cargar mundos virtuales inmensos instantáneamente de forma fluida."
+            },
+            ai: {
+                title: "Entrenamiento de Inteligencia Artificial",
+                icon: "brain-circuit",
+                metric: "Ingesta de Datasets",
+                speed: "> 10,000 MB/s",
+                pattern: "Lectura masiva paralela",
+                analysis: "Para entrenar modelos de deep learning, millones de imágenes, textos o audios se cargan cíclicamente en pools de GPUs de alto rendimiento. Las GPU se quedan esperando datos si el almacenamiento no es capaz de enviarlos en paralelo utilizando múltiples colas con soporte NVMe-oF (NVMe over Fabrics) o buses PCIe de última generación.",
+                recTitle: "Almacenamiento EDSFF de Alta Densidad (PCIe Gen 5 NVMe)",
+                recDesc: "Requiere arreglos de SSDs empresariales EDSFF E3.S en servidores dedicados para obtener el mayor paralelismo y tasa de transferencia sostenida de datos sin caídas térmicas."
+            }
+        };
+
+        function selectUseCase(id) {
+            const data = useCasesData[id];
+
+            // Marcar botón activo
+            document.querySelectorAll('.use-btn').forEach(btn => {
+                btn.className = "use-btn w-full p-3 rounded-lg border border-gray-800 bg-gray-900/40 text-left text-xs transition-all flex items-center space-x-3";
+                const icon = btn.querySelector('i');
+                if (icon) icon.className = "w-4 h-4 text-gray-400";
+            });
+
+            const activeBtn = document.getElementById(`use-${id}`);
+            if (activeBtn) {
+                activeBtn.className = "use-btn w-full p-3 rounded-lg border border-cyan-500 bg-cyan-950/20 text-left text-xs transition-all flex items-center space-x-3";
+                const icon = activeBtn.querySelector('i');
+                if (icon) icon.className = "w-4 h-4 text-cyan-400";
+            }
+
+            // Inyectar datos en el panel de detalle
+            document.getElementById('use-title').innerText = data.title;
+            document.getElementById('use-req-metric').innerText = data.metric;
+            document.getElementById('use-req-speed').innerText = data.speed;
+            document.getElementById('use-req-pattern').innerText = data.pattern;
+            document.getElementById('use-analysis').innerText = data.analysis;
+            document.getElementById('use-recommendation-title').innerText = data.recTitle;
+            document.getElementById('use-recommendation-desc').innerText = data.recDesc;
+
+            // Cambiar icono del detalle
+            const detailIconContainer = document.getElementById('use-icon-container');
+            const detailIcon = document.getElementById('use-icon');
+            detailIcon.setAttribute('data-lucide', data.icon);
+
+            lucide.createIcons();
+        }
+
+
+        /* -------------------------------------------------------------
+           MODULO 7: AUTOEVALUACIÓN (QUIZ)
+           ------------------------------------------------------------- */
+        const answersKey = {
+            1: 'A',
+            2: 'B',
+            3: 'B',
+            4: 'A',
+            5: 'B'
+        };
+
+        let userAnswers = {};
+
+        function checkAnswer(qNum, selectedOpt, btnElement) {
+            // Guardar respuesta del usuario
+            userAnswers[qNum] = selectedOpt;
+
+            // Deshabilitar otros botones de esta pregunta
+            const parent = btnElement.parentElement;
+            parent.querySelectorAll('.quiz-opt-btn').forEach(btn => {
+                btn.classList.remove('border-cyan-500', 'bg-cyan-950/20', 'border-emerald-500', 'bg-emerald-950/20', 'border-red-500', 'bg-red-950/20');
+                btn.classList.add('border-gray-800', 'bg-gray-900/40');
+            });
+
+            const correctAns = answersKey[qNum];
+            const feedbackEl = document.getElementById(`feedback-${qNum}`);
+            feedbackEl.classList.remove('hidden');
+
+            if (selectedOpt === correctAns) {
+                btnElement.classList.remove('border-gray-800', 'bg-gray-900/40');
+                btnElement.classList.add('border-emerald-500', 'bg-emerald-950/20', 'text-emerald-300');
+                feedbackEl.className = "text-xs mt-2 text-emerald-400 font-bold";
+                feedbackEl.innerText = "¡Correcto! Excelente análisis de la especificación técnica.";
+            } else {
+                btnElement.classList.remove('border-gray-800', 'bg-gray-900/40');
+                btnElement.classList.add('border-red-500', 'bg-red-950/20', 'text-red-300');
+                feedbackEl.className = "text-xs mt-2 text-red-400 font-bold";
+                feedbackEl.innerText = `Incorrecto. La respuesta correcta era la opción ${correctAns}.`;
+            }
+
+            // Calcular puntaje total acumulado
+            calculateScore();
+        }
+
+        function calculateScore() {
+            let score = 0;
+            const answeredCount = Object.keys(userAnswers).length;
+
+            for (let q in answersKey) {
+                if (userAnswers[q] === answersKey[q]) {
+                    score++;
+                }
+            }
+
+            document.getElementById('quiz-score').innerText = `${score} / 5`;
+
+            // Actualizar panel de resumen
+            const statusText = document.getElementById('quiz-status-text');
+            if (answeredCount === 5) {
+                if (score >= 4) {
+                    statusText.innerText = "Aprobado (Excelente)";
+                    statusText.className = "font-bold text-emerald-400";
+                } else {
+                    statusText.innerText = "Reprobado (Repasar contenido)";
+                    statusText.className = "font-bold text-red-400";
+                }
+            } else {
+                statusText.innerText = "Pendiente (Faltan responder)";
+                statusText.className = "font-bold text-amber-400";
+            }
+        }
+
+
+        /* -------------------------------------------------------------
+           INICIALIZACIÓN DE CARGA DEL SISTEMA
+           ------------------------------------------------------------- */
+        window.onload = function () {
+            // Iniciar ThreeJS
+            initThreeJS();
+
+            // Iniciar Grillas de la NAND
+            renderNandSimulation();
+
+            // Forzar primer detalle de componente interactivo
+            selectComponent('controller');
+
+            // Inicializar el primer Factor de Forma (SATA SSD 2.5) para que no cargue vacío
+            selectFormFactor('ssd25');
+        };
+        // Funciones para el Modal de Imágenes
+        function openImageModal(src) {
+            document.getElementById('image-modal-img').src = src;
+            document.getElementById('image-modal').classList.remove('hidden');
+        }
+
+        function closeImageModal() {
+            document.getElementById('image-modal').classList.add('hidden');
+        }
+    </script>
+
+    <!-- Modal de Imagen -->
+    <div id="image-modal" class="fixed inset-0 z-[100] hidden bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity" onclick="closeImageModal()">
+        <div class="relative max-w-4xl max-h-full flex items-center justify-center" onclick="event.stopPropagation()">
+            <button onclick="closeImageModal()" class="absolute -top-12 right-0 text-white hover:text-cyan-400 transition-colors">
+                <i data-lucide="x" class="w-8 h-8"></i>
+            </button>
+            <img id="image-modal-img" src="" class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl border border-gray-700">
+        </div>
+    </div>
+</body>
+
+</html>

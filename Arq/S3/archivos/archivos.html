@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AFS Explorer - Sistemas de Archivos Avanzados</title>
+    <!-- Tailwind CSS para el diseño de la interfaz de usuario moderna -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#0b0f19',
+                            card: '#131b2e',
+                            primary: '#3b82f6',
+                            success: '#10b981',
+                            accent: '#8b5cf6',
+                            text: '#f3f4f6'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts para tipografía de estilo tecnológico e ingenieril -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Iconos Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Three.js para la escena interactiva 3D y simulación de AR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls para navegación y rotación en 3D -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Personalización de barra de desplazamiento para estética cibernética */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+
+        /* Animación de pulso holográfico */
+        @keyframes holo-pulse {
+
+            0%,
+            100% {
+                opacity: 0.2;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.4;
+                transform: scale(1.05);
+            }
+        }
+
+        .holo-glow {
+            position: relative;
+        }
+
+        .holo-glow::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
+            border-radius: inherit;
+            z-index: -1;
+            animation: holo-pulse 4s infinite ease-in-out;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+
+    <!-- CABECERA -->
+    <header
+        class="border-b border-gray-800 bg-cyber-bg/85 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-gradient-to-tr from-cyber-primary to-cyber-accent rounded-lg text-white">
+                <i data-lucide="database" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1
+                    class="text-xl font-bold tracking-tight bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                    AFS-EXPLORER
+                </h1>
+                <p class="text-xs text-gray-400">Sistemas de Archivos Avanzados: NTFS, EXT4, ZFS</p>
+            </div>
+        </div>
+        <nav class="flex flex-wrap gap-2">
+            <button onclick="switchTab('explorer')" id="btn-tab-explorer"
+                class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 bg-cyber-primary text-white shadow-lg shadow-cyber-primary/20">
+                <span class="flex items-center gap-2"><i data-lucide="layers" class="w-4 h-4"></i> Explorador 3D /
+                    AR</span>
+            </button>
+            <button onclick="switchTab('simulations')" id="btn-tab-simulations"
+                class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold text-gray-400 hover:text-white transition-all duration-300">
+                <span class="flex items-center gap-2"><i data-lucide="play-circle" class="w-4 h-4"></i>
+                    Simulaciones</span>
+            </button>
+            <button onclick="switchTab('comparison')" id="btn-tab-comparison"
+                class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold text-gray-400 hover:text-white transition-all duration-300">
+                <span class="flex items-center gap-2"><i data-lucide="git-compare" class="w-4 h-4"></i> Comparar
+                    Sistemas</span>
+            </button>
+            <button onclick="switchTab('evaluation')" id="btn-tab-evaluation"
+                class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold text-gray-400 hover:text-white transition-all duration-300">
+                <span class="flex items-center gap-2"><i data-lucide="award" class="w-4 h-4"></i> Evaluación</span>
+            </button>
+        </nav>
+    </header>
+
+    <!-- ÁREA DE CONTENIDO PRINCIPAL -->
+    <main class="flex-grow flex flex-col">
+
+        <!-- ================= PESTAÑA: EXPLORADOR 3D / AR ================= -->
+        <section id="tab-explorer" class="tab-content flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6 p-6">
+            <!-- Columna izquierda: Visor Holográfico 3D -->
+            <div
+                class="lg:col-span-8 flex flex-col bg-cyber-card rounded-2xl border border-gray-800 overflow-hidden relative min-h-[500px]">
+                <!-- Barra de control superior del visor -->
+                <div class="absolute top-4 left-4 z-10 flex flex-wrap gap-2">
+                    <button id="btn-ar-toggle" onclick="toggleARMode()"
+                        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg flex items-center gap-2 transition-all shadow-md shadow-purple-600/20">
+                        <i data-lucide="aperture" class="w-4 h-4"></i>
+                        <span>Activar Realidad Aumentada (Simulada)</span>
+                    </button>
+                    <button onclick="reset3DCamera()"
+                        class="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                        <span>Reajustar Vista</span>
+                    </button>
+                </div>
+
+                <!-- Indicador de modo AR -->
+                <div id="ar-status-indicator"
+                    class="hidden absolute top-4 right-4 z-10 bg-black/60 border border-purple-500/50 px-3 py-1 rounded-full flex items-center gap-2 animate-pulse">
+                    <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                    <span class="text-[10px] text-purple-300 font-bold uppercase tracking-wider">Modo AR Activo</span>
+                </div>
+
+                <!-- Cámara de fondo para AR -->
+                <video id="ar-webcam"
+                    class="absolute inset-0 w-full h-full object-cover hidden opacity-40 mix-blend-screen" autoplay
+                    playsinline muted></video>
+
+                <!-- Canvas de renderizado de Three.js -->
+                <div id="canvas3d-container"
+                    class="w-full h-full flex-grow relative bg-gradient-to-b from-slate-950 to-cyber-bg">
+                    <!-- Instrucciones flotantes para interacción -->
+                    <div
+                        class="absolute bottom-4 left-4 pointer-events-none bg-black/50 backdrop-blur-sm px-3 py-2 rounded-lg text-xs text-gray-400 border border-gray-800">
+                        <p class="flex items-center gap-1"><i data-lucide="mouse-pointer"
+                                class="w-3 h-3 text-cyber-primary"></i> Clic Izquierdo + Arrastrar: Rotar modelo</p>
+                        <p class="flex items-center gap-1"><i data-lucide="move" class="w-3 h-3 text-cyber-primary"></i>
+                            Clic Derecho + Arrastrar: Desplazar</p>
+                        <p class="flex items-center gap-1"><i data-lucide="zoom-in"
+                                class="w-3 h-3 text-cyber-primary"></i> Rueda del ratón: Zoom</p>
+                        <p class="flex items-center gap-1 mt-1 text-cyber-success font-medium"><i
+                                data-lucide="check-circle" class="w-3 h-3"></i> Toca una capa del disco para analizarla
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna derecha: Detalles de Capas y Analogía de Biblioteca -->
+            <div class="lg:col-span-4 flex flex-col gap-6">
+                <!-- Panel Informativo de Capa Seleccionada -->
+                <div class="bg-cyber-card border border-gray-800 rounded-2xl p-6 flex flex-col h-full justify-between">
+                    <div>
+                        <div class="flex items-center justify-between border-b border-gray-800 pb-4 mb-4">
+                            <span class="text-xs uppercase tracking-widest font-bold text-cyber-primary code-font"
+                                id="selected-layer-id">CAPA 00</span>
+                            <span class="px-2 py-0.5 bg-gray-800 text-[10px] rounded text-gray-400 font-mono">Kernel
+                                Space</span>
+                        </div>
+
+                        <h3 class="text-2xl font-bold mb-2 flex items-center gap-2" id="selected-layer-name">
+                            Selecciona una Capa
+                        </h3>
+
+                        <p class="text-sm text-gray-300 leading-relaxed mb-6" id="selected-layer-desc">
+                            Haz clic en cualquiera de las capas holográficas del disco duro interactivo 3D para
+                            desplegar su arquitectura física, lógica, direccionamiento y su analogía con el sistema de
+                            bibliotecas.
+                        </p>
+
+                        <!-- Analogía de Biblioteca (Diseño elegante tipo Tarjeta Holográfica) -->
+                        <div
+                            class="bg-gradient-to-r from-purple-950/40 to-blue-950/40 border border-purple-900/30 rounded-xl p-4 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 p-3 opacity-10">
+                                <i data-lucide="library" class="w-20 h-20 text-purple-400"></i>
+                            </div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="p-1 bg-purple-500/20 text-purple-400 rounded-lg">
+                                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                                </span>
+                                <h4 class="text-xs uppercase tracking-wider font-bold text-purple-300">Analogía de
+                                    Biblioteca</h4>
+                            </div>
+                            <p class="text-xs text-gray-400 leading-relaxed italic" id="selected-layer-analogy">
+                                "El sistema de archivos actúa como el reglamento organizador de una gran biblioteca..."
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Panel de selección rápida de capas -->
+                    <div class="mt-6 border-t border-gray-800 pt-4">
+                        <label class="text-xs text-gray-500 font-bold uppercase tracking-wider block mb-2">Capas de
+                            Almacenamiento</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="selectLayer(5)"
+                                class="layer-selector-btn text-left p-2 rounded-lg text-xs border border-gray-800 hover:border-purple-500/50 bg-slate-900/40 transition-all flex items-center gap-2"
+                                data-index="5">
+                                <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                                <span class="truncate">5. Metadatos</span>
+                            </button>
+                            <button onclick="selectLayer(4)"
+                                class="layer-selector-btn text-left p-2 rounded-lg text-xs border border-gray-800 hover:border-pink-500/50 bg-slate-900/40 transition-all flex items-center gap-2"
+                                data-index="4">
+                                <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+                                <span class="truncate">4. Archivos</span>
+                            </button>
+                            <button onclick="selectLayer(3)"
+                                class="layer-selector-btn text-left p-2 rounded-lg text-xs border border-gray-800 hover:border-indigo-500/50 bg-slate-900/40 transition-all flex items-center gap-2"
+                                data-index="3">
+                                <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                                <span class="truncate">3. Directorios</span>
+                            </button>
+                            <button onclick="selectLayer(2)"
+                                class="layer-selector-btn text-left p-2 rounded-lg text-xs border border-gray-800 hover:border-cyan-500/50 bg-slate-900/40 transition-all flex items-center gap-2"
+                                data-index="2">
+                                <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
+                                <span class="truncate">2. Sis. Archivos</span>
+                            </button>
+                            <button onclick="selectLayer(1)"
+                                class="layer-selector-btn text-left p-2 rounded-lg text-xs border border-gray-800 hover:border-emerald-500/50 bg-slate-900/40 transition-all flex items-center gap-2"
+                                data-index="1">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span class="truncate">1. Particiones</span>
+                            </button>
+                            <button onclick="selectLayer(0)"
+                                class="layer-selector-btn text-left p-2 rounded-lg text-xs border border-gray-800 hover:border-blue-500/50 bg-slate-900/40 transition-all flex items-center gap-2"
+                                data-index="0">
+                                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                <span class="truncate">0. Unidad Física</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= PESTAÑA: SIMULACIONES INTERACTIVAS ================= -->
+        <section id="tab-simulations" class="tab-content flex-grow hidden p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Barra lateral de navegación de simulaciones -->
+            <div class="lg:col-span-3 flex flex-col gap-3">
+                <div class="bg-cyber-card border border-gray-800 rounded-xl p-4">
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Módulos de Simulación
+                    </h3>
+                    <div class="flex flex-col gap-2">
+                        <button onclick="activateSimulation('save')" id="btn-sim-save"
+                            class="sim-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 border border-transparent bg-blue-600 text-white flex items-center gap-2">
+                            <i data-lucide="download" class="w-4 h-4"></i> Guardado de Archivo
+                        </button>
+                        <button onclick="activateSimulation('search')" id="btn-sim-search"
+                            class="sim-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-slate-800 transition-all duration-300 flex items-center gap-2">
+                            <i data-lucide="search" class="w-4 h-4"></i> Localización por Metadatos
+                        </button>
+                        <button onclick="activateSimulation('crash')" id="btn-sim-crash"
+                            class="sim-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-slate-800 transition-all duration-300 flex items-center gap-2">
+                            <i data-lucide="zap-off" class="w-4 h-4"></i> Falla Eléctrica y Consistencia
+                        </button>
+                        <button onclick="activateSimulation('healing')" id="btn-sim-healing"
+                            class="sim-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-slate-800 transition-all duration-300 flex items-center gap-2">
+                            <i data-lucide="shield-check" class="w-4 h-4"></i> Checksums y Autoreparación (ZFS)
+                        </button>
+                        <button onclick="activateSimulation('cow')" id="btn-sim-cow"
+                            class="sim-btn w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-slate-800 transition-all duration-300 flex items-center gap-2">
+                            <i data-lucide="copy" class="w-4 h-4"></i> Copy-on-Write (CoW)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Marco conceptual rápido -->
+                <div class="bg-slate-900/40 border border-gray-800 rounded-xl p-4 flex-grow">
+                    <h4
+                        class="text-xs font-bold uppercase text-cyber-primary tracking-wider mb-2 flex items-center gap-1">
+                        <i data-lucide="info" class="w-3.5 h-3.5"></i> Nota Académica
+                    </h4>
+                    <p class="text-xs text-gray-400 leading-relaxed" id="sim-notes">
+                        Las operaciones de bajo nivel del kernel gestionan directamente las estructuras del sistema de
+                        archivos. Analiza el flujo de ejecución para comparar las diferentes filosofías de diseño de
+                        estructuras.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Contenedor del Simulador Activo -->
+            <div
+                class="lg:col-span-9 bg-cyber-card border border-gray-800 rounded-2xl p-6 flex flex-col justify-between min-h-[500px]">
+
+                <!-- Encabezado de la Simulación -->
+                <div
+                    class="border-b border-gray-800 pb-4 mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div>
+                        <span class="text-xs uppercase font-bold tracking-wider text-cyber-accent code-font"
+                            id="sim-subtitle">Módulo Interactivo</span>
+                        <h2 class="text-xl font-bold" id="sim-title">Guardando un Archivo en Disco</h2>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="resetSimulation()"
+                            class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Reiniciar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Ventana Visual de Simulación Animada -->
+                <div
+                    class="flex-grow flex flex-col justify-center items-center bg-slate-950/80 rounded-xl p-6 border border-gray-900 relative overflow-hidden min-h-[300px]">
+                    <!-- Aquí se inyectan las animaciones dinámicas vía JS -->
+                    <div id="simulation-viewport" class="w-full h-full flex justify-center items-center">
+                        <!-- Render interactivo de la simulación activa -->
+                    </div>
+                </div>
+
+                <!-- Panel de Control Inferior y Explicación del Algoritmo -->
+                <div class="mt-4 bg-slate-900/60 rounded-xl p-4 border border-gray-800/80">
+                    <div class="flex items-start gap-3">
+                        <div class="p-2 bg-cyber-primary/20 text-cyber-primary rounded-lg shrink-0 mt-0.5">
+                            <i data-lucide="terminal" class="w-4 h-4" id="sim-explanation-icon"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-gray-200 mb-1" id="sim-explanation-title">Explicación del
+                                Proceso</h4>
+                            <p class="text-xs text-gray-400 leading-relaxed" id="sim-explanation-desc">
+                                El sistema de archivos interactúa con la controladora de disco mediante peticiones
+                                lógicas de entrada/salida (I/O). Haz clic en los botones de simulación superiores o
+                                dentro del recuadro para disparar la animación.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Botones interactivos de avance de simulación -->
+                    <div class="flex justify-end gap-2 mt-4" id="sim-controls-panel">
+                        <!-- Inyectado dinámicamente -->
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ================= PESTAÑA: COMPARADOR DE SISTEMAS ================= -->
+        <section id="tab-comparison" class="tab-content flex-grow hidden p-6 flex flex-col gap-6">
+            <div class="text-center max-w-3xl mx-auto mb-4">
+                <h2
+                    class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                    Matriz de Comparación y Decisiones</h2>
+                <p class="text-sm text-gray-400">Analiza y contrapone las arquitecturas internas de los tres sistemas de
+                    archivos de vanguardia. Utiliza el selector interactivo para contrastar propiedades del núcleo y
+                    flujos de datos.</p>
+            </div>
+
+            <!-- Tabla de Matriz Interactiva -->
+            <div class="bg-cyber-card border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900 border-b border-gray-800">
+                                <th class="p-4 text-xs font-bold uppercase tracking-wider text-gray-400">Característica
+                                    Técnica</th>
+                                <th
+                                    class="p-4 text-xs font-bold uppercase tracking-wider text-blue-400 border-l border-gray-800">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-2 h-2 rounded-full bg-blue-500"></span> NTFS (Windows)
+                                    </div>
+                                </th>
+                                <th
+                                    class="p-4 text-xs font-bold uppercase tracking-wider text-emerald-400 border-l border-gray-800">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> EXT4 (Linux)
+                                    </div>
+                                </th>
+                                <th
+                                    class="p-4 text-xs font-bold uppercase tracking-wider text-purple-400 border-l border-gray-800">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-2 h-2 rounded-full bg-purple-500"></span> ZFS (Unix/Enterprise)
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-800 text-sm">
+                            <tr class="hover:bg-slate-800/30 transition-all">
+                                <td class="p-4 font-semibold text-gray-300">Sistemas Operativos Principales</td>
+                                <td class="p-4 text-gray-400 border-l border-gray-800">Microsoft Windows, Windows Server
+                                </td>
+                                <td class="p-4 text-gray-400 border-l border-gray-800">GNU/Linux, Android (móviles)</td>
+                                <td class="p-4 text-gray-400 border-l border-gray-800">FreeBSD, TrueNAS, Solaris, Linux
+                                    (vía ZFS on Linux)</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30 transition-all">
+                                <td class="p-4 font-semibold text-gray-300">Manejo de Permisos</td>
+                                <td class="p-4 text-gray-400 border-l border-gray-800">ACLs Avanzadas (Lista de Control
+                                    de Acceso) integradas con Active Directory</td>
+                                <td class="p-4 text-gray-400 border-l border-gray-800">Permisos clásicos POSIX
+                                    (Lectura/Escritura/Ejecución para Propietario/Grupo/Otros) y ACLs opcionales</td>
+                                <td class="p-4 text-gray-400 border-l border-gray-800">ACLs nativas ricas tipo NFSv4 /
+                                    POSIX integradas en el zpool</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30 transition-all">
+                                <td class="p-4 font-semibold text-gray-300">Journaling (Bitácora)</td>
+                                <td class="p-4 text-gray-400 border-l border-gray-800">Sí (Registra solo metadatos para
+                                    asegurar integridad lógica veloz)</td>
+                                <td class="p-4 text-gray-400 border-l border-gray-800">Sí (Modos ajustables: Journaling
+                                    completo, Ordered, Writeback)</td>
+                                <td class="p-4 text-gray-400 border-l border-gray-800 text-purple-300 font-medium">No
+                                    necesario. Implementa ZIL (ZFS Intent Log) sobre un diseño inherentemente
+                                    transaccional</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30 transition-all">
+                                <td class="p-4 font-semibold text-gray-300">Snapshots (Instantáneas)</td>
+                                <td class="p-4 text-gray-400 border-l border-gray-800">VSS (Volume Shadow Copy) nativo
+                                    pero requiere reserva sustancial de disco</td>
+                                <td class="p-4 text-gray-400 border-l border-gray-800 text-red-400/80">No nativos a
+                                    nivel de sistema de archivos (Depende de capas de volumen externas como LVM)</td>
+                                <td class="p-4 text-purple-300 font-medium border-l border-gray-800">Nativos,
+                                    instantáneos e ilimitados. Costo computacional casi nulo (O(1))</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30 transition-all">
+                                <td class="p-4 font-semibold text-gray-300">Copy-on-Write (CoW)</td>
+                                <td class="p-4 text-red-400/80 border-l border-gray-800">No. Sobrescribe bloques en el
+                                    sitio físico original (In-Place Update)</td>
+                                <td class="p-4 text-red-400/80 border-l border-gray-800">No. Modifica datos
+                                    sobrescribiendo directamente las coordenadas LBA de bloques</td>
+                                <td class="p-4 text-purple-300 font-medium border-l border-gray-800">Sí. Arquitectura
+                                    core basada en transacciones CoW (Nunca se sobrescriben datos activos)</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30 transition-all">
+                                <td class="p-4 font-semibold text-gray-300">Self-Healing (Autocuración)</td>
+                                <td class="p-4 text-red-400/80 border-l border-gray-800">No. Requiere herramientas
+                                    manuales post-falla como chkdsk</td>
+                                <td class="p-4 text-red-400/80 border-l border-gray-800">No. Requiere intervención
+                                    manual en consola mediante fsck tras fallos graves</td>
+                                <td class="p-4 text-purple-300 font-medium border-l border-gray-800">Sí. Compara árboles
+                                    de Checksums matemáticos y repara en caliente mediante redundancia espejo o RAID-Z
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30 transition-all">
+                                <td class="p-4 font-semibold text-gray-300">Casos de Uso Recomendados</td>
+                                <td class="p-4 text-gray-400 border-l border-gray-800">Discos de sistema en entornos de
+                                    escritorio de consumo e infraestructura empresarial Microsoft Windows</td>
+                                <td class="p-4 text-gray-400 border-l border-gray-800">Servidores Linux web, bases de
+                                    datos optimizadas, estaciones de trabajo de propósito general y Android</td>
+                                <td class="p-4 text-purple-300 font-medium border-l border-gray-800">Sistemas de
+                                    almacenamiento masivo, Servidores NAS críticos, virtualización en la nube
+                                    (Proxmox/Docker) e integridad forense</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Comparador Cara a Cara Dinámico -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                <div class="bg-cyber-card border border-gray-800 rounded-2xl p-6">
+                    <h3 class="text-lg font-bold mb-4 text-blue-400 flex items-center gap-2">
+                        <i data-lucide="shield-alert" class="w-5 h-5"></i> El Dilema del "Write Hole" (Hoyo de
+                        Escritura)
+                    </h3>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-4">
+                        Tanto <strong>NTFS</strong> como <strong>EXT4</strong> mitigan la inconsistencia lógica
+                        recurriendo al <span class="text-blue-300">Journaling</span> (un registro temporal secuencial).
+                        Sin embargo, si ocurre una interrupción eléctrica a nivel de hardware, el dato en sí mismo puede
+                        quedar corrompido ("Silent Data Corruption"), aunque la estructura lógica del directorio sea
+                        declarada consistente.
+                    </p>
+                    <p class="text-sm text-gray-300 leading-relaxed">
+                        <strong>ZFS</strong> elimina este problema de raíz. Al implementar <span
+                            class="text-purple-300">Copy-on-Write (CoW)</span>, la estructura completa es inmutable
+                        durante la escritura. El sistema solo redirige el puntero raíz de la transacción una vez que la
+                        escritura de datos y metadatos con sus checksums asociados ha culminado exitosamente en nuevos
+                        bloques físicos.
+                    </p>
+                </div>
+
+                <div class="bg-cyber-card border border-gray-800 rounded-2xl p-6">
+                    <h3 class="text-lg font-bold mb-4 text-purple-400 flex items-center gap-2">
+                        <i data-lucide="server" class="w-5 h-5"></i> Integración RAID: Tradicional vs ZFS
+                    </h3>
+                    <p class="text-sm text-gray-300 leading-relaxed mb-4">
+                        En arreglos tradicionales (como NTFS o EXT4 sobre RAID por hardware), el controlador de RAID no
+                        sabe qué bloques contienen archivos reales y cuáles están vacíos. Limita la sincronización y es
+                        ciego ante la corrupción silenciosa de bits sueltos.
+                    </p>
+                    <p class="text-sm text-gray-300 leading-relaxed">
+                        En cambio, <strong>ZFS es a la vez Administrador de Volúmenes (zpools) y Sistema de
+                            Archivos</strong>. Conoce con precisión matemática dónde se aloja cada dato real. La
+                        protección ante fallos físicos de almacenamiento (RAID-Z1, Z2, Z3) está acoplada directamente
+                        con el cálculo de integridad lógica del kernel.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= PESTAÑA: EVALUACIÓN ================= -->
+        <section id="tab-evaluation"
+            class="tab-content flex-grow hidden p-6 max-w-4xl mx-auto w-full flex flex-col justify-center">
+
+            <!-- Tarjeta Principal del Cuestionario -->
+            <div id="quiz-container"
+                class="bg-cyber-card border border-gray-800 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
+                <div class="absolute -right-16 -top-16 p-10 opacity-5">
+                    <i data-lucide="help-circle" class="w-48 h-48 text-cyber-accent"></i>
+                </div>
+
+                <!-- Progreso -->
+                <div class="flex justify-between items-center mb-6">
+                    <span class="text-xs uppercase font-mono tracking-widest text-cyber-primary"
+                        id="quiz-progress-text">Pregunta 1 de 4</span>
+                    <div class="w-32 bg-gray-800 h-2 rounded-full overflow-hidden">
+                        <div id="quiz-progress-bar"
+                            class="bg-gradient-to-r from-blue-500 to-purple-500 h-full transition-all duration-300"
+                            style="width: 25%"></div>
+                    </div>
+                </div>
+
+                <!-- Pregunta -->
+                <h3 id="quiz-question" class="text-xl font-bold mb-6 text-gray-100">
+                    ¿Cargando evaluación interactiva...?
+                </h3>
+
+                <!-- Opciones (Se inyectan dinámicamente) -->
+                <div id="quiz-options" class="flex flex-col gap-3 mb-6">
+                    <!-- Botones de opción -->
+                </div>
+
+                <!-- Explicación Académica Post-respuesta -->
+                <div id="quiz-feedback"
+                    class="hidden bg-slate-900/80 border rounded-xl p-4 mb-6 transition-all duration-300">
+                    <div class="flex items-start gap-3">
+                        <span id="quiz-feedback-icon" class="p-2 rounded-lg shrink-0">
+                            <!-- Icono dinámico de check o cruz -->
+                        </span>
+                        <div>
+                            <h4 id="quiz-feedback-title" class="text-sm font-bold mb-1"></h4>
+                            <p id="quiz-feedback-text" class="text-xs text-gray-400 leading-relaxed"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón Siguiente -->
+                <div class="flex justify-end">
+                    <button id="btn-quiz-next" onclick="nextQuestion()"
+                        class="px-5 py-2.5 bg-cyber-primary hover:bg-blue-600 text-white font-semibold rounded-lg text-sm flex items-center gap-1.5 transition-all shadow-md shadow-cyber-primary/25 disabled:opacity-50 disabled:pointer-events-none"
+                        disabled>
+                        <span>Siguiente Pregunta</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pantalla de Resultados Finales -->
+            <div id="quiz-results"
+                class="hidden bg-cyber-card border border-gray-800 rounded-2xl p-8 text-center shadow-2xl relative overflow-hidden">
+                <div
+                    class="absolute inset-0 bg-gradient-to-tr from-blue-950/10 via-purple-950/10 to-transparent pointer-events-none">
+                </div>
+                <div
+                    class="w-20 h-20 bg-purple-500/15 border border-purple-500/30 text-purple-400 rounded-full flex justify-center items-center mx-auto mb-6">
+                    <i data-lucide="trophy" class="w-10 h-10"></i>
+                </div>
+                <h3 class="text-3xl font-bold mb-2 text-gray-100">Evaluación Concluida</h3>
+                <p class="text-gray-400 text-sm max-w-md mx-auto mb-6">Has completado el diagnóstico sobre
+                    almacenamiento y arquitecturas de sistemas de archivos de bajo nivel.</p>
+
+                <div class="inline-block bg-slate-900 border border-gray-800 rounded-2xl px-8 py-4 mb-8">
+                    <p class="text-xs text-gray-500 uppercase tracking-widest font-mono mb-1">Calificación de Arquitecto
+                    </p>
+                    <p class="text-4xl font-extrabold text-cyber-success" id="quiz-score-display">0 / 0</p>
+                    <p class="text-xs text-gray-400 mt-1" id="quiz-grade-text">Clasificación: Aprendiz del Kernel</p>
+                </div>
+
+                <div>
+                    <button onclick="restartQuiz()"
+                        class="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-xl text-sm transition-all inline-flex items-center gap-2">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        <span>Reintentar Diagnóstico Académico</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- PIE DE PÁGINA -->
+    <footer
+        class="border-t border-gray-800 bg-slate-950 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-2 text-xs text-gray-500">
+        <div class="footer-inner">
+            <p class="footer-copy" style="font-size: 12px; color: white; text-align: center;">© 2026 —
+                Experiencia Técnica Interactiva. Fines educativos - Luis Torrejón Arias.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ========================================================== -->
+    <!--                   LÓGICA JAVASCRIPT PRINCIPAL              -->
+    <!-- ========================================================== -->
+    <script>
+        // Inicialización de iconos Lucide al cargar
+        document.addEventListener("DOMContentLoaded", () => {
+            lucide.createIcons();
+            init3D();
+            selectLayer(0); // Empezar seleccionando la capa física del disco
+            activateSimulation('save'); // Inicializar simulador en modo guardar
+            initQuiz();
+        });
+
+        // CONTROLADOR DE PESTAÑAS (Tab Control)
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-cyber-primary', 'text-white', 'shadow-lg', 'shadow-cyber-primary/20');
+                btn.classList.add('text-gray-400', 'hover:text-white');
+            });
+
+            const activeBtn = document.getElementById(`btn-tab-${tabId}`);
+            activeBtn.classList.remove('text-gray-400', 'hover:text-white');
+            activeBtn.classList.add('bg-cyber-primary', 'text-white', 'shadow-lg', 'shadow-cyber-primary/20');
+
+            // Disparador de re-ajuste del canvas al cambiar a la pestaña 3D
+            if (tabId === 'explorer') {
+                setTimeout(() => {
+                    onWindowResize();
+                }, 50);
+            }
+        }
+
+        // ================= SISTEMA 3D Y REALIDAD AUMENTADA =================
+        let scene, camera, renderer, controls, layersGroup;
+        let isARActive = false;
+        let videoStream = null;
+        let raycaster, mouse;
+        const layerMeshes = [];
+
+        // Datos descriptivos de las capas (Estructura interna + Analogía de biblioteca)
+        const layersData = [
+            {
+                id: "CAPA 00",
+                name: "Unidad Física (Sectores y Bloques)",
+                desc: "Es el medio físico donde se graba la información de forma magnética (platos de disco duro HDD) o electrónica (transistores de estado sólido SSD). El disco se comunica con el sistema operativo exponiendo un direccionamiento lógico lineal denominado LBA (Logical Block Addressing), donde el sector físico estándar suele ser de 512 bytes o 4 KB.",
+                analogy: "El Edificio de la Biblioteca: Representa el espacio de concreto, los muros y el suelo físico donde físicamente existen y se asientan las estructuras para sostener los libros."
+            },
+            {
+                id: "CAPA 01",
+                name: "Particiones de Disco (Esquemas MBR / GPT)",
+                desc: "Es la segmentación lógica inicial del dispositivo. Permite crear áreas delimitadas de bloques LBA lógicos independientes. El esquema clásico MBR limitaba a 4 particiones primarias y 2 TB, mientras que el moderno GPT (GUID Partition Table) rompe esa restricción admitiendo hasta 128 particiones por disco en sistemas basados en UEFI.",
+                analogy: "Las Salas Temáticas: El edificio se subdivide lógicamente en grandes salas cerradas independientes (Sala de Ciencias, Sala de Humanidades, Sala de Arte). No se mezclan entre sí."
+            },
+            {
+                id: "CAPA 02",
+                name: "Sistema de Archivos (Formatos NTFS, EXT4, ZFS)",
+                desc: "Es la estructura de software gobernada por el Kernel encargada de mapear el espacio de almacenamiento. Controla la asignación de bloques libres y ocupados mediante estructuras como mapas de bits (EXT4) o tablas globales como la MFT (NTFS). ZFS prescinde de esquemas tradicionales integrando gestión de volúmenes unificada (Zpools).",
+                analogy: "El Reglamento y el Sistema de Clasificación (CDU/Dewey): Define las reglas universales bajo las cuales se colocarán los estantes, la forma de indexar libros y los protocolos para adquirirlos o eliminarlos."
+            },
+            {
+                id: "CAPA 03",
+                name: "Directorios (Estructuras de Árbol Jerárquico)",
+                desc: "Permiten la organización humana de los archivos. Técnicamente, un directorio es en sí mismo un tipo de archivo especial que contiene una tabla de correspondencia entre nombres legibles de usuario (strings) y apuntadores únicos del sistema de archivos, como el Inodo (en EXT4) o el registro MFT (en NTFS).",
+                analogy: "Los Estantes y Pasillos: Muebles físicos etiquetados con categorías jerárquicas específicos encargados de clasificar y agrupar los libros para que los investigadores no tengan que revolver todo el edificio."
+            },
+            {
+                id: "CAPA 04",
+                name: "Archivos (Segmentos de Datos Únicos)",
+                desc: "Es la unidad lógica de información persistente. Ante el sistema operativo es una secuencia contigua de bytes. Físicamente, el kernel puede fragmentar y distribuir estos bytes en decenas de bloques no secuenciales distribuidos en el disco duro, vinculados dinámicamente mediante extensiones continuas (Extents).",
+                analogy: "Los Libros: Las obras de información con contenido legible redactado. Pueden ser extensos (ocupando varios tomos en un estante) o breves, pero contienen la información que busca el usuario final."
+            },
+            {
+                id: "CAPA 05",
+                name: "Metadatos (Inodos, Atributos, Permisos y Fechas)",
+                desc: "Son 'datos que describen datos'. Almacenan el tamaño exacto del archivo, la fecha de creación/modificación, listas de control de acceso (ACLs), permisos POSIX y, crucialmente, los punteros físicos de los bloques del disco duro donde residen los datos reales. En NTFS residen en los registros de la MFT, en EXT4 en la tabla de Inodos.",
+                analogy: "La Ficha del Catálogo Bibliotecario: Una tarjeta indexadora que no contiene la novela, pero detalla el título, autor, número de páginas, fecha de publicación, quién tiene derecho a leerlo y en qué estante exacto se ubica."
+            }
+        ];
+
+        function init3D() {
+            const container = document.getElementById('canvas3d-container');
+
+            // Creación de escena
+            scene = new THREE.Scene();
+
+            // Configuración de Cámara
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(5, 5, 8);
+
+            // Renderizador
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Controles de Órbita
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 1.8; // Impedir que pase por debajo del suelo
+            controls.minDistance = 3;
+            controls.maxDistance = 20;
+
+            // Iluminación
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0x3b82f6, 1.2);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
+
+            const pointLight = new THREE.PointLight(0x8b5cf6, 1.5, 15);
+            pointLight.position.set(-4, 3, -4);
+            scene.add(pointLight);
+
+            // Grupo para contener las capas del disco duro
+            layersGroup = new THREE.Group();
+            scene.add(layersGroup);
+
+            // Generar las Capas Holográficas
+            const colors = [0x3b82f6, 0x10b981, 0x06b6d4, 0x6366f1, 0xec4899, 0xa855f7];
+
+            for (let i = 0; i < 6; i++) {
+                const layerHeight = 0.25;
+                const geometry = new THREE.CylinderGeometry(2, 2, layerHeight, 32);
+
+                // Material semi-transparente holográfico
+                const material = new THREE.MeshPhongMaterial({
+                    color: colors[i],
+                    transparent: true,
+                    opacity: 0.65,
+                    shininess: 100,
+                    specular: 0xffffff,
+                    flatShading: false
+                });
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.y = (i - 2.5) * 0.8; // Separación vertical para ver las capas
+                mesh.userData = { index: i };
+                layersGroup.add(mesh);
+                layerMeshes.push(mesh);
+
+                // Agregar un aro metálico o brillante exterior para reforzar estética
+                const edgeGeometry = new THREE.EdgesGeometry(mesh.geometry);
+                const edgeMaterial = new THREE.LineBasicMaterial({ color: colors[i], linewidth: 2 });
+                const wireframe = new THREE.LineSegments(edgeGeometry, edgeMaterial);
+                mesh.add(wireframe);
+
+                // Rejilla de almacenamiento simulado dentro de la capa física o de partición
+                if (i === 0 || i === 1) {
+                    const gridHelper = new THREE.GridHelper(3.2, 12, colors[i], 0x475569);
+                    gridHelper.position.y = layerHeight / 2 + 0.01;
+                    mesh.add(gridHelper);
+                }
+            }
+
+            // Raycasting para interacción con clics
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            container.addEventListener('click', onCanvasClick, false);
+
+            window.addEventListener('resize', onWindowResize, false);
+            animate3D();
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+
+            // Rotación pasiva sutil de todo el conjunto holográfico
+            if (layersGroup) {
+                layersGroup.rotation.y += 0.003;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas3d-container');
+            if (!container) return;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function reset3DCamera() {
+            camera.position.set(5, 5, 8);
+            controls.target.set(0, 0, 0);
+            layersGroup.rotation.set(0, 0, 0);
+        }
+
+        // Raycasting: Detección de clic en capas 3D
+        function onCanvasClick(event) {
+            const container = document.getElementById('canvas3d-container');
+            const rect = renderer.domElement.getBoundingClientRect();
+
+            mouse.x = ((event.clientX - rect.left) / container.clientWidth) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / container.clientHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(layersGroup.children);
+
+            if (intersects.length > 0) {
+                // Obtener el objeto primario de la capa
+                const clickedMesh = intersects[0].object;
+                const layerIndex = clickedMesh.userData.index;
+                if (layerIndex !== undefined) {
+                    selectLayer(layerIndex);
+                }
+            }
+        }
+
+        // Acción de Selección de Capa (UI y Efecto Visual en el Modelo 3D)
+        function selectLayer(index) {
+            // Actualizar textos informativos
+            const data = layersData[index];
+            document.getElementById('selected-layer-id').innerText = data.id;
+            document.getElementById('selected-layer-name').innerText = data.name;
+            document.getElementById('selected-layer-desc').innerText = data.desc;
+            document.getElementById('selected-layer-analogy').innerText = `"${data.analogy}"`;
+
+            // Resetear efectos visuales (escala y opacidad de capas no activas)
+            layerMeshes.forEach((mesh, i) => {
+                if (i === index) {
+                    // Resaltar capa activa
+                    mesh.scale.set(1.15, 1.15, 1.15);
+                    mesh.material.opacity = 0.95;
+                    mesh.position.y = (i - 2.5) * 0.95; // Levantar levemente
+                } else {
+                    // Retornar a dimensiones base
+                    mesh.scale.set(1.0, 1.0, 1.0);
+                    mesh.material.opacity = 0.5;
+                    mesh.position.y = (i - 2.5) * 0.8;
+                }
+            });
+
+            // Actualizar botones de selección rápida
+            document.querySelectorAll('.layer-selector-btn').forEach(btn => {
+                const btnIndex = parseInt(btn.getAttribute('data-index'));
+                if (btnIndex === index) {
+                    btn.classList.add('bg-purple-950/40', 'border-purple-500/80');
+                    btn.classList.remove('bg-slate-900/40', 'border-gray-800');
+                } else {
+                    btn.classList.remove('bg-purple-950/40', 'border-purple-500/80');
+                    btn.classList.add('bg-slate-900/40', 'border-gray-800');
+                }
+            });
+        }
+
+        // CONTROLADOR DE REALIDAD AUMENTADA SIMULADA
+        async function toggleARMode() {
+            const video = document.getElementById('ar-webcam');
+            const arIndicator = document.getElementById('ar-status-indicator');
+            const btn = document.getElementById('btn-ar-toggle');
+
+            if (!isARActive) {
+                try {
+                    // Solicitar permiso de la cámara al navegador
+                    videoStream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: "environment" },
+                        audio: false
+                    });
+
+                    video.srcObject = videoStream;
+                    video.classList.remove('hidden');
+                    arIndicator.classList.remove('hidden');
+
+                    // Modificar colores de la interfaz para integrar el holograma sobre el video
+                    renderer.setClearColor(0x000000, 0); // Fondo transparente del canvas
+
+                    btn.innerHTML = `<i data-lucide="video-off" class="w-4 h-4"></i> Desactivar Realidad Aumentada`;
+                    lucide.createIcons();
+                    isARActive = true;
+                } catch (err) {
+                    // Mostrar error amigable integrado en UI si falla
+                    console.error("Acceso denegado a cámara: ", err);
+                    alert("No se pudo iniciar la cámara del dispositivo. Mostrando holograma simulado sobre cuadrícula cibernética.");
+                }
+            } else {
+                // Detener transmisión de cámara
+                if (videoStream) {
+                    videoStream.getTracks().forEach(track => track.stop());
+                }
+                video.classList.add('hidden');
+                arIndicator.classList.add('hidden');
+                renderer.setClearColor(0x0b0f19, 1.0); // Restaurar fondo de la escena
+
+                btn.innerHTML = `<i data-lucide="aperture" class="w-4 h-4"></i> Activar Realidad Aumentada (Simulada)`;
+                lucide.createIcons();
+                isARActive = false;
+            }
+        }
+
+
+        // ================= SIMULACIONES INTERACTIVAS (ANIMACIONES) =================
+        let simState = {
+            current: 'save',
+            step: 0,
+            interval: null,
+            corrupted: false
+        };
+
+        // Activa un módulo de simulación específico
+        function activateSimulation(type) {
+            simState.current = type;
+            simState.step = 0;
+            simState.corrupted = false;
+            if (simState.interval) clearInterval(simState.interval);
+
+            // Actualizar botones de navegación lateral
+            document.querySelectorAll('.sim-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('text-gray-400', 'hover:bg-slate-800');
+            });
+            document.getElementById(`btn-sim-${type}`).classList.remove('text-gray-400', 'hover:bg-slate-800');
+            document.getElementById(`btn-sim-${type}`).classList.add('bg-blue-600', 'text-white');
+
+            renderSimulationUI();
+        }
+
+        function resetSimulation() {
+            activateSimulation(simState.current);
+        }
+
+        // Despliega la UI y los controles correspondientes a la simulación seleccionada
+        function renderSimulationUI() {
+            const viewport = document.getElementById('simulation-viewport');
+            const sub = document.getElementById('sim-subtitle');
+            const title = document.getElementById('sim-title');
+            const desc = document.getElementById('sim-explanation-desc');
+            const controls = document.getElementById('sim-controls-panel');
+
+            viewport.innerHTML = ''; // Limpiar lienzo
+            controls.innerHTML = ''; // Limpiar botones
+
+            switch (simState.current) {
+                case 'save':
+                    sub.innerText = "ALGORITMO DE ESCRITURA";
+                    title.innerText = "Cómo se guarda un archivo en disco";
+                    desc.innerText = "Visualiza el flujo secuencial de persistencia física: el archivo es segmentado en bloques por el sistema operativo, se buscan bloques LBA libres en un mapa de bits y finalmente se actualizan los metadatos de acceso.";
+
+                    viewport.innerHTML = `
+                        <div class="flex flex-col items-center gap-4 w-full max-w-md">
+                            <div class="text-xs font-mono text-gray-500 mb-2">Representación física de bloques en disco</div>
+                            <div class="grid grid-cols-8 gap-1 w-full" id="disk-grid-save">
+                                ${Array(32).fill().map((_, i) => `<div class="aspect-square border border-gray-800 rounded bg-slate-900 flex items-center justify-center text-[8px] font-mono" id="blk-save-${i}">${i}</div>`).join('')}
+                            </div>
+                            <div class="w-full bg-gray-900 border border-gray-800 rounded-lg p-3 text-xs flex justify-between items-center mt-2">
+                                <span class="font-bold text-cyber-primary flex items-center gap-1"><i data-lucide="file" class="w-3.5 h-3.5"></i> documento.pdf</span>
+                                <span class="font-mono text-gray-500 text-[10px]" id="save-status-info">Estado: Esperando Escritura</span>
+                            </div>
+                        </div>
+                    `;
+                    controls.innerHTML = `
+                        <button onclick="runSaveStep()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-xs font-bold rounded-lg text-white flex items-center gap-1.5 transition-all">
+                            <span>Siguiente Paso</span>
+                            <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                        </button>
+                    `;
+                    lucide.createIcons();
+                    break;
+
+                case 'search':
+                    sub.innerText = "ALGORITMO DE LECTURA / INDEXADO";
+                    title.innerText = "Cómo se localiza un archivo mediante metadatos";
+                    desc.innerText = "Un usuario consulta '/var/log/syslog'. Sigue el rastro lógico por el cual el Kernel realiza el parseo de directorios partiendo del Inodo raíz '/' (Inodo 2 estándar en EXT4) hasta obtener el Inodo destino y sus bloques de datos.";
+
+                    viewport.innerHTML = `
+                        <div class="flex flex-col items-center justify-center gap-6 w-full max-w-lg">
+                            <div class="text-xs bg-slate-900 border border-gray-800 rounded-lg p-2 font-mono text-cyber-primary w-full text-center">
+                                Solicitud de Lectura: <span class="text-white">cat /var/log/syslog</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs font-mono w-full justify-between">
+                                <div id="node-root" class="border border-gray-800 rounded-lg p-2 bg-slate-900 w-24 text-center">Inodo 2 (/)</div>
+                                <div class="text-gray-600">&rarr;</div>
+                                <div id="node-var" class="border border-gray-800 rounded-lg p-2 bg-slate-900 w-24 text-center">Inodo var/</div>
+                                <div class="text-gray-600">&rarr;</div>
+                                <div id="node-log" class="border border-gray-800 rounded-lg p-2 bg-slate-900 w-24 text-center">Inodo log/</div>
+                                <div class="text-gray-600">&rarr;</div>
+                                <div id="node-file" class="border border-gray-800 rounded-lg p-2 bg-slate-900 w-24 text-center">Inodo syslog</div>
+                            </div>
+                            <div class="w-full grid grid-cols-4 gap-2 text-[10px]" id="search-block-repr">
+                                <div class="border border-gray-800 rounded p-2 text-center" id="s-blk-0">Bloque Datos Root</div>
+                                <div class="border border-gray-800 rounded p-2 text-center" id="s-blk-1">Bloque Datos var</div>
+                                <div class="border border-gray-800 rounded p-2 text-center" id="s-blk-2">Bloque Datos log</div>
+                                <div class="border border-gray-800 rounded p-2 text-center" id="s-blk-3">Bloque Datos syslog</div>
+                            </div>
+                        </div>
+                    `;
+                    controls.innerHTML = `
+                        <button onclick="runSearchStep()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-xs font-bold rounded-lg text-white flex items-center gap-1.5 transition-all">
+                            <span>Pasar al Siguiente Nodo</span>
+                            <i data-lucide="chevrons-right" class="w-3.5 h-3.5"></i>
+                        </button>
+                    `;
+                    break;
+
+                case 'crash':
+                    sub.innerText = "PREVENCIÓN DE INCONSISTENCIAS";
+                    title.innerText = "Efectos de una Falla de Energía en Escrituras";
+                    desc.innerText = "Compara qué sucede con los metadatos cuando se corta repentinamente la electricidad mientras se escribe en disco. Observa cómo el Journaling de EXT4 previene la corrupción lógica, mientras que ZFS la elimina mediante inmutabilidad de punteros.";
+
+                    viewport.innerHTML = `
+                        <div class="flex flex-col items-center gap-6 w-full max-w-md">
+                            <!-- Visual del disco -->
+                            <div class="relative w-full aspect-[2/1] border border-gray-800 rounded-2xl bg-slate-900 flex flex-col justify-center items-center overflow-hidden" id="crash-visual-box">
+                                <div class="absolute inset-0 bg-red-500/10 pointer-events-none hidden" id="power-cut-overlay"></div>
+                                <div class="text-sm font-bold text-cyber-primary" id="crash-drive-status">DISCO OPERANDO NORMALMENTE</div>
+                                <div class="w-4/5 bg-gray-800 h-3 rounded-full mt-2 overflow-hidden border border-gray-700">
+                                    <div id="crash-progress-bar" class="h-full bg-blue-500" style="width: 0%"></div>
+                                </div>
+                                <p class="text-[10px] text-gray-500 font-mono mt-1" id="crash-subtext">Escribiendo archivo de base de datos...</p>
+                            </div>
+                            <!-- Selectores del sistema para comparar el efecto -->
+                            <div class="grid grid-cols-2 gap-3 w-full">
+                                <button onclick="setCrashFS('journal')" id="btn-crash-journal" class="p-3 rounded-xl border border-blue-500/50 bg-blue-950/20 text-left text-xs">
+                                    <div class="font-bold mb-1 text-blue-400">EXT4/NTFS (Journaling)</div>
+                                    <p class="text-gray-400 text-[10px] leading-snug">Se registra la transacción en una bitácora antes de alterar bloques.</p>
+                                </button>
+                                <button onclick="setCrashFS('zfs')" id="btn-crash-zfs" class="p-3 rounded-xl border border-gray-800 bg-slate-900/40 text-left text-xs">
+                                    <div class="font-bold mb-1 text-purple-400">ZFS (Copy-on-Write)</div>
+                                    <p class="text-gray-400 text-[10px] leading-snug">El puntero de árbol solo cambia una vez completado el bloque nuevo.</p>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    controls.innerHTML = `
+                        <button onclick="triggerPowerCrash()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-xs font-bold rounded-lg text-white flex items-center gap-1.5 transition-all shadow-md shadow-red-600/20">
+                            <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                            <span>Simular Corte de Energía Eléctrica</span>
+                        </button>
+                    `;
+                    lucide.createIcons();
+                    break;
+
+                case 'healing':
+                    sub.innerText = "ALTA DISPONIBILIDAD E INTEGRIDAD";
+                    title.innerText = "Autoreparación mediante Checksums (ZFS)";
+                    desc.innerText = "ZFS implementa un árbol de checksums donde cada bloque contiene el hash matemático de sus bloques hijos. Si ocurre una fluctuación o un bit erróneo en el plato físico ('bit rot'), ZFS lo detecta inmediatamente mediante discrepancia de hash y recupera la copia correcta desde el espejo.";
+
+                    viewport.innerHTML = `
+                        <div class="flex flex-col items-center gap-6 w-full max-w-lg">
+                            <div class="flex justify-between items-center w-full gap-4">
+                                <!-- Espejo Disco A -->
+                                <div class="border border-gray-800 rounded-xl p-4 bg-slate-900 w-1/2 flex flex-col items-center" id="healing-disk-a">
+                                    <span class="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Arreglo Espejo A</span>
+                                    <div class="w-12 h-12 rounded-full border-4 border-dashed border-gray-700 flex items-center justify-center my-3 text-[10px] font-bold" id="disk-a-graphic">A</div>
+                                    <div class="font-mono text-[10px] bg-slate-950 px-2 py-1 rounded text-emerald-400" id="disk-a-hash">Hash: 7F2B</div>
+                                </div>
+                                <!-- Espejo Disco B -->
+                                <div class="border border-gray-800 rounded-xl p-4 bg-slate-900 w-1/2 flex flex-col items-center" id="healing-disk-b">
+                                    <span class="text-[10px] font-bold text-purple-400 uppercase tracking-wider">Arreglo Espejo B</span>
+                                    <div class="w-12 h-12 rounded-full border-4 border-dashed border-gray-700 flex items-center justify-center my-3 text-[10px] font-bold" id="disk-b-graphic">B</div>
+                                    <div class="font-mono text-[10px] bg-slate-950 px-2 py-1 rounded text-emerald-400" id="disk-b-hash">Hash: 7F2B</div>
+                                </div>
+                            </div>
+                            <div class="text-[11px] bg-slate-950 border border-gray-800 p-2.5 rounded-lg w-full font-mono text-center flex items-center justify-center gap-2" id="healing-monitor">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Datos íntegros detectados. Lectura correcta.
+                            </div>
+                        </div>
+                    `;
+                    controls.innerHTML = `
+                        <button onclick="injectSilentCorruption()" class="px-3.5 py-2 bg-yellow-600 hover:bg-yellow-700 text-xs font-bold rounded-lg text-white flex items-center gap-1.5 transition-all shadow-md shadow-yellow-600/20">
+                            <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Inyectar Corrupción de Bit (Bit Rot) en A
+                        </button>
+                        <button onclick="triggerSelfHeal()" id="btn-self-heal" class="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-xs font-bold rounded-lg text-white flex items-center gap-1.5 transition-all shadow-md shadow-purple-600/20 opacity-50 pointer-events-none">
+                            <i data-lucide="activity" class="w-3.5 h-3.5"></i> Ejecutar Autocuración en Caliente
+                        </button>
+                    `;
+                    lucide.createIcons();
+                    break;
+
+                case 'cow':
+                    sub.innerText = "FILOSOFÍA DE INTEGRIDAD NATIVA";
+                    title.innerText = "Cómo funciona Copy-on-Write (CoW)";
+                    desc.innerText = "Compara el comportamiento tradicional (In-Place) donde al modificar un archivo se sobrescribe físicamente el bloque previo, frente a Copy-on-Write (ZFS), donde la modificación se escribe en espacio libre nuevo, manteniendo el bloque anterior a salvo.";
+
+                    viewport.innerHTML = `
+                        <div class="flex flex-col gap-4 w-full max-w-md">
+                            <!-- Superior: Tradicional -->
+                            <div class="border border-gray-800 rounded-xl p-3 bg-slate-900/60">
+                                <div class="text-xs font-bold text-blue-400 mb-2">Escritura en Sitio (In-Place) - NTFS / EXT4</div>
+                                <div class="flex items-center gap-2">
+                                    <div class="px-3 py-2 bg-blue-500 rounded text-xs font-bold text-slate-950">Inodo</div>
+                                    <span class="text-gray-600">&rarr;</span>
+                                    <div id="cow-inplace-block" class="px-4 py-2 border border-blue-500/50 bg-blue-950/20 rounded text-xs font-mono">Bloque A (Original)</div>
+                                </div>
+                            </div>
+                            <!-- Inferior: Copy-on-Write -->
+                            <div class="border border-gray-800 rounded-xl p-3 bg-slate-900/60">
+                                <div class="text-xs font-bold text-purple-400 mb-2">Copy-on-Write - ZFS</div>
+                                <div class="flex flex-col gap-2">
+                                    <div class="flex items-center gap-2">
+                                        <div id="cow-zfs-root" class="px-3 py-2 bg-purple-500 rounded text-xs font-bold text-slate-950">Z-Pointer</div>
+                                        <span class="text-gray-600">&rarr;</span>
+                                        <div id="cow-zfs-original" class="px-4 py-2 border border-purple-500/50 bg-purple-950/20 rounded text-xs font-mono">Bloque A (Original)</div>
+                                    </div>
+                                    <div class="flex items-center gap-2 mt-1 hidden" id="cow-zfs-new-row">
+                                        <span class="w-16"></span>
+                                        <span class="text-gray-600">&searr;</span>
+                                        <div id="cow-zfs-new" class="px-4 py-2 border border-emerald-500 bg-emerald-950/20 rounded text-xs font-mono text-emerald-400">Bloque A* (Modificado)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    controls.innerHTML = `
+                        <button onclick="runCoWStep()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-xs font-bold rounded-lg text-white flex items-center gap-1.5 transition-all">
+                            <span>Modificar Archivo</span>
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                        </button>
+                    `;
+                    lucide.createIcons();
+                    break;
+            }
+        }
+
+        // --- LÓGICA DE SIMULACIÓN DE GUARDADO ---
+        function runSaveStep() {
+            const grid = document.getElementById('disk-grid-save');
+            const info = document.getElementById('save-status-info');
+            const desc = document.getElementById('sim-explanation-desc');
+
+            if (simState.step === 0) {
+                // Paso 1: Segmentar y buscar espacio en mapa de bits
+                info.innerText = "Paso 1: Evaluando espacio libre en mapa de bits...";
+                desc.innerText = "El kernel de Windows o Linux examina las estructuras de espacio libre (bitmap). Para este archivo de 3 bloques, busca sectores vacíos en el disco duro.";
+
+                // Resaltar mapa de bits en el grid
+                document.getElementById('blk-save-5').classList.add('border-cyan-500', 'bg-cyan-950/50');
+                document.getElementById('blk-save-6').classList.add('border-cyan-500', 'bg-cyan-950/50');
+                document.getElementById('blk-save-7').classList.add('border-cyan-500', 'bg-cyan-950/50');
+
+                simState.step = 1;
+            } else if (simState.step === 1) {
+                // Paso 2: Escritura de datos físicos
+                info.innerText = "Paso 2: Escribiendo bloques físicos de datos...";
+                desc.innerText = "La controladora SATA o NVMe realiza los ciclos de voltaje (o alineación de cabezal magnético) escribiendo secuencialmente en los sectores de disco libres localizados previamente.";
+
+                document.getElementById('blk-save-5').className = "aspect-square border border-emerald-500 rounded bg-emerald-950/70 text-emerald-400 flex items-center justify-center text-[8px] font-mono font-bold";
+                document.getElementById('blk-save-5').innerText = "DATA 1";
+                document.getElementById('blk-save-6').className = "aspect-square border border-emerald-500 rounded bg-emerald-950/70 text-emerald-400 flex items-center justify-center text-[8px] font-mono font-bold";
+                document.getElementById('blk-save-6').innerText = "DATA 2";
+                document.getElementById('blk-save-7').className = "aspect-square border border-emerald-500 rounded bg-emerald-950/70 text-emerald-400 flex items-center justify-center text-[8px] font-mono font-bold";
+                document.getElementById('blk-save-7').innerText = "DATA 3";
+
+                simState.step = 2;
+            } else if (simState.step === 2) {
+                // Paso 3: Vinculación de Metadatos
+                info.innerText = "Paso 3: Vinculando punteros de inodo/MFT.";
+                desc.innerText = "Finalmente, para hacer accesible el archivo, el sistema operativo asienta un registro en la tabla de Inodos (EXT4) o MFT (NTFS), apuntando a los bloques físicos LBA [5, 6, 7]. ¡La operación de escritura ha concluido con éxito!";
+
+                // Mostrar bloque de metadato del archivo
+                document.getElementById('blk-save-1').className = "aspect-square border border-purple-500 rounded bg-purple-950/70 text-purple-400 flex items-center justify-center text-[8px] font-mono font-bold";
+                document.getElementById('blk-save-1').innerText = "META";
+
+                simState.step = 3;
+            } else {
+                // Reiniciar ciclo
+                resetSimulation();
+            }
+        }
+
+        // --- LÓGICA DE SIMULACIÓN DE INDEXADO/BÚSQUEDA ---
+        function runSearchStep() {
+            const desc = document.getElementById('sim-explanation-desc');
+            const step = simState.step;
+
+            // Resetear clases activas de nodos
+            ['node-root', 'node-var', 'node-log', 'node-file'].forEach(id => {
+                document.getElementById(id).className = "border border-gray-800 rounded-lg p-2 bg-slate-900 w-24 text-center text-xs text-gray-400";
+            });
+            ['s-blk-0', 's-blk-1', 's-blk-2', 's-blk-3'].forEach(id => {
+                document.getElementById(id).className = "border border-gray-800 rounded p-2 text-center text-gray-500";
+            });
+
+            if (step === 0) {
+                document.getElementById('node-root').className = "border border-cyan-500 rounded-lg p-2 bg-cyan-950/20 w-24 text-center text-xs text-cyan-400 font-bold";
+                document.getElementById('s-blk-0').className = "border border-cyan-500 bg-cyan-950/10 rounded p-2 text-center text-xs text-cyan-300";
+                desc.innerText = "1. El Kernel consulta el Inodo 2 (raíz '/'). Lee sus bloques asociados de disco, encontrando que la subcarpeta 'var' está ligada al Inodo número 412.";
+                simState.step = 1;
+            } else if (step === 1) {
+                document.getElementById('node-var').className = "border border-blue-500 rounded-lg p-2 bg-blue-950/20 w-24 text-center text-xs text-blue-400 font-bold";
+                document.getElementById('s-blk-1').className = "border border-blue-500 bg-blue-950/10 rounded p-2 text-center text-xs text-blue-300";
+                desc.innerText = "2. Salta al Inodo 412 (directorio '/var/'). Su lectura en disco revela el listado de subcarpetas, indicando que el subdirectorio 'log' apunta al Inodo 1018.";
+                simState.step = 2;
+            } else if (step === 2) {
+                document.getElementById('node-log').className = "border border-purple-500 rounded-lg p-2 bg-purple-950/20 w-24 text-center text-xs text-purple-400 font-bold";
+                document.getElementById('s-blk-2').className = "border border-purple-500 bg-purple-950/10 rounded p-2 text-center text-xs text-purple-300";
+                desc.innerText = "3. Salta al Inodo 1018 (directorio '/var/log/'). Mapea su contenido buscando la entrada del string 'syslog', descubriendo que corresponde al Inodo 5520.";
+                simState.step = 3;
+            } else if (step === 3) {
+                document.getElementById('node-file').className = "border border-emerald-500 rounded-lg p-2 bg-emerald-950/20 w-24 text-center text-xs text-emerald-400 font-bold";
+                document.getElementById('s-blk-3').className = "border border-emerald-500 bg-emerald-950/10 rounded p-2 text-center text-xs text-emerald-300";
+                desc.innerText = "4. ¡Inodo 'syslog' localizado! El sistema operativo lee sus metadatos (tamaño, permisos) y, crucialmente, los punteros LBA físicos que contienen los bytes reales del log, desplegándolos en consola.";
+                simState.step = 4;
+            } else {
+                resetSimulation();
+            }
+        }
+
+        // --- LÓGICA DE SIMULACIÓN DE FALLA ELÉCTRICA ---
+        let selectedCrashFS = 'journal';
+        function setCrashFS(fs) {
+            selectedCrashFS = fs;
+            document.getElementById('btn-crash-journal').className = fs === 'journal' ? "p-3 rounded-xl border border-blue-500 bg-blue-950/20 text-left text-xs" : "p-3 rounded-xl border border-gray-800 bg-slate-900/40 text-left text-xs";
+            document.getElementById('btn-crash-zfs').className = fs === 'zfs' ? "p-3 rounded-xl border border-purple-500 bg-purple-950/20 text-left text-xs" : "p-3 rounded-xl border border-gray-800 bg-slate-900/40 text-left text-xs";
+            resetSimulation();
+        }
+
+        function triggerPowerCrash() {
+            const bar = document.getElementById('crash-progress-bar');
+            const status = document.getElementById('crash-drive-status');
+            const sub = document.getElementById('crash-subtext');
+            const desc = document.getElementById('sim-explanation-desc');
+            const overlay = document.getElementById('power-cut-overlay');
+            const box = document.getElementById('crash-visual-box');
+
+            // Iniciar animación de barra de escritura
+            let pct = 0;
+            status.innerText = "ESCRIBIENDO EN SECTORES...";
+            status.className = "text-sm font-bold text-yellow-500 animate-pulse";
+
+            const timer = setInterval(() => {
+                pct += 10;
+                bar.style.width = pct + "%";
+
+                if (pct === 50) {
+                    // Simular el colapso a la mitad de la escritura
+                    clearInterval(timer);
+                    overlay.classList.remove('hidden');
+                    status.innerText = "FALLA ELÉCTRICA: CORTANDO ENERGÍA";
+                    status.className = "text-sm font-bold text-red-500 animate-bounce";
+                    sub.innerText = "ERROR: INTERRUPCIÓN DE ALIMENTACIÓN FÍSICA";
+                    box.classList.add('border-red-600', 'shadow-2xl', 'shadow-red-900/20');
+
+                    // Procesar según sistema de archivos elegido
+                    setTimeout(() => {
+                        overlay.classList.add('hidden');
+                        if (selectedCrashFS === 'journal') {
+                            status.innerText = "SISTEMA INICIADO: CHEQUEANDO JOURNAL";
+                            status.className = "text-sm font-bold text-blue-400";
+                            sub.innerText = "Replay del Journal completo de EXT4...";
+                            desc.innerText = "Tras la falla, EXT4 arranca examinando el 'Journal'. Descubre que la transacción quedó inconclusa. Replay o descarta los cambios parciales basándose en el registro, restaurando la coherencia lógica de las tablas en segundos, previniendo corrupción del árbol raíz.";
+                        } else {
+                            status.innerText = "SISTEMA INICIADO: COHERENCIA INTACTA";
+                            status.className = "text-sm font-bold text-purple-400";
+                            sub.innerText = "ZFS intacto: Transacción abortada automáticamente.";
+                            desc.innerText = "Con ZFS (Copy-on-Write), la falla eléctrica no afectó las estructuras del sistema de archivos. Dado que los nuevos bloques a medio escribir nunca fueron enlazados por el puntero de raíz de transacciones (que requiere una operación atómica finalizada), el sistema operativo simplemente ignora los datos huérfanos de la escritura fallida. Estado: Coherente al 100%.";
+                        }
+                    }, 2000);
+                }
+            }, 150);
+        }
+
+        // --- LÓGICA DE SIMULACIÓN DE AUTOCURACIÓN ZFS ---
+        function injectSilentCorruption() {
+            const diskA = document.getElementById('healing-disk-a');
+            const hashA = document.getElementById('disk-a-hash');
+            const graphicA = document.getElementById('disk-a-graphic');
+            const monitor = document.getElementById('healing-monitor');
+            const healBtn = document.getElementById('btn-self-heal');
+
+            simState.corrupted = true;
+
+            // Alterar visualmente Disco A para denotar bit rot
+            diskA.className = "border border-red-500 rounded-xl p-4 bg-red-950/20 w-1/2 flex flex-col items-center animate-pulse";
+            graphicA.className = "w-12 h-12 rounded-full border-4 border-dashed border-red-500 flex items-center justify-center my-3 text-[10px] font-bold text-red-400";
+            hashA.className = "font-mono text-[10px] bg-slate-950 px-2 py-1 rounded text-red-500 font-bold";
+            hashA.innerText = "Hash: BE49"; // Hash corrupto por un bitflip silencioso
+
+            monitor.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span> DISCREPANCIA DE CHECKSUM DETECTADA. Disco A corrupto.`;
+
+            // Habilitar botón de autocuración
+            healBtn.classList.remove('opacity-50', 'pointer-events-none');
+        }
+
+        function triggerSelfHeal() {
+            if (!simState.corrupted) return;
+
+            const diskA = document.getElementById('healing-disk-a');
+            const hashA = document.getElementById('disk-a-hash');
+            const graphicA = document.getElementById('disk-a-graphic');
+            const monitor = document.getElementById('healing-monitor');
+            const healBtn = document.getElementById('btn-self-heal');
+            const desc = document.getElementById('sim-explanation-desc');
+
+            // Simular reparación copiando datos desde B
+            monitor.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span> Copiando bloques sanos desde Espejo B hacia A...`;
+
+            setTimeout(() => {
+                // Restaurar Disco A
+                diskA.className = "border border-gray-800 rounded-xl p-4 bg-slate-900 w-1/2 flex flex-col items-center transition-all duration-500";
+                graphicA.className = "w-12 h-12 rounded-full border-4 border-dashed border-gray-700 flex items-center justify-center my-3 text-[10px] font-bold text-white";
+                hashA.className = "font-mono text-[10px] bg-slate-950 px-2 py-1 rounded text-emerald-400";
+                hashA.innerText = "Hash: 7F2B";
+
+                monitor.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> ¡CORRECCIÓN EXITOSA! Autocuración completada sin pérdida de datos.`;
+                desc.innerText = "ZFS ha calculado que la copia del Disco A no correspondía con el checksum almacenado en el bloque padre. Inmediatamente desvió la lectura al Disco B (consistente), y utilizó estos bloques sanos para reescribir y sanar el sector dañado de A en caliente, impidiendo fallos silenciosos de disco.";
+
+                healBtn.classList.add('opacity-50', 'pointer-events-none');
+                simState.corrupted = false;
+            }, 2500);
+        }
+
+        // --- LÓGICA DE SIMULACIÓN DE COPY-ON-WRITE ---
+        function runCoWStep() {
+            const blockInPlace = document.getElementById('cow-inplace-block');
+            const newRow = document.getElementById('cow-zfs-new-row');
+            const zfsRoot = document.getElementById('cow-zfs-root');
+            const desc = document.getElementById('sim-explanation-desc');
+
+            // Animación Tradicional
+            blockInPlace.className = "px-4 py-2 border border-red-500 bg-red-950/20 rounded text-xs font-mono text-red-400 animate-pulse";
+            blockInPlace.innerText = "Bloque A (SOBREESCRITO)";
+
+            // Animación CoW
+            newRow.classList.remove('hidden');
+            zfsRoot.className = "px-3 py-2 bg-emerald-500 rounded text-xs font-bold text-slate-950 animate-pulse";
+            zfsRoot.innerText = "Z-Pointer*";
+
+            desc.innerText = "Al modificar el archivo: 1) NTFS/EXT4 escriben directamente encima del Bloque A (riesgo de inconsistencia si falla). 2) ZFS localiza bloques libres nuevos, escribe el 'Bloque A*' con los cambios, y solo si se completa, actualiza el puntero raíz ('Z-Pointer*'). El 'Bloque A' viejo queda intacto, sirviendo de base para un Snapshot instantáneo.";
+        }
+
+
+        // ================= SISTEMA DE EVALUACIÓN (QUIZ) =================
+        const quizQuestions = [
+            {
+                q: "¿Qué sistema de archivos es el más recomendable para asegurar integridad extrema frente a fallos de corrupción de bits en almacenamiento masivo?",
+                options: [
+                    { text: "EXT4", isCorrect: false },
+                    { text: "NTFS", isCorrect: false },
+                    { text: "ZFS", isCorrect: true },
+                    { text: "FAT32", isCorrect: false }
+                ],
+                feedbackTitle: "¡Correcto!",
+                feedbackText: "ZFS integra de forma nativa sumas de comprobación (checksums) criptográficas de extremo a extremo, permitiendo la detección y autoreparación activa contra corrupción de datos silenciosa."
+            },
+            {
+                q: "¿Qué función permite volver instantáneamente a un estado anterior guardado en el sistema de archivos de forma ultrarrápida (O(1))?",
+                options: [
+                    { text: "Snapshots (Instantáneas)", isCorrect: true },
+                    { text: "Desfragmentación", isCorrect: false },
+                    { text: "Journal Replay", isCorrect: false },
+                    { text: "Chkdsk", isCorrect: false }
+                ],
+                feedbackTitle: "¡Correcto!",
+                feedbackText: "Gracias al esquema Copy-on-Write, los Snapshots en ZFS son casi instantáneos y de costo constante, ya que se limitan a conservar los punteros de metadatos históricos sin duplicar datos."
+            },
+            {
+                q: "¿Cuál es la principal diferencia funcional entre el Journaling y Copy-on-Write (CoW)?",
+                options: [
+                    { text: "Journaling no requiere almacenamiento auxiliar físico.", isCorrect: false },
+                    { text: "El Journaling previene inconsistencias lógicas usando una bitácora; CoW escribe siempre en espacio libre nuevo garantizando inmutabilidad directa.", isCorrect: true },
+                    { text: "CoW es más lento de escribir y propenso a inconsistencias lógicas crónicas.", isCorrect: false },
+                    { text: "EXT4 e Inodos requieren estrictamente CoW.", isCorrect: false }
+                ],
+                feedbackTitle: "¡Excelente análisis!",
+                feedbackText: "El Journaling es una bitácora correctora post-desastre (sirve para reconstruir). CoW elimina la posibilidad de inconsistencias previniendo la sobrescritura directa en el sector activo."
+            },
+            {
+                q: "En el sistema EXT4, ¿qué estructura contiene las propiedades del archivo (fechas, propietario, punteros físicos) pero NO el nombre del archivo?",
+                options: [
+                    { text: "El Directorio", isCorrect: false },
+                    { text: "El Inodo", isCorrect: true },
+                    { text: "La MFT", isCorrect: false },
+                    { text: "El Sector de Booteo", isCorrect: false }
+                ],
+                feedbackTitle: "¡Correcto!",
+                feedbackText: "El Inodo almacena todos los metadatos y punteros de datos. El nombre legible del archivo se asocia en el bloque de directorio, el cual vincula los nombres textuales con sus respectivos números de inodo."
+            }
+        ];
+
+        let currentQuestionIdx = 0;
+        let score = 0;
+
+        function initQuiz() {
+            currentQuestionIdx = 0;
+            score = 0;
+            document.getElementById('quiz-container').classList.remove('hidden');
+            document.getElementById('quiz-results').classList.add('hidden');
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const qData = quizQuestions[currentQuestionIdx];
+
+            // Actualizar interfaz de avance
+            document.getElementById('quiz-progress-text').innerText = `Pregunta ${currentQuestionIdx + 1} de ${quizQuestions.length}`;
+            document.getElementById('quiz-progress-bar').style.width = `${((currentQuestionIdx + 1) / quizQuestions.length) * 100}%`;
+
+            // Cargar pregunta
+            document.getElementById('quiz-question').innerText = qData.q;
+
+            // Inyectar opciones
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+
+            qData.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "option-btn w-full text-left p-4 rounded-xl border border-gray-800 bg-slate-900/60 hover:bg-slate-800 hover:border-cyber-primary text-sm font-medium transition-all duration-200 flex justify-between items-center";
+                btn.innerHTML = `<span>${opt.text}</span> <i data-lucide="circle" class="w-4 h-4 text-gray-600"></i>`;
+                btn.onclick = () => selectOption(idx, opt.isCorrect);
+                optionsContainer.appendChild(btn);
+            });
+
+            // Ocultar feedback y deshabilitar botón de avance
+            document.getElementById('quiz-feedback').classList.add('hidden');
+            document.getElementById('btn-quiz-next').disabled = true;
+
+            lucide.createIcons();
+        }
+
+        function selectOption(selectedIdx, isCorrect) {
+            const qData = quizQuestions[currentQuestionIdx];
+            const buttons = document.querySelectorAll('.option-btn');
+
+            // Inhabilitar clics adicionales
+            buttons.forEach(btn => btn.disabled = true);
+
+            // Resaltar acierto o fallo
+            buttons.forEach((btn, idx) => {
+                const isBtnCorrect = qData.options[idx].isCorrect;
+                if (isBtnCorrect) {
+                    btn.className = "option-btn w-full text-left p-4 rounded-xl border border-emerald-500 bg-emerald-950/20 text-sm font-semibold text-emerald-400 transition-all duration-200 flex justify-between items-center";
+                    btn.innerHTML = `<span>${qData.options[idx].text}</span> <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>`;
+                } else if (idx === selectedIdx) {
+                    btn.className = "option-btn w-full text-left p-4 rounded-xl border border-red-500 bg-red-950/20 text-sm font-semibold text-red-400 transition-all duration-200 flex justify-between items-center";
+                    btn.innerHTML = `<span>${qData.options[idx].text}</span> <i data-lucide="x-circle" class="w-4 h-4 text-red-400"></i>`;
+                } else {
+                    btn.className = "option-btn w-full text-left p-4 rounded-xl border border-gray-800 bg-slate-900/20 opacity-40 text-sm font-medium transition-all duration-200 flex justify-between items-center";
+                }
+            });
+
+            if (isCorrect) score++;
+
+            // Desplegar panel explicativo retroalimentado
+            const feedbackBox = document.getElementById('quiz-feedback');
+            const feedbackIcon = document.getElementById('quiz-feedback-icon');
+            const feedbackTitle = document.getElementById('quiz-feedback-title');
+            const feedbackText = document.getElementById('quiz-feedback-text');
+
+            feedbackBox.classList.remove('hidden');
+            if (isCorrect) {
+                feedbackBox.className = "bg-emerald-950/20 border border-emerald-500/30 rounded-xl p-4 mb-6 transition-all duration-300";
+                feedbackIcon.className = "p-2 bg-emerald-500/20 text-emerald-400 rounded-lg shrink-0";
+                feedbackIcon.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4"></i>`;
+                feedbackTitle.innerText = qData.feedbackTitle;
+                feedbackTitle.className = "text-sm font-bold text-emerald-400 mb-1";
+            } else {
+                feedbackBox.className = "bg-red-950/20 border border-red-500/30 rounded-xl p-4 mb-6 transition-all duration-300";
+                feedbackIcon.className = "p-2 bg-red-500/20 text-red-400 rounded-lg shrink-0";
+                feedbackIcon.innerHTML = `<i data-lucide="help-circle" class="w-4 h-4"></i>`;
+                feedbackTitle.innerText = "Respuesta Incorrecta";
+                feedbackTitle.className = "text-sm font-bold text-red-400 mb-1";
+            }
+            feedbackText.innerText = qData.feedbackText;
+
+            // Habilitar botón de avance
+            document.getElementById('btn-quiz-next').disabled = false;
+            lucide.createIcons();
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIdx < quizQuestions.length - 1) {
+                currentQuestionIdx++;
+                showQuestion();
+            } else {
+                // Fin del juego
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('quiz-container').classList.add('hidden');
+            document.getElementById('quiz-results').classList.remove('hidden');
+
+            document.getElementById('quiz-score-display').innerText = `${score} / ${quizQuestions.length}`;
+
+            // Asignación de rangos académicos
+            const gradeText = document.getElementById('quiz-grade-text');
+            const pct = (score / quizQuestions.length) * 100;
+
+            if (pct === 100) {
+                gradeText.innerText = "Clasificación: Desarrollador del Kernel Principal (C-Level OS Architect)";
+                gradeText.className = "text-xs text-purple-400 mt-1 font-bold";
+            } else if (pct >= 75) {
+                gradeText.innerText = "Clasificación: Administrador de Sistemas Senior";
+                gradeText.className = "text-xs text-blue-400 mt-1 font-bold";
+            } else if (pct >= 50) {
+                gradeText.innerText = "Clasificación: Estudiante de Sistemas Operativos";
+                gradeText.className = "text-xs text-yellow-400 mt-1 font-bold";
+            } else {
+                gradeText.innerText = "Clasificación: Analista de Sistemas en Entrenamiento";
+                gradeText.className = "text-xs text-red-400 mt-1 font-bold";
+            }
+        }
+
+        function restartQuiz() {
+            initQuiz();
+        }
+    </script>
+</body>
+
+</html>
