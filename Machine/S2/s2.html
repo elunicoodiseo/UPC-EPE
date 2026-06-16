@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelos de Machine Learning en Realidad Aumentada</title>
+
+    <!-- Librerías Externas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #F6F4F2;
+            --card-bg: #FFFFFF;
+            --text-main: #0F172A;
+            --text-sec: #475569;
+            --accent-main: #C97B63;
+            --accent-soft: #E7D7CF;
+            --success: #22C55E;
+            --danger: #EF4444;
+            --info: #3B82F6;
+            --warning: #F59E0B;
+            --border-radius: 16px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            color: var(--text-main);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        p {
+            color: var(--text-sec);
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .text-accent {
+            color: var(--accent-main);
+        }
+
+        header {
+            text-align: center;
+            padding: 2rem 1rem;
+            background: var(--card-bg);
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        header p {
+            max-width: 800px;
+            margin: 0 auto;
+            font-size: 1.1rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .bento-grid {
+            display: grid;
+            grid-template-columns: 250px 1fr 380px;
+            /* Panel derecho un poco más ancho */
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+            min-height: 750px;
+        }
+
+        .bento-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            padding: 1rem;
+            text-align: left;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-sec);
+            font-weight: 600;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-btn:hover {
+            background: var(--accent-soft);
+            color: var(--accent-main);
+        }
+
+        .nav-btn.active {
+            background: var(--accent-main);
+            color: white;
+        }
+
+        .visualizer-area {
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .canvas-container {
+            flex-grow: 1;
+            width: 100%;
+            min-height: 450px;
+            background: #e5e5f7;
+            opacity: 1;
+            background-image: radial-gradient(#C97B63 0.5px, transparent 0.5px), radial-gradient(#C97B63 0.5px, #e5e5f7 0.5px);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            position: relative;
+        }
+
+        .controls-overlay {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(5px);
+            z-index: 10;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: var(--accent-main);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--accent-main);
+            color: var(--accent-main);
+        }
+
+        .btn-outline:hover {
+            background: var(--accent-soft);
+        }
+
+        .info-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .info-section {
+            border-left: 4px solid var(--accent-main);
+            padding-left: 1rem;
+        }
+
+        .info-section.output {
+            border-left-color: var(--info);
+            background: #f0f7ff;
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .info-section.definition {
+            border-left-color: var(--warning);
+            background: #fffbeb;
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .badge-type {
+            background: var(--accent-soft);
+            color: var(--accent-main);
+        }
+
+        .inputs-container {
+            margin-top: 0.5rem;
+            padding: 1rem;
+            background: var(--bg-color);
+            border-radius: 8px;
+        }
+
+        .slider-group {
+            margin-bottom: 1rem;
+        }
+
+        .slider-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent-main);
+        }
+
+        .grid-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .case-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            border-top: 4px solid var(--accent-main);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th,
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: var(--bg-color);
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(3px);
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 1024px) {
+            .bento-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-menu {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .nav-btn {
+                flex: 1;
+                text-align: center;
+                justify-content: center;
+            }
+
+            .info-panel {
+                height: auto;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .formula-box {
+            background: var(--text-main);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: monospace;
+            text-align: center;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        .header-content {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .header-content h2 {
+            margin-bottom: 0;
+            text-shadow: 0 2px 4px rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Modelos de Machine Learning en <span class="text-accent">Realidad Aumentada</span></h1>
+        <p>Explora cómo diferentes modelos de Machine Learning reciben datos, procesan variables, aprenden patrones y
+            generan predicciones o clasificaciones aplicables a contextos educativos reales.</p>
+    </header>
+
+    <div class="container">
+
+        <div class="bento-grid">
+
+            <!-- Navegación -->
+            <div class="bento-card">
+                <h3>Modelos</h3>
+                <div class="nav-menu" id="model-nav">
+                    <button class="nav-btn active" data-model="0"><i class="fas fa-chart-line"></i> Regresión
+                        Lineal</button>
+                    <button class="nav-btn" data-model="4"><i class="fas fa-layer-group"></i> Reg. Lineal
+                        Múltiple</button>
+                    <button class="nav-btn" data-model="1"><i class="fas fa-balance-scale"></i> Regresión
+                        Logística</button>
+                    <button class="nav-btn" data-model="2"><i class="fas fa-code-branch"></i> Árbol de Decisión</button>
+                    <button class="nav-btn" data-model="3"><i class="fas fa-tree"></i> Random Forest</button>
+                </div>
+
+                <div style="margin-top: auto; padding-top: 2rem;">
+                    <button id="btn-resumen" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                        <i class="fas fa-book-open"></i> Resumen Final
+                    </button>
+                </div>
+            </div>
+
+            <!-- Visualizador 3D -->
+            <div class="bento-card visualizer-area">
+                <div class="header-content">
+                    <h2 id="ui-title">Regresión Lineal</h2>
+                    <span class="badge badge-type" id="ui-type">Predicción Continua</span>
+                </div>
+
+                <div class="canvas-container" id="canvas-container">
+                    <div id="ar-fallback" class="hidden"
+                        style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 8px; font-size: 0.8rem; color: var(--danger); z-index: 10; font-weight:bold; text-align: right;">
+                        Tu navegador no soporta AR nativo.<br>Modo 3D interactivo activo.
+                    </div>
+                </div>
+
+                <div class="controls-overlay">
+                    <button class="btn btn-outline" id="btn-ar"><i class="fas fa-vr-cardboard"></i> Activar modo
+                        AR</button>
+                    <button class="btn btn-primary" id="btn-step"><i class="fas fa-play"></i> Simulación paso a
+                        paso</button>
+                    <button class="btn btn-outline" id="btn-reset"><i class="fas fa-undo"></i> Reiniciar</button>
+                </div>
+            </div>
+
+            <!-- Panel de Información e Interacción -->
+            <div class="bento-card info-panel" id="info-panel">
+
+                <div class="info-section definition">
+                    <h3><i class="fas fa-book"></i> Definición</h3>
+                    <p id="ui-definition" style="font-size: 0.85rem; margin-bottom: 0;">Modelo estadístico...</p>
+                </div>
+
+                <div class="info-section">
+                    <h3><i class="fas fa-school"></i> Caso Educativo</h3>
+                    <p id="ui-case" style="font-size: 0.85rem; margin-bottom: 0;">Una institución educativa...</p>
+                </div>
+
+                <div class="info-section">
+                    <h3><i class="fas fa-cogs"></i> Operación</h3>
+                    <div id="ui-formula" class="formula-box">y = mx + b</div>
+                </div>
+
+                <div class="inputs-container">
+                    <h3><i class="fas fa-sliders-h"></i> Modificar Entradas (Inputs)</h3>
+                    <div id="dynamic-inputs">
+                        <!-- Sliders dinámicos -->
+                    </div>
+                </div>
+
+                <div class="info-section output">
+                    <h3><i class="fas fa-flag-checkered"></i> Salida (Output)</h3>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--info);" id="ui-output-value">Nota:
+                        15.0</div>
+                    <p id="ui-interpretation" style="margin-top: 0.5rem; font-size: 0.85rem; margin-bottom: 0;">
+                        Interpretación...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Casos Reales -->
+        <h2>Aplicaciones reales en instituciones educativas</h2>
+        <div class="grid-cards">
+            <div class="case-card">
+                <h4><i class="fas fa-chart-bar text-accent"></i> Rendimiento</h4>
+                <p>Usar regresión lineal o Random Forest para estimar la nota final de los estudiantes anticipadamente.
+                </p>
+            </div>
+            <div class="case-card">
+                <h4><i class="fas fa-exclamation-circle" style="color: var(--danger)"></i> Riesgo</h4>
+                <p>Usar regresión logística para estimar la probabilidad de que un estudiante desapruebe el curso.</p>
+            </div>
+            <div class="case-card">
+                <h4><i class="fas fa-hands-helping" style="color: var(--info)"></i> Apoyo</h4>
+                <p>Usar árboles de decisión para definir rutas de intervención académica y asignar tutorías.</p>
+            </div>
+            <div class="case-card">
+                <h4><i class="fas fa-building" style="color: var(--success)"></i> Gestión</h4>
+                <p>Usar Random Forest para anticipar demanda de cursos, uso de recursos o riesgo general de abandono.
+                </p>
+            </div>
+        </div>
+
+        <!-- Comparador -->
+        <h2>Comparador de Modelos</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Modelo</th>
+                        <th>Inputs (Ejemplos)</th>
+                        <th>Operación Interna</th>
+                        <th>Output</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Regresión Lineal</strong></td>
+                        <td>Horas de estudio</td>
+                        <td>Ajusta una línea geométrica para minimizar los errores entre datos.</td>
+                        <td>Valor numérico continuo (ej. Nota estimada)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Reg. Lineal Múltiple</strong></td>
+                        <td>Horas de estudio, Asistencia</td>
+                        <td>Ajusta un plano tridimensional considerando múltiples variables a la vez.</td>
+                        <td>Valor numérico continuo ajustado</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Regresión Logística</strong></td>
+                        <td>Asistencia, tareas, promedio</td>
+                        <td>Calcula una probabilidad (0 a 1) usando una función sigmoide.</td>
+                        <td>Probabilidad o Categoría (ej. Aprueba/Desaprueba)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Árbol de Decisión</strong></td>
+                        <td>Asistencia, tareas, alertas previas</td>
+                        <td>Aplica secuencias de reglas condicionales (tipo Sí/No). Implementa <em>poda</em>.</td>
+                        <td>Clasificación directa (ej. Necesita apoyo)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Random Forest</strong></td>
+                        <td>Varias variables académicas combinadas</td>
+                        <td>Promedia o vota las predicciones de docenas/cientos de árboles.</td>
+                        <td>Puntaje estable o clasificación robusta</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="modal-resumen">
+        <div class="modal-content">
+            <h2 style="color: var(--accent-main); margin-bottom: 1rem;"><i class="fas fa-graduation-cap"></i> Conclusión
+                Educativa</h2>
+            <p style="font-size: 1.1rem; text-align: left;">
+                Los modelos de Machine Learning transforman datos de entrada en resultados útiles.
+                <br><br>
+                La <strong>regresión lineal</strong> y el <strong>Random Forest de regresión</strong> predicen valores
+                numéricos.
+                La <strong>regresión logística</strong> y el <strong>árbol de decisión</strong> pueden clasificar casos.
+                <br><br>
+                La elección del modelo depende del tipo de problema, las variables disponibles y la necesidad de
+                interpretación que tenga la institución educativa para apoyar a sus estudiantes.
+            </p>
+            <button class="btn btn-primary" style="margin-top: 1.5rem;"
+                onclick="document.getElementById('modal-resumen').style.display='none'">Cerrar</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. DATOS DE CONTENIDO POR MODELO ---
+        const modelData = [
+            {
+                id: 0,
+                title: "Regresión Lineal",
+                type: "Predicción de un valor continuo",
+                definition: "Modelo que asume una relación lineal entre las variables de entrada y la de salida, trazando una línea que reduce la distancia con todos los datos conocidos.",
+                case: "Estimar la nota final a partir de horas de estudio para anticipar el rendimiento.",
+                formula: "y = mx + b<br><small>(Nota = pendiente * horas + base)</small>",
+                interpretation: "A mayor cantidad de horas, mayor nota. Funciona mejor cuando la tendencia es clara. Si la relación es muy dispersa, la línea perderá precisión.",
+                inputs: [
+                    { id: 'lr_hours', label: 'Horas de estudio semanal', min: 0, max: 10, value: 6, step: 0.5 }
+                ],
+                calcOutput: (vals) => {
+                    const h = vals.lr_hours;
+                    let nota = 6 + (1.3 * h); // Ajustado a la visualización visual
+                    if (nota > 20) nota = 20;
+                    return { text: `Nota: ${nota.toFixed(1)}`, val: nota, raw: [h] };
+                }
+            },
+            {
+                id: 1,
+                title: "Regresión Logística",
+                type: "Clasificación Binaria",
+                definition: "Modelo probabilístico que utiliza una curva sigmoide (en forma de 'S') para estimar la probabilidad de que algo ocurra o pertenezca a una categoría.",
+                case: "Estimar si un estudiante aprobará o desaprobará basado en su asistencia y horas de estudio.",
+                formula: "Prob = 1 / (1 + e<sup>-z</sup>)",
+                interpretation: "Devuelve un porcentaje (ej. 78%). Luego se usa un umbral (ej. 50%) para definir si la clasificación final es 'Aprueba' o 'Desaprueba'.",
+                inputs: [
+                    { id: 'log_hours', label: 'Horas de estudio', min: 0, max: 8, value: 3.5, step: 0.5 },
+                    { id: 'log_att', label: 'Asistencia (%)', min: 0, max: 100, value: 70, step: 5 }
+                ],
+                calcOutput: (vals) => {
+                    const z = (vals.log_hours * 0.8) + ((vals.log_att / 100) * 4) - 4;
+                    const prob = 1 / (1 + Math.exp(-z));
+                    const pPct = (prob * 100).toFixed(0);
+                    const state = prob >= 0.5 ? 'Aprueba' : 'Desaprueba';
+                    const color = prob >= 0.5 ? 'var(--success)' : 'var(--danger)';
+                    return { text: `<span style="color:${color}">${state}</span> <br><small style="color:var(--text-sec);font-size:0.9rem">Prob: ${pPct}%</small>`, val: prob, raw: [vals.log_hours, vals.log_att] };
+                }
+            },
+            {
+                id: 2,
+                title: "Árbol de Decisión",
+                type: "Clasificación por reglas (con poda)",
+                definition: "Estructura en forma de árbol donde cada nodo es una pregunta sobre un dato. Incluye el proceso de <strong>poda (pruning)</strong>, que recorta ramas innecesarias para no sobreaprender excepciones.",
+                case: "Identificar si un estudiante necesita apoyo académico detectando patrones en su historial.",
+                formula: "SI (Condición A)<br>ENTONCES B SINO C",
+                interpretation: "Sigue una ruta clara. Los nodos sombreados muestran la 'poda', donde ramas demasiado específicas fueron descartadas para que el modelo funcione mejor con estudiantes nuevos.",
+                inputs: [
+                    { id: 'dt_att', label: 'Asistencia (%)', min: 0, max: 100, value: 55, step: 5 },
+                    { id: 'dt_alerts', label: 'Alertas previas', min: 0, max: 5, value: 1, step: 1 },
+                    { id: 'dt_task', label: 'Tareas entregadas (%)', min: 0, max: 100, value: 60, step: 5 }
+                ],
+                calcOutput: (vals) => {
+                    let path = [];
+                    let result = "";
+                    let color = "";
+                    let nodeIndices = []; // Para iluminar ruta visual
+
+                    nodeIndices.push(0); // Root
+
+                    if (vals.dt_att < 60) {
+                        nodeIndices.push(1); // L1 Izq
+                        if (vals.dt_alerts >= 2) {
+                            nodeIndices.push(3); // Apoyo Urgente
+                            result = "Apoyo Urgente"; color = 'var(--danger)';
+                        } else {
+                            nodeIndices.push(4); // Apoyo Moderado
+                            result = "Apoyo Moderado"; color = 'var(--warning)';
+                        }
+                    } else {
+                        nodeIndices.push(2); // L1 Der
+                        if (vals.dt_task < 50) {
+                            nodeIndices.push(5); // Nodo con poda debajo
+                            result = "Observación"; color = 'var(--warning)';
+                        } else {
+                            nodeIndices.push(6); // Buen estado
+                            result = "Buen Estado"; color = 'var(--success)';
+                        }
+                    }
+                    return { text: `<span style="color:${color}">${result}</span>`, val: nodeIndices, raw: path };
+                }
+            },
+            {
+                id: 3,
+                title: "Random Forest",
+                type: "Ensamble de múltiples árboles",
+                definition: "Crea docenas de árboles de decisión (un 'bosque') simultáneamente. Cada árbol ve una parte distinta de los datos. La decisión final es el promedio de todos, reduciendo errores.",
+                case: "Predecir puntaje final analizando datos complejos sin depender de un solo árbol.",
+                formula: "Salida = Promedio de<br>50 predicciones independientes",
+                interpretation: "Es altamente preciso. Visualmente, verás cómo 50 árboles independientes aportan su grano de arena (partícula) al cálculo del centro.",
+                inputs: [
+                    { id: 'rf_att', label: 'Asistencia (%)', min: 0, max: 100, value: 80, step: 5 },
+                    { id: 'rf_part', label: 'Participación (1-5)', min: 1, max: 5, value: 3, step: 1 },
+                    { id: 'rf_task', label: 'Tareas (%)', min: 0, max: 100, value: 85, step: 5 }
+                ],
+                calcOutput: (vals) => {
+                    const base = (vals.rf_att / 100) * 10 + (vals.rf_task / 100) * 6 + vals.rf_part;
+
+                    // Generar 50 variaciones simulando predicciones independientes de cada árbol
+                    const raw = [];
+                    let sum = 0;
+                    for (let i = 0; i < 50; i++) {
+                        let treePred = base + (Math.random() * 4 - 2); // Variación individual
+                        treePred = Math.min(20, Math.max(0, treePred));
+                        raw.push(treePred);
+                        sum += treePred;
+                    }
+                    const avg = sum / 50; // Promedio final de todos los árboles
+                    return { text: `Puntaje: ${avg.toFixed(1)}`, val: avg, raw: raw };
+                }
+            },
+            {
+                id: 4,
+                title: "Regresión Lineal Múltiple",
+                type: "Predicción Continua Multivariable",
+                definition: "Extensión de la regresión lineal que utiliza dos o más variables independientes simultáneas. Geométricamente, en lugar de una línea, ajusta un <strong>plano</strong> en un espacio 3D para reducir los errores.",
+                case: "Estimar la nota final considerando tanto las horas de estudio como la asistencia al mismo tiempo.",
+                formula: "y = m₁x₁ + m₂x₂ + b<br><small>(Nota = peso1*horas + peso2*asistencia + base)</small>",
+                interpretation: "Demuestra cómo el resultado depende del impacto combinado de varios factores interactuando simultáneamente.",
+                inputs: [
+                    { id: 'mlr_hours', label: 'Horas de estudio', min: 0, max: 10, value: 5, step: 0.5 },
+                    { id: 'mlr_att', label: 'Asistencia (%)', min: 0, max: 100, value: 80, step: 5 }
+                ],
+                calcOutput: (vals) => {
+                    const h = vals.mlr_hours;
+                    const a = vals.mlr_att;
+                    // Lógica simulada: Base 2, +1.0 por hora, +0.08 por cada % de asistencia
+                    let nota = 2 + (1.0 * h) + (0.08 * a);
+                    if (nota > 20) nota = 20;
+                    return { text: `Nota: ${nota.toFixed(1)}`, val: nota, raw: [h, a] };
+                }
+            }
+        ];
+
+        let currentModelId = 0;
+        let currentInputs = {};
+
+        // --- 2. CONFIGURACIÓN THREE.JS ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = null;
+
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+        camera.position.set(5, 5, 12);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        const modelGroup = new THREE.Group();
+        scene.add(modelGroup);
+
+        let active3DElements = {};
+
+        function createTextSprite(message, color = "rgba(15, 23, 42, 1)", bgColor = "rgba(255,255,255,0.9)", width = 256, fontSize = 24, height = 128) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = width; canvas.height = height;
+            context.fillStyle = bgColor;
+            context.roundRect(0, 0, width, height, 20); context.fill();
+            context.font = `Bold ${fontSize}px Arial`;
+            context.fillStyle = color;
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+            context.fillText(message, width / 2, height / 2);
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            sprite.scale.set(width / 128, height / 128, 1);
+            return sprite;
+        }
+
+        // --- 3. CONSTRUCCIÓN DE ESCENAS 3D POR MODELO ---
+
+        function buildMultipleLinearRegression() {
+            modelGroup.clear();
+            active3DElements = {};
+
+            const axesHelper = new THREE.AxesHelper(10);
+            modelGroup.add(axesHelper);
+
+            // Coeficientes visuales del hiperplano
+            const slopeX = 1.0;
+            const slopeZ = 0.8; // Z mapped 0-10 para representar 0-100%
+            const intercept = 2;
+
+            // Puntos de datos distribuidos en el espacio 3D
+            const materialData = new THREE.MeshLambertMaterial({ color: 0x475569 });
+            const geoPoint = new THREE.SphereGeometry(0.15, 16, 16);
+
+            for (let i = 0; i < 60; i++) {
+                const x = Math.random() * 10;
+                const z = Math.random() * 10;
+                const noise = (Math.random() - 0.5) * 3;
+                let y = intercept + (slopeX * x) + (slopeZ * z) + noise;
+                y = Math.max(0, Math.min(y, 20));
+
+                const mesh = new THREE.Mesh(geoPoint, materialData);
+                mesh.position.set(x, y * 0.4, z); // Y escalado al 40% visualmente
+                modelGroup.add(mesh);
+            }
+
+            // Plano tridimensional (Regresión)
+            const planeGeo = new THREE.PlaneGeometry(10, 10, 10, 10);
+            planeGeo.rotateX(-Math.PI / 2); // Acostar sobre el plano XZ
+            planeGeo.translate(5, 0, 5); // Centrar en el área 0-10 positiva
+
+            // Ajustar altura de los vértices para formar la inclinación
+            const pos = planeGeo.attributes.position;
+            for (let i = 0; i < pos.count; i++) {
+                const vx = pos.getX(i);
+                const vz = pos.getZ(i);
+                const vy = (intercept + (slopeX * vx) + (slopeZ * vz)) * 0.4;
+                pos.setY(i, vy);
+            }
+            planeGeo.computeVertexNormals();
+
+            const planeMat = new THREE.MeshBasicMaterial({ color: 0x3B82F6, side: THREE.DoubleSide, transparent: true, opacity: 0.4 });
+            const plane = new THREE.Mesh(planeGeo, planeMat);
+            modelGroup.add(plane);
+
+            // Grilla sobre el plano para resaltar curvatura plana
+            const wireMat = new THREE.MeshBasicMaterial({ color: 0x2563eb, wireframe: true, transparent: true, opacity: 0.2 });
+            const wirePlane = new THREE.Mesh(planeGeo, wireMat);
+            modelGroup.add(wirePlane);
+
+            // Punto de predicción interactivo
+            const materialPred = new THREE.MeshLambertMaterial({ color: 0xC97B63 });
+            const predMesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), materialPred);
+            modelGroup.add(predMesh);
+
+            // Línea indicadora vertical
+            const indicMat = new THREE.LineDashedMaterial({ color: 0xC97B63, dashSize: 0.2, gapSize: 0.1 });
+            const indicGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 0)]);
+            const indicLine = new THREE.Line(indicGeo, indicMat);
+            indicLine.computeLineDistances();
+            modelGroup.add(indicLine);
+
+            active3DElements = { predMesh, indicLine, intercept, slopeX, slopeZ };
+
+            camera.position.set(14, 8, 14);
+            controls.target.set(5, 4, 5);
+        }
+
+        function buildLinearRegression() {
+            modelGroup.clear();
+            active3DElements = {};
+
+            const axesHelper = new THREE.AxesHelper(6);
+            modelGroup.add(axesHelper);
+
+            // Generar 50 puntos de datos con ruido
+            const materialData = new THREE.MeshLambertMaterial({ color: 0x475569 });
+            const geoPoint = new THREE.SphereGeometry(0.12, 16, 16);
+
+            // Pendiente simulada: y = 0.6x + 0.5 (adaptado al espacio visual 3D)
+            const slope = 0.6;
+            const intercept = 0.5;
+
+            for (let i = 0; i < 50; i++) {
+                const x = Math.random() * 8; // Rango de 0 a 8
+                // Añadir ruido aleatorio entre -1.5 y 1.5
+                const noise = (Math.random() - 0.5) * 2.5;
+                let y = (x * slope) + intercept + noise;
+                y = Math.max(0, Math.min(y, 6)); // Limitar visualmente
+
+                const mesh = new THREE.Mesh(geoPoint, materialData);
+                mesh.position.set(x, y, (Math.random() - 0.5) * 0.5); // Ligero ruido en Z para volumen
+                modelGroup.add(mesh);
+            }
+
+            // Línea de regresión principal
+            const materialLine = new THREE.LineBasicMaterial({ color: 0x3B82F6, linewidth: 3 });
+            const points = [];
+            points.push(new THREE.Vector3(0, intercept, 0));
+            points.push(new THREE.Vector3(8, (8 * slope) + intercept, 0));
+            const geometryLine = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(geometryLine, materialLine);
+            modelGroup.add(line);
+
+            // Punto de predicción interactivo
+            const materialPred = new THREE.MeshLambertMaterial({ color: 0xC97B63 });
+            const predMesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), materialPred);
+            modelGroup.add(predMesh);
+
+            const indicMat = new THREE.LineDashedMaterial({ color: 0xC97B63, dashSize: 0.2, gapSize: 0.1 });
+            const indicGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 0)]);
+            const indicLine = new THREE.Line(indicGeo, indicMat);
+            indicLine.computeLineDistances();
+            modelGroup.add(indicLine);
+
+            active3DElements = { predMesh, indicLine, line, baseOffset: intercept, slope: slope };
+
+            camera.position.set(5, 4, 8);
+            controls.target.set(4, 3, 0);
+        }
+
+        function buildLogisticRegression() {
+            modelGroup.clear();
+            active3DElements = {};
+
+            const grid = new THREE.GridHelper(10, 10, 0x000000, 0xcccccc);
+            grid.position.y = -0.1;
+            modelGroup.add(grid);
+
+            const geoPoint = new THREE.SphereGeometry(0.2, 16, 16);
+            const matFail = new THREE.MeshLambertMaterial({ color: 0xEF4444 });
+            const matPass = new THREE.MeshLambertMaterial({ color: 0x22C55E });
+
+            for (let i = 0; i < 30; i++) {
+                const x = (Math.random() - 0.5) * 8;
+                const z = (Math.random() - 0.5) * 8;
+                const pass = (x + z) > 0.5;
+                const mesh = new THREE.Mesh(geoPoint, pass ? matPass : matFail);
+                mesh.position.set(x, 0, z);
+                modelGroup.add(mesh);
+            }
+
+            const planeGeo = new THREE.PlaneGeometry(12, 4);
+            const planeMat = new THREE.MeshBasicMaterial({ color: 0x3B82F6, side: THREE.DoubleSide, transparent: true, opacity: 0.2 });
+            const boundary = new THREE.Mesh(planeGeo, planeMat);
+            boundary.rotation.x = -Math.PI / 2;
+            boundary.rotation.y = -Math.PI / 4;
+            boundary.position.y = 0.1;
+            modelGroup.add(boundary);
+
+            const predMesh = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 16), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+            predMesh.position.y = 0.5;
+            modelGroup.add(predMesh);
+
+            const label = createTextSprite("Prob: 0%", "#fff", "#3B82F6");
+            label.position.set(0, 1.2, 0);
+            predMesh.add(label);
+
+            active3DElements = { predMesh, label };
+
+            camera.position.set(0, 8, 8);
+            controls.target.set(0, 0, 0);
+        }
+
+        function buildDecisionTree() {
+            modelGroup.clear();
+            active3DElements = {};
+            const nodes = [];
+
+            const createNode = (text, x, y, z, color = 0xffffff, isPruned = false) => {
+                const group = new THREE.Group();
+                const mat = new THREE.MeshLambertMaterial({
+                    color: color,
+                    transparent: isPruned,
+                    opacity: isPruned ? 0.3 : 1
+                });
+                const box = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.8, 0.2), mat);
+                group.add(box);
+
+                const bgColor = isPruned ? "rgba(200,200,200,0.5)" : "rgba(255,255,255,0.9)";
+                const textColor = isPruned ? "#888" : "#0F172A";
+                const sprite = createTextSprite(text, textColor, bgColor, 300, 20);
+                sprite.position.z = 0.15;
+                if (isPruned) sprite.material.opacity = 0.5;
+
+                group.add(sprite);
+                group.position.set(x, y, z);
+                modelGroup.add(group);
+                return { group, box, isPruned };
+            };
+
+            const drawLine = (p1, p2, dashed = false) => {
+                const material = dashed
+                    ? new THREE.LineDashedMaterial({ color: 0x888888, dashSize: 0.2, gapSize: 0.1 })
+                    : new THREE.LineBasicMaterial({ color: 0x475569, linewidth: 2 });
+                const geometry = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+                const line = new THREE.Line(geometry, material);
+                if (dashed) line.computeLineDistances();
+                modelGroup.add(line);
+                return line;
+            };
+
+            // Nivel 0
+            nodes[0] = createNode("¿Asist < 60%?", 0, 6, 0);
+            // Nivel 1
+            nodes[1] = createNode("¿Alertas >= 2?", -3.5, 4, 0); // Sí
+            nodes[2] = createNode("¿Tareas < 50%?", 3.5, 4, 0);  // No
+
+            // Nivel 2 (Izquierda)
+            nodes[3] = createNode("Apoyo Urgente", -5.5, 2, 0, 0xEF4444);
+            nodes[4] = createNode("Apoyo Moderado", -1.5, 2, 0, 0xF59E0B);
+
+            // Nivel 2 (Derecha)
+            nodes[5] = createNode("Observación", 1.5, 2, 0, 0xF59E0B);
+            nodes[6] = createNode("Buen Estado", 5.5, 2, 0, 0x22C55E);
+
+            // Nivel 3 (Nodos Podados - Pruning) para mostrar el concepto
+            nodes[7] = createNode("[Poda] Apoyo Extra", 0, 0, 0, 0xcccccc, true);
+            nodes[8] = createNode("[Poda] Ignorar", 3, 0, 0, 0xcccccc, true);
+
+            // Conexiones normales
+            drawLine(nodes[0].group.position, nodes[1].group.position);
+            drawLine(nodes[0].group.position, nodes[2].group.position);
+            drawLine(nodes[1].group.position, nodes[3].group.position);
+            drawLine(nodes[1].group.position, nodes[4].group.position);
+            drawLine(nodes[2].group.position, nodes[5].group.position);
+            drawLine(nodes[2].group.position, nodes[6].group.position);
+
+            // Conexiones podadas (punteadas) desde el nodo 5
+            drawLine(nodes[5].group.position, nodes[7].group.position, true);
+            drawLine(nodes[5].group.position, nodes[8].group.position, true);
+
+            // Texto explicativo flotante de poda
+            const pruneLabel = createTextSprite("✂️ Ramas podadas (Evita sobreajuste)", "#EF4444", "rgba(255,255,255,0.8)", 400, 16);
+            pruneLabel.position.set(1.5, -0.8, 0);
+            modelGroup.add(pruneLabel);
+
+            active3DElements = { nodes };
+            camera.position.set(0, 3, 12);
+            controls.target.set(0, 3, 0);
+        }
+
+        function buildRandomForest() {
+            modelGroup.clear();
+            active3DElements = {};
+            const trees = [];
+            const particles = [];
+
+            const makeTree = (x, z) => {
+                const group = new THREE.Group();
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.6), new THREE.MeshLambertMaterial({ color: 0x5c4033 }));
+                trunk.position.y = 0.3;
+                const leaves = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.2, 5), new THREE.MeshLambertMaterial({ color: 0x22C55E }));
+                leaves.position.y = 1.0;
+                group.add(trunk);
+                group.add(leaves);
+
+                // Etiqueta individual del árbol flotando encima
+                const sprite = createTextSprite("0.0", "#0F172A", "rgba(255,255,255,0.8)", 128, 28, 64);
+                sprite.position.y = 2.2;
+                group.add(sprite);
+
+                group.position.set(x, 0, z);
+
+                // Variación sutil de tamaño y rotación
+                const scale = 0.8 + Math.random() * 0.4;
+                group.scale.set(scale, scale, scale);
+                group.rotation.y = Math.random() * Math.PI;
+
+                modelGroup.add(group);
+                return { group, sprite, pos: new THREE.Vector3(x, 1.2 * scale, z) };
+            };
+
+            // Generar 50 árboles aleatorios en un área circular/rectangular detrás
+            for (let i = 0; i < 50; i++) {
+                const x = (Math.random() - 0.5) * 16;
+                const z = -2 - (Math.random() * 8); // Profundidad de -2 a -10
+                trees.push(makeTree(x, z));
+
+                // Crear partícula para cada árbol (oculta inicialmente)
+                const p = new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshBasicMaterial({ color: 0xC97B63 }));
+                p.visible = false;
+                modelGroup.add(p);
+                particles.push(p);
+            }
+
+            // Centro (Output Promedio) al frente
+            const centerBase = new THREE.Mesh(new THREE.BoxGeometry(4, 0.5, 2), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+            centerBase.position.set(0, 0, 3);
+            modelGroup.add(centerBase);
+
+            const finalSprite = createTextSprite("Promedio", "#fff", "#C97B63", 300);
+            finalSprite.position.set(0, 1.5, 3);
+            modelGroup.add(finalSprite);
+
+            active3DElements = { trees, finalSprite, particles, centerPos: new THREE.Vector3(0, 0.5, 3) };
+
+            camera.position.set(0, 6, 14);
+            controls.target.set(0, 0, 0);
+        }
+
+        // --- 4. LÓGICA DE INTERFAZ Y ACTUALIZACIÓN ---
+
+        function initUI() {
+            const nav = document.getElementById('model-nav');
+            nav.addEventListener('click', (e) => {
+                const btn = e.target.closest('.nav-btn');
+                if (!btn) return;
+
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                currentModelId = parseInt(btn.dataset.model);
+                loadModelUI(currentModelId);
+            });
+
+            document.getElementById('btn-resumen').addEventListener('click', () => {
+                document.getElementById('modal-resumen').style.display = 'flex';
+            });
+
+            document.getElementById('btn-reset').addEventListener('click', () => {
+                controls.reset();
+                loadModelUI(currentModelId);
+            });
+
+            document.getElementById('btn-step').addEventListener('click', runStepAnimation);
+            document.getElementById('btn-ar').addEventListener('click', toggleAR);
+
+            loadModelUI(0);
+        }
+
+        function loadModelUI(id) {
+            TWEEN.removeAll();
+            const data = modelData[id];
+
+            document.getElementById('ui-title').innerHTML = data.title;
+            document.getElementById('ui-type').innerHTML = data.type;
+            document.getElementById('ui-definition').innerHTML = data.definition;
+            document.getElementById('ui-case').innerHTML = data.case;
+            document.getElementById('ui-formula').innerHTML = data.formula;
+            document.getElementById('ui-interpretation').innerHTML = data.interpretation;
+
+            const inputContainer = document.getElementById('dynamic-inputs');
+            inputContainer.innerHTML = '';
+            currentInputs = {};
+
+            let isUpdating = false;
+
+            data.inputs.forEach(inp => {
+                currentInputs[inp.id] = inp.value;
+
+                const div = document.createElement('div');
+                div.className = 'slider-group';
+                div.innerHTML = `
+                    <label><span>${inp.label}</span> <span id="val-${inp.id}">${inp.value}</span></label>
+                    <input type="range" id="${inp.id}" min="${inp.min}" max="${inp.max}" step="${inp.step}" value="${inp.value}">
+                `;
+                inputContainer.appendChild(div);
+
+                const slider = document.getElementById(inp.id);
+                slider.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    document.getElementById(`val-${inp.id}`).innerText = val;
+                    currentInputs[inp.id] = val;
+
+                    // Throttle para prevenir saturación visual con 50 lienzos (canvas)
+                    if (!isUpdating) {
+                        isUpdating = true;
+                        requestAnimationFrame(() => {
+                            updateSimulation();
+                            isUpdating = false;
+                        });
+                    }
+                });
+            });
+
+            if (id === 0) buildLinearRegression();
+            else if (id === 1) buildLogisticRegression();
+            else if (id === 2) buildDecisionTree();
+            else if (id === 3) buildRandomForest();
+            else if (id === 4) buildMultipleLinearRegression();
+
+            updateSimulation();
+        }
+
+        function updateSimulation() {
+            const data = modelData[currentModelId];
+            const result = data.calcOutput(currentInputs);
+
+            document.getElementById('ui-output-value').innerHTML = result.text;
+
+            if (currentModelId === 0) {
+                // Lineal
+                const h = result.raw[0];
+                const x = (h / 10) * 8; // Mapear horas (0-10) al grid X (0-8)
+                const y = active3DElements.baseOffset + (active3DElements.slope * x);
+
+                new TWEEN.Tween(active3DElements.predMesh.position)
+                    .to({ x: x, y: y, z: 0 }, 300).start();
+
+                const posArr = active3DElements.indicLine.geometry.attributes.position.array;
+                posArr[0] = x; posArr[1] = 0; posArr[2] = 0;
+                posArr[3] = x; posArr[4] = y; posArr[5] = 0;
+                active3DElements.indicLine.geometry.attributes.position.needsUpdate = true;
+                active3DElements.indicLine.computeLineDistances();
+
+            } else if (currentModelId === 4) {
+                // Lineal Múltiple (Plano 3D)
+                const h = result.raw[0];
+                const a = result.raw[1];
+
+                const x = h; // Horas (0-10) mapea directo a X (0-10)
+                const z = (a / 100) * 10; // Asistencia (0-100) mapea a Z (0-10)
+                const y = (active3DElements.intercept + (active3DElements.slopeX * x) + (active3DElements.slopeZ * z)) * 0.4;
+
+                new TWEEN.Tween(active3DElements.predMesh.position)
+                    .to({ x: x, y: y, z: z }, 300).start();
+
+                const posArr = active3DElements.indicLine.geometry.attributes.position.array;
+                posArr[0] = x; posArr[1] = 0; posArr[2] = z; // base
+                posArr[3] = x; posArr[4] = y; posArr[5] = z; // tope
+                active3DElements.indicLine.geometry.attributes.position.needsUpdate = true;
+                active3DElements.indicLine.computeLineDistances();
+
+            } else if (currentModelId === 1) {
+                // Logística
+                const h = currentInputs.log_hours;
+                const a = currentInputs.log_att;
+
+                const x = ((h / 8) * 8) - 4;
+                const z = ((a / 100) * 8) - 4;
+
+                new TWEEN.Tween(active3DElements.predMesh.position)
+                    .to({ x: x, z: z }, 300).start();
+
+                const isPass = result.val >= 0.5;
+                active3DElements.predMesh.material.color.setHex(isPass ? 0x22C55E : 0xEF4444);
+
+                const pPct = (result.val * 100).toFixed(0);
+                const colorHex = isPass ? "#22C55E" : "#EF4444";
+
+                const canvas = active3DElements.label.material.map.image;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, 256, 128);
+                ctx.fillStyle = "rgba(255,255,255,0.9)";
+                ctx.roundRect(0, 0, 256, 128, 20); ctx.fill();
+                ctx.fillStyle = colorHex;
+                ctx.fillText(`Prob: ${pPct}%`, 128, 64);
+                active3DElements.label.material.map.needsUpdate = true;
+
+            } else if (currentModelId === 2) {
+                // Árbol: Iluminar ruta
+                const activeIndices = result.val; // array de nodos activos
+
+                active3DElements.nodes.forEach((n, idx) => {
+                    if (n.isPruned) return; // Nodos podados siempre opacos
+                    n.box.material.emissive.setHex(0x000000);
+                });
+
+                activeIndices.forEach(idx => {
+                    if (active3DElements.nodes[idx]) {
+                        active3DElements.nodes[idx].box.material.emissive.setHex(0x444444);
+                    }
+                });
+
+            } else if (currentModelId === 3) {
+                // Forest: Actualizar texto independiente de cada árbol
+                const preds = result.raw;
+                active3DElements.trees.forEach((tree, i) => {
+                    const canvasT = tree.sprite.material.map.image;
+                    const ctxT = canvasT.getContext('2d');
+                    ctxT.clearRect(0, 0, 128, 64);
+                    ctxT.fillStyle = "rgba(255,255,255,0.85)";
+                    ctxT.roundRect(0, 0, 128, 64, 10); ctxT.fill();
+                    ctxT.font = "Bold 28px Arial";
+                    ctxT.fillStyle = "#0F172A";
+                    ctxT.textAlign = "center";
+                    ctxT.textBaseline = "middle";
+                    ctxT.fillText(preds[i].toFixed(1), 64, 32);
+                    tree.sprite.material.map.needsUpdate = true;
+                });
+
+                // Actualizar texto central (Promedio)
+                const canvasC = active3DElements.finalSprite.material.map.image;
+                const ctxC = canvasC.getContext('2d');
+                ctxC.clearRect(0, 0, 300, 128);
+                ctxC.fillStyle = "rgba(255,255,255,0.9)";
+                ctxC.roundRect(0, 0, 300, 128, 20); ctxC.fill();
+                ctxC.font = "Bold 24px Arial";
+                ctxC.fillStyle = "#C97B63";
+                ctxC.textAlign = "center";
+                ctxC.textBaseline = "middle";
+                ctxC.fillText(`Promedio: ${result.val.toFixed(1)}`, 150, 64);
+                active3DElements.finalSprite.material.map.needsUpdate = true;
+            }
+        }
+
+        // --- 5. ANIMACIONES PASO A PASO ---
+        function runStepAnimation() {
+            TWEEN.removeAll();
+            const btn = document.getElementById('btn-step');
+            btn.disabled = true;
+
+            if (currentModelId === 0) {
+                const targetPos = { ...active3DElements.predMesh.position };
+                active3DElements.predMesh.position.set(0, 0, 0);
+                active3DElements.predMesh.material.opacity = 0;
+                active3DElements.predMesh.material.transparent = true;
+
+                new TWEEN.Tween(active3DElements.predMesh.material)
+                    .to({ opacity: 1 }, 500)
+                    .onComplete(() => {
+                        new TWEEN.Tween(active3DElements.predMesh.position)
+                            .to(targetPos, 1500)
+                            .easing(TWEEN.Easing.Cubic.Out)
+                            .onComplete(() => btn.disabled = false)
+                            .start();
+                    }).start();
+
+            } else if (currentModelId === 4) {
+                // Lineal Múltiple
+                const targetPos = { ...active3DElements.predMesh.position };
+                active3DElements.predMesh.position.set(targetPos.x, 0, targetPos.z);
+                active3DElements.predMesh.material.opacity = 0;
+                active3DElements.predMesh.material.transparent = true;
+
+                new TWEEN.Tween(active3DElements.predMesh.material)
+                    .to({ opacity: 1 }, 500)
+                    .onComplete(() => {
+                        new TWEEN.Tween(active3DElements.predMesh.position)
+                            .to(targetPos, 1500)
+                            .easing(TWEEN.Easing.Cubic.Out)
+                            .onComplete(() => btn.disabled = false)
+                            .start();
+                    }).start();
+
+            } else if (currentModelId === 1) {
+                const targetPos = { ...active3DElements.predMesh.position };
+                active3DElements.predMesh.position.y = 5;
+
+                new TWEEN.Tween(active3DElements.predMesh.position)
+                    .to(targetPos, 1000)
+                    .easing(TWEEN.Easing.Bounce.Out)
+                    .onComplete(() => btn.disabled = false)
+                    .start();
+
+            } else if (currentModelId === 2) {
+                // Animar la ruta del árbol
+                const nodeIndices = modelData[2].calcOutput(currentInputs).val;
+                let delay = 0;
+
+                nodeIndices.forEach((nIdx) => {
+                    const group = active3DElements.nodes[nIdx].group;
+                    const origScale = group.scale.clone();
+
+                    new TWEEN.Tween(group.scale)
+                        .to({ x: 1.15, y: 1.15, z: 1.15 }, 300)
+                        .delay(delay)
+                        .yoyo(true).repeat(1)
+                        .onComplete(() => { group.scale.copy(origScale); })
+                        .start();
+                    delay += 500;
+                });
+                setTimeout(() => btn.disabled = false, delay + 200);
+
+            } else if (currentModelId === 3) {
+                // Forest: 50 partículas vuelan al centro
+                let maxDelay = 0;
+
+                active3DElements.trees.forEach((tree, i) => {
+                    const p = active3DElements.particles[i];
+                    p.position.copy(tree.pos);
+                    p.visible = true;
+
+                    // Tiempo aleatorio para que se vea orgánico
+                    const delay = Math.random() * 1500;
+                    if (delay > maxDelay) maxDelay = delay;
+
+                    new TWEEN.Tween(p.position)
+                        .to(active3DElements.centerPos, 800)
+                        .easing(TWEEN.Easing.Quadratic.In)
+                        .delay(delay)
+                        .onComplete(() => { p.visible = false; })
+                        .start();
+                });
+
+                // Pulsación final del cuadro central
+                new TWEEN.Tween(active3DElements.finalSprite.scale)
+                    .to({ x: 2.5 * (300 / 128), y: 1.5, z: 1.5 }, 300)
+                    .delay(maxDelay + 600)
+                    .yoyo(true).repeat(1)
+                    .onComplete(() => btn.disabled = false)
+                    .start();
+            } else {
+                btn.disabled = false;
+            }
+        }
+
+        // --- 6. AR FALLBACK ---
+        function toggleAR() {
+            const fallbackMsg = document.getElementById('ar-fallback');
+            fallbackMsg.classList.remove('hidden');
+            setTimeout(() => { fallbackMsg.classList.add('hidden'); }, 5000);
+        }
+
+        // --- 7. BUCLE RENDER ---
+        function animate(time) {
+            requestAnimationFrame(animate);
+            TWEEN.update(time);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        initUI();
+        animate();
+
+    </script>
+</body>
+
+</html>
