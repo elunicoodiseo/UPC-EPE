@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio: Virtualización y Linux</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#10b981',
+                        accent: '#f97316',
+                        darkbg: '#0f172a',
+                        darkcard: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- SweetAlert2 para alertas interactivas -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- A-Frame para WebXR / AR / 3D -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+
+    <style>
+        /* Estilos personalizados */
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .dark .glass {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-view {
+            display: none;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        .section-view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Contenedor A-Frame embebido */
+        .aframe-container {
+            width: 100%;
+            height: 500px;
+            border-radius: 1rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Terminal simulada */
+        .terminal {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background-color: #10b981;
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-gray-50 text-gray-800 dark:bg-darkbg dark:text-gray-200 transition-colors duration-300 flex h-screen overflow-hidden">
+
+    <!-- Menú Lateral -->
+    <aside
+        class="w-64 bg-white dark:bg-darkcard border-r border-gray-200 dark:border-gray-700 flex flex-col justify-between hidden md:flex z-20">
+        <div>
+            <div class="p-6 text-center border-b border-gray-200 dark:border-gray-700">
+                <i class="fa-brands fa-linux text-4xl text-accent mb-2"></i>
+                <h1 class="text-xl font-bold font-mono">VirtuaLab OS</h1>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">© 2026 — Experiencia Técnica Interactiva. Fines
+                    educativos - Luis Torrejón Arias.</p>
+            </div>
+            <nav class="p-4 space-y-2" id="sidebar-nav">
+                <!-- Enlaces generados dinámicamente -->
+            </nav>
+        </div>
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="mb-4">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Progreso del Laboratorio</p>
+                <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                    <div id="progress-bar" class="bg-secondary h-2.5 rounded-full transition-all duration-500"
+                        style="width: 0%"></div>
+                </div>
+                <p class="text-xs text-right mt-1 font-bold" id="progress-text">0%</p>
+            </div>
+            <button id="theme-toggle"
+                class="w-full py-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-moon dark:hidden"></i>
+                <i class="fa-solid fa-sun hidden dark:block text-yellow-400"></i>
+                <span class="dark:hidden">Modo Oscuro</span>
+                <span class="hidden dark:block">Modo Claro</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Contenido Principal -->
+    <main class="flex-1 overflow-y-auto h-full relative" id="main-content">
+
+        <!-- Botón menú móvil -->
+        <button id="mobile-menu-btn"
+            class="md:hidden fixed top-4 right-4 z-50 bg-primary text-white p-3 rounded-full shadow-lg">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <!-- CONTENEDORES DE SECCIÓN -->
+        <div class="max-w-5xl mx-auto p-6 lg:p-10 pb-24">
+
+            <!-- 1. INTRODUCCIÓN -->
+            <section id="sec-intro" class="section-view active">
+                <div class="text-center mb-10">
+                    <h2
+                        class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary mb-4">
+                        Aprende Virtualización y Linux</h2>
+                    <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                        Descubre cómo instalar un sistema operativo dentro de otro. Entiende la arquitectura, el kernel,
+                        la memoria y la CPU desde la práctica.
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6 mb-10">
+                    <div class="glass p-6 rounded-2xl shadow-sm">
+                        <h3 class="text-xl font-bold mb-3 flex items-center gap-2"><i
+                                class="fa-brands fa-linux text-primary"></i> ¿Qué es Linux?</h3>
+                        <p class="mb-3 text-sm">Es un núcleo (Kernel) de sistema operativo libre. Una
+                            <strong>distribución</strong> (como Ubuntu, Debian o Mint) empaqueta este kernel con
+                            herramientas y un entorno gráfico.
+                        </p>
+                        <p class="text-sm">En este curso, Linux nos permite estudiar:</p>
+                        <ul class="list-disc list-inside text-sm mt-2 space-y-1 text-gray-600 dark:text-gray-400">
+                            <li>Administración de procesos y CPU.</li>
+                            <li>Uso de memoria virtual.</li>
+                            <li>Jerarquía del Sistema de archivos.</li>
+                            <li>Usuarios, permisos y Kernel.</li>
+                        </ul>
+                    </div>
+                    <div class="glass p-6 rounded-2xl shadow-sm border-t-4 border-accent">
+                        <h3 class="text-xl font-bold mb-3 flex items-center gap-2"><i
+                                class="fa-solid fa-box text-accent"></i> ¿Qué es VirtualBox?</h3>
+                        <p class="text-sm mb-3">Es un <strong>Hipervisor de Tipo 2</strong>. Permite crear máquinas
+                            virtuales (VM) ejecutándose como una aplicación más sobre tu sistema operativo principal.
+                        </p>
+                        <div class="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg text-sm mt-4 text-center">
+                            <span class="block text-primary font-bold">Sistema Anfitrión (Host)</span>
+                            <i class="fa-solid fa-arrow-down my-1"></i>
+                            <span class="block text-accent font-bold">VirtualBox (Hipervisor)</span>
+                            <i class="fa-solid fa-arrow-down my-1"></i>
+                            <span class="block text-secondary font-bold">Sistema Invitado (Guest - Linux)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="navigate('sec-ar')"
+                    class="block w-full text-center bg-primary hover:bg-blue-600 text-white py-3 rounded-xl font-bold transition shadow-lg">
+                    Comenzar Experiencia <i class="fa-solid fa-arrow-right ml-2"></i>
+                </button>
+            </section>
+
+            <!-- 2. REALIDAD AUMENTADA / 3D -->
+            <section id="sec-ar" class="section-view">
+                <h2 class="text-3xl font-bold mb-2">Arquitectura 3D de Virtualización</h2>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">Explora el modelo 3D. Observa cómo VirtualBox actúa
+                    como puente entre el hardware real y el sistema invitado. (Puedes mover la cámara arrastrando con el
+                    ratón o en tu celular).</p>
+
+                <div class="aframe-container shadow-2xl border-4 border-gray-200 dark:border-gray-700">
+                    <a-scene id="aframe-scene" embedded vr-mode-ui="enabled: true">
+                        <!-- Entorno -->
+                        <a-sky color="#1e293b"></a-sky>
+                        <a-light type="directional" position="-1 2 1" intensity="0.8"></a-light>
+                        <a-light type="ambient" color="#fff" intensity="0.4"></a-light>
+
+                        <!-- Hardware Físico (Anfitrión) -->
+                        <a-box position="0 -1.5 -4" width="4" height="0.5" depth="3" color="#475569">
+                            <a-text value="Hardware Fisico\n(CPU, RAM, Disco Real)" position="0 0.3 1.6" align="center"
+                                color="#fff" scale="0.8 0.8 0.8"></a-text>
+                        </a-box>
+
+                        <!-- Sistema Operativo Anfitrión (Windows/Mac) -->
+                        <a-box position="0 -0.8 -4" width="3.8" height="0.3" depth="2.8" color="#3b82f6" opacity="0.8">
+                            <a-text value="SO Anfitrion (Windows/macOS)" position="0 0.2 1.5" align="center"
+                                color="#fff" scale="0.6 0.6 0.6"></a-text>
+                        </a-box>
+
+                        <!-- VirtualBox (Hipervisor) -->
+                        <a-box position="0 0.2 -4" width="3.4" height="1" depth="2.4" color="#f97316" wireframe="true"
+                            wireframe-linewidth="3">
+                            <a-text value="VirtualBox (Capa de Virtualizacion)" position="0 -0.6 1.3" align="center"
+                                color="#f97316" scale="0.6 0.6 0.6"></a-text>
+                        </a-box>
+
+                        <!-- Sistema Operativo Invitado (Linux VM) -->
+                        <a-box position="0 0.2 -4" width="2" height="0.6" depth="1.5" color="#10b981">
+                            <a-text value="Maquina Virtual (SO Invitado: Linux)" position="0 0.4 0.8" align="center"
+                                color="#fff" scale="0.5 0.5 0.5"></a-text>
+
+                            <!-- Recursos asignados -->
+                            <a-cylinder position="-0.6 0.4 0" radius="0.1" height="0.2" color="#ef4444"></a-cylinder>
+                            <a-text value="CPU Virtual" position="-0.6 0.6 0" align="center"
+                                scale="0.3 0.3 0.3"></a-text>
+
+                            <a-box position="0 0.4 0" width="0.4" height="0.1" depth="0.4" color="#eab308"></a-box>
+                            <a-text value="RAM Asignada" position="0 0.6 0" align="center" scale="0.3 0.3 0.3"></a-text>
+
+                            <a-box position="0.6 0.4 0" width="0.3" height="0.3" depth="0.3" color="#8b5cf6"></a-box>
+                            <a-text value="Disco Virtual" position="0.6 0.6 0" align="center"
+                                scale="0.3 0.3 0.3"></a-text>
+                        </a-box>
+
+                        <!-- Partículas / Flujo de datos -->
+                        <a-entity position="0 -0.5 -3.5"
+                            animation="property: position; to: 0 0.2 -3.5; loop: true; dur: 2000">
+                            <a-sphere radius="0.05" color="#fff"></a-sphere>
+                        </a-entity>
+
+                        <a-camera position="0 1 0"></a-camera>
+                    </a-scene>
+                </div>
+
+                <div class="mt-6 flex justify-between">
+                    <button onclick="navigate('sec-intro')"
+                        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition">Atrás</button>
+                    <button onclick="navigate('sec-prep')"
+                        class="px-4 py-2 bg-primary text-white rounded hover:bg-blue-600 transition">Siguiente:
+                        Preparativos</button>
+                </div>
+            </section>
+
+            <!-- 3. PREPARATIVOS Y DESCARGAS -->
+            <section id="sec-prep" class="section-view">
+                <h2 class="text-3xl font-bold mb-6">Requisitos y Descargas</h2>
+
+                <div class="grid md:grid-cols-2 gap-6 mb-8">
+                    <!-- Windows -->
+                    <div class="glass p-5 rounded-xl border-l-4 border-blue-500">
+                        <h3 class="font-bold text-xl mb-4"><i class="fa-brands fa-windows text-blue-500"></i> Para
+                            Windows</h3>
+                        <ul class="space-y-2 text-sm">
+                            <li><i class="fa-solid fa-check text-green-500 mr-2"></i> Tener al menos 8GB de RAM física.
+                            </li>
+                            <li><i class="fa-solid fa-check text-green-500 mr-2"></i> 25GB de espacio libre en disco.
+                            </li>
+                            <li><i class="fa-solid fa-microchip text-blue-500 mr-2"></i> Virtualización activada en
+                                BIOS/UEFI (VT-x o AMD-V).</li>
+                        </ul>
+                    </div>
+                    <!-- Mac -->
+                    <div class="glass p-5 rounded-xl border-l-4 border-gray-500">
+                        <h3 class="font-bold text-xl mb-4"><i class="fa-brands fa-apple text-gray-500"></i> Para macOS
+                        </h3>
+                        <ul class="space-y-2 text-sm">
+                            <li><i class="fa-solid fa-microchip text-gray-500 mr-2"></i> <strong>Intel:</strong>
+                                VirtualBox funciona sin problemas.</li>
+                            <li><i class="fa-solid fa-microchip text-gray-500 mr-2"></i> <strong>Apple Silicon
+                                    (M1/M2/M3/M4):</strong> VirtualBox 7.2 tiene soporte oficial, pero requiere
+                                ISOs ARM64. Si hay problemas, usar <a href="https://mac.getutm.app/" target="_blank"
+                                    class="text-primary underline">UTM</a> o
+                                <a href="https://www.parallels.com/" target="_blank"
+                                    class="text-primary underline">Parallels</a>.
+                            </li>
+                            <li><i class="fa-solid fa-check text-green-500 mr-2"></i> Permitir extensiones de kernel en
+                                Ajustes del Sistema > Privacidad y Seguridad.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Actividad ISO -->
+                <div
+                    class="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-2xl border border-blue-200 dark:border-blue-800 mb-8">
+                    <h3 class="font-bold text-lg text-primary mb-2"><i class="fa-solid fa-gamepad"></i> Actividad de
+                        Comprobación</h3>
+                    <p class="text-sm mb-4">El estudiante tiene una laptop con Windows de 64 bits y un procesador Intel
+                        Core i5. ¿Qué tipo de imagen ISO de Ubuntu Linux debe descargar para instalarla en VirtualBox?
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="iso-options">
+                        <button onclick="checkISO('arm')"
+                            class="p-3 bg-white dark:bg-gray-800 rounded border hover:border-primary transition text-left text-sm">ISO
+                            ARM (aarch64)</button>
+                        <button onclick="checkISO('x64')"
+                            class="p-3 bg-white dark:bg-gray-800 rounded border hover:border-primary transition text-left text-sm">ISO
+                            AMD64 / x64 (64-bits)</button>
+                        <button onclick="checkISO('server')"
+                            class="p-3 bg-white dark:bg-gray-800 rounded border hover:border-primary transition text-left text-sm">ISO
+                            Servidor Antiguo (i386)</button>
+                        <button onclick="checkISO('mac')"
+                            class="p-3 bg-white dark:bg-gray-800 rounded border hover:border-primary transition text-left text-sm">ISO
+                            macOS Installer</button>
+                    </div>
+                </div>
+
+                <div class="flex justify-between mt-6">
+                    <button onclick="navigate('sec-ar')"
+                        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition">Atrás</button>
+                    <button onclick="navigate('sec-manual')"
+                        class="px-4 py-2 bg-primary text-white rounded hover:bg-blue-600 transition">Siguiente: Manual
+                        de Instalación</button>
+                </div>
+            </section>
+
+            <!-- 4. MANUAL DE INSTALACIÓN GUIADO -->
+            <section id="sec-manual" class="section-view">
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <h2 class="text-3xl font-bold mb-2">Manual de Instalación Guiada</h2>
+                        <p class="text-gray-600 dark:text-gray-400">Sigue cada paso, entiende la arquitectura y marca tu
+                            progreso.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <a href="manual_virtualbox_ubuntu.pdf" target="_blank"
+                            class="text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 px-3 py-1.5 rounded hover:bg-red-200 dark:hover:bg-red-900/50 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-pdf"></i> Descargar PDF
+                        </a>
+                        <button onclick="resetProgress()" class="text-xs text-red-500 hover:underline"><i
+                                class="fa-solid fa-trash-can"></i> Reiniciar progreso</button>
+                    </div>
+                </div>
+
+                <div id="manual-container" class="space-y-6">
+                    <!-- Los pasos se renderizan aquí por JS -->
+                </div>
+
+                <div class="flex justify-between mt-8">
+                    <button onclick="navigate('sec-prep')"
+                        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition">Atrás</button>
+                    <button onclick="navigate('sec-terminal')"
+                        class="px-4 py-2 bg-primary text-white rounded hover:bg-blue-600 transition">Siguiente: Uso de
+                        Linux</button>
+                </div>
+            </section>
+
+            <!-- 5. TERMINAL Y SISTEMA (POST INSTALACIÓN) -->
+            <section id="sec-terminal" class="section-view">
+                <h2 class="text-3xl font-bold mb-6">Primer Inicio y Terminal</h2>
+                <p class="mb-6">¡Felicidades! Linux está instalado. Ahora el Kernel de Linux está gestionando los
+                    recursos virtuales (CPU y RAM) que asignaste. Practiquemos comandos básicos que interactúan con el
+                    Sistema Operativo.</p>
+
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="md:col-span-1 space-y-3">
+                        <h3 class="font-bold border-b pb-2">Comandos a probar:</h3>
+                        <button onclick="runCmd('pwd', '/home/alumno')"
+                            class="block w-full text-left p-2 bg-gray-100 dark:bg-gray-800 rounded hover:bg-gray-200 text-sm font-mono">pwd</button>
+                        <button
+                            onclick="runCmd('ls -l', 'drwxr-xr-x 2 alumno alumno 4096 Jul 2 10:00 Descargas\n-rw-r--r-- 1 alumno alumno 0 Jul 2 10:01 archivo.txt')"
+                            class="block w-full text-left p-2 bg-gray-100 dark:bg-gray-800 rounded hover:bg-gray-200 text-sm font-mono">ls
+                            -l</button>
+                        <button onclick="runCmd('mkdir practica_linux', '')"
+                            class="block w-full text-left p-2 bg-gray-100 dark:bg-gray-800 rounded hover:bg-gray-200 text-sm font-mono">mkdir
+                            practica_linux</button>
+                        <button
+                            onclick="runCmd('free -h', '               total        used        free      shared  buff/cache   available\nMem:           2.0Gi       850Mi       500Mi        15Mi       650Mi       1.0Gi')"
+                            class="block w-full text-left p-2 bg-gray-100 dark:bg-gray-800 rounded hover:bg-gray-200 text-sm font-mono">free
+                            -h</button>
+                        <button
+                            onclick="runCmd('top -n 1', 'top - 10:05:22 up 15 min,  1 user,  load average: 0.00, 0.02, 0.00\nTasks: 120 total,   1 running, 119 sleeping,   0 stopped,   0 zombie\n%Cpu(s):  1.5 us,  0.5 sy,  0.0 ni, 98.0 id,  0.0 wa')"
+                            class="block w-full text-left p-2 bg-gray-100 dark:bg-gray-800 rounded hover:bg-gray-200 text-sm font-mono">top</button>
+                        <button onclick="clearTerminal()"
+                            class="block w-full text-center p-2 mt-4 bg-red-100 text-red-600 dark:bg-red-900/30 rounded text-sm font-bold">Limpiar
+                            Terminal</button>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <div
+                            class="bg-gray-900 text-green-400 p-4 rounded-xl shadow-xl h-80 overflow-y-auto terminal text-sm">
+                            <div class="mb-2 text-gray-400">Ubuntu 26.04 LTS (tty1)</div>
+                            <div id="term-output">
+                                <div><span class="text-green-300">alumno@virtual-os</span>:<span
+                                        class="text-blue-400">~</span>$ <span class="text-white">echo "Bienvenido a
+                                        Linux"</span></div>
+                                <div class="text-white">Bienvenido a Linux</div>
+                            </div>
+                            <div><span class="text-green-300">alumno@virtual-os</span>:<span
+                                    class="text-blue-400">~</span>$ <span class="cursor"></span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    class="mt-8 bg-orange-50 dark:bg-orange-900/20 p-5 rounded-xl border border-orange-200 dark:border-orange-800">
+                    <h3 class="font-bold text-orange-600 dark:text-orange-400"><i class="fa-solid fa-power-off"></i>
+                        Concepto: Apagado Correcto</h3>
+                    <p class="text-sm mt-2">Nunca cierres la ventana de VirtualBox usando la "X" mientras el sistema
+                        está encendido, equivale a desconectar el cable de energía de un PC físico. Esto puede corromper
+                        el <strong>Sistema de Archivos</strong>. Siempre usa el menú de apagado de Linux o el comando
+                        <code>sudo poweroff</code>.
+                    </p>
+                </div>
+
+                <div class="flex justify-between mt-6">
+                    <button onclick="navigate('sec-manual')"
+                        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition">Atrás</button>
+                    <button onclick="navigate('sec-trouble')"
+                        class="px-4 py-2 bg-primary text-white rounded hover:bg-blue-600 transition">Siguiente:
+                        Problemas</button>
+                </div>
+            </section>
+
+            <!-- 6. LABORATORIO DE PROBLEMAS -->
+            <section id="sec-trouble" class="section-view">
+                <h2 class="text-3xl font-bold mb-6">Laboratorio de Problemas (Troubleshooting)</h2>
+                <p class="mb-6">Haz clic en un problema frecuente para entender su causa a nivel de arquitectura o SO y
+                    cómo solucionarlo.</p>
+
+                <div class="space-y-4" id="accordion-container">
+                    <!-- Acordeón renderizado por JS -->
+                </div>
+
+                <div class="flex justify-start mt-8">
+                    <button onclick="navigate('sec-terminal')"
+                        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition">Atrás</button>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- SCRIPTS DE LA APLICACIÓN -->
+    <script>
+        // --- 1. DATOS DEL MANUAL (20 PASOS) ---
+        const manualSteps = [
+            { id: 1, title: "Verificar las características de la computadora", objetivo: "Confirmar que el equipo físico puede ejecutar una máquina virtual.", acciones: ["Revisar memoria RAM disponible (mínimo 8 GB recomendado).", "Revisar espacio libre en disco (mínimo 25 GB).", "Identificar SO principal (Win/Mac).", "En Mac, identificar si es Intel o Apple Silicon (M1/M2/M3/M4).", 'Verificar virtualización en BIOS/UEFI — <a href=\"https://support.microsoft.com/es-es/windows/habilitar-la-virtualizaci%C3%B3n-en-windows-c5578302-6e43-4b4b-aed8-b09152c53a28\" target=\"_blank\" class=\"text-primary underline\">Guía para activar VT-x / AMD-V ↗</a>.'], resultado: "Sabes si tu PC tiene recursos suficientes.", concepto: "Una máquina virtual utiliza recursos reales del equipo físico (Host) multiplexando hardware como CPU y RAM.", error: "Asignar demasiada RAM a la VM, ahogando al SO anfitrión y provocando uso excesivo de memoria Swap (paginación)." },
+            { id: 2, title: "Descargar VirtualBox 7.2", objetivo: "Obtener el hipervisor (versión actual: 7.2.x).", acciones: ['Ir a la página oficial: <a href=\"https://www.virtualbox.org/wiki/Downloads\" target=\"_blank\" class=\"text-primary underline\">virtualbox.org/wiki/Downloads ↗</a>.', "Seleccionar el instalador según tu SO: <strong>Windows hosts</strong> o <strong>macOS / Intel hosts</strong>.", "Guardar el archivo en tu carpeta de Descargas.", '(Opcional) Descargar también el <a href=\"https://www.virtualbox.org/wiki/Downloads\" target=\"_blank\" class=\"text-primary underline\">Extension Pack ↗</a> para soporte USB 3.0 y más.'], resultado: "Instalador de VirtualBox 7.2 descargado.", concepto: "VirtualBox es un Hipervisor tipo 2. Actúa como capa de software que virtualiza el hardware físico para que el SO invitado crea que tiene control directo.", error: "Descargar desde webs de terceros. Siempre usar virtualbox.org como fuente oficial." },
+            { id: 3, title: "Descargar la imagen ISO de Ubuntu 26.04 LTS", objetivo: "Obtener el instalador del SO invitado (Ubuntu 26.04 LTS 'Resolute Raccoon').", acciones: ['Ir a la página oficial de Ubuntu Desktop: <a href=\"https://ubuntu.com/download/desktop\" target=\"_blank\" class=\"text-primary underline\">ubuntu.com/download/desktop ↗</a>.', "Descargar la ISO <strong>AMD64 / x64</strong> si tienes procesador Intel o AMD.", 'Si tienes Mac con Apple Silicon (M1-M4): descargar la ISO <strong>ARM64</strong> desde <a href=\"https://cdimage.ubuntu.com/releases/26.04/release/\" target=\"_blank\" class=\"text-primary underline\">cdimage.ubuntu.com ↗</a>.', "El archivo pesa aprox. 5-6 GB. Verificar que la descarga se complete al 100%."], resultado: "Archivo .iso de Ubuntu 26.04 LTS listo en el equipo.", concepto: "La ISO es una copia bit a bit de un disco óptico. Contiene el gestor de arranque (GRUB), el Kernel Linux 7.0 y el sistema base con GNOME 50.", error: "Bajar ISO ARM para un procesador x64 (o viceversa), resultando en error de arquitectura de conjunto de instrucciones (ISA)." },
+            { id: 4, title: "Instalar VirtualBox en Windows", objetivo: "Instalar el software anfitrión.", acciones: ["Ejecutar el instalador descargado (VirtualBox-7.2.x-Win.exe).", "Aceptar UAC (Permisos de Administrador).", "Siguiente > Siguiente > Instalar.", "Permitir instalación de adaptadores de red virtuales cuando lo solicite."], resultado: "VirtualBox 7.2 instalado en Windows.", concepto: "Los adaptadores de red virtuales (ej. Host-Only Adapter) interceptan paquetes del modelo OSI para permitir comunicación de red al invitado.", error: "Cancelar la instalación de controladores de red. Esto impide la conectividad de la VM." },
+            { id: 5, title: "Instalar VirtualBox en Mac", objetivo: "Instalar el software anfitrión en macOS.", acciones: ["Abrir el archivo .dmg descargado.", "Ejecutar el .pkg incluido.", "Ir a Ajustes del Sistema > Privacidad y Seguridad y permitir la extensión de kernel de Oracle.", 'Para Apple Silicon (M1-M4): VirtualBox 7.2 tiene <strong>soporte oficial</strong>, pero solo ejecuta VMs con ISOs ARM64.', 'Si VirtualBox presenta problemas en Apple Silicon, considerar <a href=\"https://mac.getutm.app/\" target=\"_blank\" class=\"text-primary underline\">UTM (gratuito) ↗</a> o <a href=\"https://www.parallels.com/\" target=\"_blank\" class=\"text-primary underline\">Parallels ↗</a> como alternativa.'], resultado: "VirtualBox instalado en macOS.", concepto: "macOS protege el Kernel-Space bloqueando Kexts (Kernel Extensions) de terceros por seguridad. Debes autorizarlos explícitamente en Ajustes del Sistema.", error: "Ignorar la alerta de Seguridad y Privacidad, lo que causa que VirtualBox falle al arrancar VMs." },
+            { id: 6, title: "Crear nueva VM: Nombre, SO e ISO", objetivo: "Configurar la primera sección del asistente de creación.", acciones: ["Abrir VirtualBox y clic en <strong>Nueva</strong> (New). Se abrirá el asistente <strong>'New Virtual Machine'</strong> con 4 secciones desplegables.", "Desplegar <strong>'Virtual machine name and operating system'</strong>:", "En <strong>VM Name</strong>: escribir <code>Ubuntu</code> (VirtualBox autodetecta el SO).", "Verificar que <strong>VM Folder</strong> apunte a una carpeta con espacio suficiente (ej. <code>C:\\Users\\TU_USUARIO\\VirtualBox VMs</code>).", "En <strong>ISO Image</strong>: clic en el desplegable y seleccionar la ISO de Ubuntu 26.04 que descargaste. Si no aparece, elegir <strong>'Other...'</strong> para buscarla.", "Verificar que VirtualBox autodetecte: <strong>OS</strong>: Linux, <strong>OS Distribution</strong>: Ubuntu, <strong>OS Version</strong>: Ubuntu (64-bit) con ícono <strong>x64</strong>.", "Dejar <strong>desmarcado</strong> 'Proceed with Unattended Installation' para hacer la instalación manual paso a paso (recomendado para este laboratorio)."], resultado: "Nombre, ISO y tipo de SO configurados.", concepto: "La VM es una abstracción (computadora simulada). VirtualBox 7.2 integra la selección de ISO directamente en el asistente, ya no es necesario montarla por separado.", error: "Elegir OS Version de 32-bits teniendo una ISO de 64-bits. Verificar que diga <strong>Ubuntu (64-bit)</strong> y que el ícono muestre <strong>x64</strong>." },
+            { id: 7, title: "Revisar instalación desatendida (Unattended)", objetivo: "Entender la sección de instalación automática.", acciones: ["Desplegar la sección <strong>'Set up unattended guest OS installation'</strong>.", "Verás dos paneles: <strong>'User Name and Password'</strong> y <strong>'OS Installation Options'</strong>.", "En <strong>User Name</strong>: por defecto aparece <code>vboxuser</code>. Puedes dejarlo o cambiarlo a tu nombre de usuario preferido.", "En <strong>Password / Confirm Password</strong>: escribe una contraseña que recuerdes.", "En <strong>Host Name</strong>: puedes dejar <code>Ubuntu</code> (nombre de tu equipo virtual).", "Abajo verás <strong>'Install Guest Additions'</strong>: si lo marcas, VirtualBox instalará automáticamente las Guest Additions (mejora resolución, portapapeles y carpetas compartidas).", "<strong>Nota:</strong> Si en el paso anterior desmarcaste 'Proceed with Unattended Installation', esta sección se puede omitir. Configurarás usuario y contraseña manualmente durante la instalación de Ubuntu."], resultado: "Sección de instalación desatendida revisada.", concepto: "La instalación desatendida (Unattended Install) automatiza el proceso de instalación del SO invitado usando un archivo de respuestas (preseed/autoinstall). VirtualBox pre-configura usuario, contraseña y hostname sin intervención manual.", error: "Si activas Unattended Install y olvidas la contraseña configurada aquí, no podrás acceder al sistema. Anótala antes de continuar." },
+            { id: 8, title: "Asignar RAM y procesadores (Hardware)", objetivo: "Definir memoria y núcleos de CPU para la VM.", acciones: ["Desplegar la sección <strong>'Specify virtual hardware'</strong>.", "En <strong>Base Memory</strong>: mover el slider hasta asignar mínimo <strong>4096 MB</strong> (4 GB). El valor por defecto de 2048 MB puede ser insuficiente para Ubuntu 26.04 con GNOME 50.", "No pasar de la línea roja del slider (máx. 50% de tu RAM física). Si tienes 16 GB, puedes asignar hasta 8192 MB.", "En <strong>Number of CPUs</strong>: mover el slider para asignar <strong>2 o más CPUs</strong>. Por defecto viene en 1, lo cual es muy lento.", "No pasar del área verde del slider (máx. 50% de tus núcleos). Los colores naranja y rojo indican riesgo.", "El checkbox <strong>'Use EFI'</strong>: dejarlo <strong>desmarcado</strong> a menos que sepas que tu ISO lo requiere (Ubuntu funciona con ambos modos)."], resultado: "RAM y CPUs asignadas correctamente.", concepto: "La RAM almacena procesos activos y la CPU los ejecuta. El hipervisor reserva estos recursos físicos del anfitrión para la VM. Si asignas demasiado, el anfitrión paginará en disco (Swap) y se volverá extremadamente lento.", error: "Dejar los valores por defecto (2048 MB RAM y 1 CPU). Ubuntu 26.04 con GNOME 50 será extremadamente lento con esos recursos mínimos." },
+            { id: 9, title: "Crear el disco duro virtual", objetivo: "Definir almacenamiento persistente.", acciones: ["Desplegar la sección <strong>'Specify virtual hard disk'</strong>.", "Seleccionar <strong>'Create a New Virtual Hard Disk'</strong> (opción por defecto, primera opción).", "Verificar que <strong>Hard Disk File Location</strong> sea correcta (ej. <code>C:\\Users\\TU_USUARIO\\VirtualBox VMs\\Ubuntu\\Ubuntu.vdi</code>).", "En <strong>Disk Size</strong>: mover el slider hasta <strong>25 GB o más</strong> (recomendado 30-50 GB).", "En <strong>Hard Disk File Type and Format</strong>: dejar <strong>VDI (VirtualBox Disk Image)</strong>.", "Dejar <strong>desmarcado</strong> 'Pre-allocate Full Size' (así el archivo .vdi crece dinámicamente según se use).", "Dejar <strong>desmarcado</strong> 'Split Disk Into 2 GB Parts' (no es necesario en NTFS/APFS modernos).", "Clic en <strong>Finish</strong> para crear la máquina virtual completa."], resultado: "VM creada con disco virtual .vdi incluido.", concepto: "El disco virtual es un archivo .vdi en tu disco real (ej. <code>C:\\Users\\...\\Ubuntu.vdi</code>), pero el sistema invitado lo ve como hardware de bloques (/dev/sda). Con reserva dinámica, solo ocupa espacio real según se use.", error: "Creer que se formateará tu disco físico real. Todo ocurre dentro del archivo .vdi, tu Windows no se ve afectado." },
+            { id: 10, title: "Verificar la ISO montada", objetivo: "Confirmar que la ISO de Ubuntu está correctamente asociada a la VM.", acciones: ["En la lista de VMs, seleccionar la VM <strong>'Ubuntu'</strong> recién creada.", "Ir a <strong>Configuración</strong> (Settings) > <strong>Almacenamiento</strong> (Storage).", "Verificar que bajo <strong>'Controller: IDE'</strong> aparezca el nombre del archivo ISO de Ubuntu 26.04 (no debe decir 'Empty').", "Si aparece 'Empty': clic en el icono de CD > <strong>'Choose a disk file...'</strong> > seleccionar la ISO descargada."], resultado: "ISO de Ubuntu 26.04 LTS montada y verificada.", concepto: "Si seleccionaste la ISO en el paso 6, ya estará montada automáticamente. Este paso sirve como verificación o para montarla si se omitió. El BIOS/UEFI virtual buscará el sector de arranque (Bootloader) en este dispositivo óptico.", error: "Olvidar montar la ISO; causa error 'Fatal: No bootable medium found! System halted'." },
+            { id: 11, title: "Iniciar la máquina virtual", objetivo: "Arrancar el sistema por primera vez.", acciones: ["Clic en <strong>Iniciar</strong> (Start).", "Seleccionar <strong>'Try or Install Ubuntu'</strong> en el menú de GRUB.", "Esperar a que cargue el instalador gráfico de Ubuntu 26.04."], resultado: "El instalador de Ubuntu 26.04 LTS arranca correctamente.", concepto: "El proceso de Boot: El BIOS/UEFI virtual cede control al GRUB (en la ISO), el cual carga el Kernel Linux 7.0 en la RAM virtual e inicia Systemd, que lanza el instalador gráfico.", error: "Pantalla negra si VT-x/AMD-V está desactivado en BIOS. Volver al Paso 1 y activar virtualización." },
+            { id: 12, title: "Configurar idioma y teclado", objetivo: "Configurar localización.", acciones: ["Seleccionar <strong>Español</strong> como idioma.", "Elegir distribución de teclado: <strong>Español (Latinoamérica)</strong> o <strong>Español (España)</strong>.", "Probar teclas como ñ, @, - para validar que el mapeo sea correcto."], resultado: "Teclado mapeado correctamente.", concepto: "El SO asocia eventos de interrupción (scancodes del hardware) a caracteres específicos (keycodes) usando mapas de teclado (Keymaps).", error: "Elegir teclado inglés para un teclado físico en español. Los caracteres como ñ, ¿ y @ no coincidirán." },
+            { id: 13, title: "Configurar el disco de instalación", objetivo: "Particionar el disco virtual.", acciones: ["Elegir <strong>'Borrar disco e instalar Ubuntu'</strong> (Erase disk and install).", "Confirmar los cambios.", "(Opcional) Ubuntu 26.04 ofrece cifrado TPM del disco completo."], resultado: "Sistema de archivos EXT4 creado en el disco virtual.", concepto: "El instalador crea una tabla de particiones (GPT) y formatea la partición con un Sistema de Archivos (EXT4), organizando cómo se guardan los datos en bloques lógicos.", error: "Miedo a perder archivos de Windows. Tranquilo: esto solo ocurre DENTRO del archivo .vdi, es completamente seguro." },
+            { id: 14, title: "Crear usuario y contraseña", objetivo: "Definir cuenta principal.", acciones: ["Ingresar tu Nombre completo.", "Definir el Nombre del equipo (hostname).", "Crear un nombre de usuario (sin espacios, minúsculas).", "Crear una clave fuerte y anotarla en lugar seguro."], resultado: "Usuario local creado.", concepto: "Linux es multiusuario. Este usuario se guardará en /etc/passwd y se le otorgarán permisos de superusuario (sudo) para administrar el sistema.", error: "Olvidar la contraseña (requiere un proceso avanzado de recuperación desde GRUB)." },
+            { id: 15, title: "Finalizar la instalación", objetivo: "Completar la copia de archivos al disco virtual.", acciones: ["Esperar que termine la instalación (puede tomar 10-20 minutos).", "Clic en <strong>'Reiniciar ahora'</strong> (Restart Now).", "VirtualBox desmontará la ISO automáticamente. Presionar Enter si lo solicita."], resultado: "Ubuntu 26.04 LTS instalado exitosamente.", concepto: "Se instaló el Kernel Linux 7.0, utilidades y GNOME 50 en EXT4. Se escribió GRUB en la partición EFI del disco virtual para que la VM arranque desde el disco duro en adelante.", error: "Volver a iniciar en modo 'Instalador' si la ISO no fue retirada (loop de instalación). Retirar ISO manualmente desde Almacenamiento." },
+            { id: 16, title: "Primer ingreso a Ubuntu 26.04", objetivo: "Login en el sistema instalado.", acciones: ["Seleccionar tu usuario en la pantalla de inicio de sesión (GDM).", "Escribir tu contraseña.", "Llegarás al escritorio de <strong>GNOME 50</strong>.", 'Si la resolución es baja: instalar <strong>Guest Additions</strong> — <a href=\"https://www.virtualbox.org/manual/topics/guestadditions.html\" target=\"_blank\" class=\"text-primary underline\">Guía oficial de Guest Additions ↗</a>.'], resultado: "Sesión gráfica iniciada en Ubuntu 26.04.", concepto: "El gestor de sesiones (GDM) autentica credenciales y carga GNOME 50 usando <strong>Wayland</strong> como servidor gráfico (Ubuntu 26.04 es Wayland-only, ya no incluye X11).", error: "Resolución baja o ratón lento. Solución: Instalar Guest Additions de VirtualBox desde el menú Dispositivos > Insertar imagen de CD de Guest Additions." },
+            { id: 17, title: "Probar comandos en Terminal", objetivo: "Interactuar con la Shell.", acciones: ["Abrir Terminal (<strong>Ctrl+Alt+T</strong>).", "Ejecutar: <code>pwd</code> (directorio actual), <code>ls</code> (listar archivos).", "Ejecutar: <code>uname -a</code> (info del Kernel Linux 7.0).", "Ejecutar: <code>free -h</code> (RAM asignada), <code>top</code> (procesos activos)."], resultado: "Comandos ejecutados correctamente.", concepto: "La Terminal ejecuta una 'Shell' (Bash por defecto). La shell lee texto, solicita al Kernel (mediante Syscalls) crear archivos o procesos, y devuelve el resultado.", error: "Error de sintaxis por confundir mayúsculas (Linux es Case-Sensitive: 'ls' ≠ 'LS')." },
+            { id: 18, title: "Apagar correctamente", objetivo: "Finalizar estado del sistema de forma segura.", acciones: ["Ir al menú del sistema (esquina superior derecha del escritorio).", "Seleccionar <strong>Apagar</strong> (Power Off).", "O bien, en la Terminal escribir: <code>sudo poweroff</code>."], resultado: "VM apagada de forma ordenada.", concepto: "Al dar orden de apagado, el Kernel envía señales SIGTERM a los procesos para que guarden su estado, y sincroniza (sync) buffers de memoria hacia el disco antes de cortar energía virtual.", error: "Cerrar la ventana de VirtualBox de golpe (la \"X\"). Esto simula un corte de luz y puede corromper el sistema de archivos." },
+            { id: 19, title: "Recopilar evidencias", objetivo: "Generar entregables para el curso.", acciones: ["Tomar captura de pantalla con la VM iniciada mostrando el escritorio GNOME 50.", "Captura de Terminal ejecutando <code>uname -a</code> (debe mostrar Linux 7.0.x).", "Captura de Terminal ejecutando <code>free -h</code> (muestra la RAM asignada).", "Anotar RAM y CPU asignadas en la configuración de VirtualBox."], resultado: "Entregables listos para enviar.", concepto: "La verificación práctica asienta la base de Arquitectura de Sistemas: Hardware Físico → Hipervisor → Hardware Virtual → SO Invitado.", error: "Capturar el sistema anfitrión (Windows/Mac) en vez del invitado (Ubuntu). Asegúrate de que la captura muestre la ventana de la VM." },
+            { id: 20, title: "Lista de verificación final", objetivo: "Validar aprendizaje completo.", acciones: ["Verificar que todos los pasos anteriores están marcados.", "Confirmar que tienes tus capturas de pantalla guardadas.", "Revisar que entiendes la cadena: Hardware → VirtualBox → VM → Ubuntu."], resultado: "¡Laboratorio completado con éxito!", concepto: "Has experimentado el ciclo completo de aprovisionamiento de recursos de TI y virtualización, base del Cloud Computing actual (IaaS, PaaS, SaaS).", error: "Saltarse los conceptos técnicos. Cada paso tiene un fundamento de arquitectura de computadoras que es evaluable." }
+        ];
+
+        // --- DATOS DE PROBLEMAS ---
+        const problems = [
+            { q: "La máquina virtual muestra pantalla negra o error 'VT-x is disabled'.", cause: "La virtualización por hardware está desactivada en la computadora física.", fix: "Reinicia la computadora real, entra a la BIOS/UEFI (usualmente presionando F2, F10 o DEL), busca opciones de CPU y activa 'Intel Virtualization Technology' o 'AMD-V'.", concept: "El hipervisor necesita instrucciones especiales del CPU físico (anillos de privilegio) para ejecutar la VM de forma eficiente." },
+            { q: "Sale un mensaje: 'Fatal: No bootable medium found! System halted.'", cause: "La VM encendió, pero el disco virtual está vacío y no hay ISO montada.", fix: "Apaga la VM. Ve a Configuración > Almacenamiento. Monta la ISO de Linux en la unidad óptica y vuelve a iniciar.", concept: "Secuencia de Arranque (Boot sequence). El BIOS virtual no encontró un sector de arranque válido en los dispositivos conectados." },
+            { q: "En Mac, VirtualBox falla al iniciar la VM (Kernel Driver not installed - rc=-1908).", cause: "macOS bloqueó el módulo del kernel de VirtualBox por seguridad.", fix: "Ve a Ajustes del Sistema > Privacidad y Seguridad. Abajo, haz clic en 'Permitir' software de Oracle America. Reinicia la Mac.", concept: "Seguridad del SO Anfitrión. macOS no permite que software modifique la gestión de memoria o CPU a nivel núcleo sin autorización explícita." },
+            { q: "El instalador de Linux es extremadamente lento.", cause: "Asignación insuficiente de RAM/CPU o paginación excesiva.", fix: "Apaga la VM. Ve a Configuración de Sistema. Asigna al menos 2 CPUs y 2GB/4GB de RAM. Asegúrate de tener espacio en el disco real.", concept: "Cuello de botella de recursos. Si la VM usa demasiada SWAP (disco usado como RAM), los I/O del disco hunden el rendimiento." }
+        ];
+
+        // --- ESTADO GLOBALES ---
+        let completedSteps = JSON.parse(localStorage.getItem('linuxLabProgress')) || [];
+
+        // --- INICIALIZACIÓN ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderNav();
+            renderManual();
+            renderTroubleshooting();
+            updateProgress();
+
+            // Setup Theme Toggle
+            const themeBtn = document.getElementById('theme-toggle');
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+            themeBtn.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+            });
+
+            // Mobile Menu
+            document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+                const sidebar = document.querySelector('aside');
+                sidebar.classList.toggle('hidden');
+                sidebar.classList.toggle('absolute');
+                sidebar.classList.toggle('h-full');
+                sidebar.classList.toggle('w-64');
+            });
+        });
+
+        // --- NAVEGACIÓN ---
+        const sections = [
+            { id: 'sec-intro', icon: 'fa-home', name: '1. Introducción' },
+            { id: 'sec-ar', icon: 'fa-cube', name: '2. Arquitectura 3D' },
+            { id: 'sec-prep', icon: 'fa-download', name: '3. Requisitos' },
+            { id: 'sec-manual', icon: 'fa-list-check', name: '4. Manual Guiado' },
+            { id: 'sec-terminal', icon: 'fa-terminal', name: '5. Terminal Linux' },
+            { id: 'sec-trouble', icon: 'fa-triangle-exclamation', name: '6. Problemas' }
+        ];
+
+        function renderNav() {
+            const nav = document.getElementById('sidebar-nav');
+            nav.innerHTML = sections.map(sec => `
+                <button onclick="navigate('${sec.id}')" id="nav-${sec.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 transition flex items-center gap-3">
+                    <i class="fa-solid ${sec.icon} w-5 text-center"></i> ${sec.name}
+                </button>
+            `).join('');
+            highlightNav('sec-intro');
+        }
+
+        function navigate(sectionId) {
+            document.querySelectorAll('.section-view').forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            highlightNav(sectionId);
+            window.scrollTo(0, 0);
+
+            // Cerrar menú móvil si está abierto
+            if (window.innerWidth < 768) {
+                document.querySelector('aside').classList.add('hidden');
+            }
+
+            // Fix para A-Frame: Forzar renderizado si es la sección AR
+            if (sectionId === 'sec-ar') {
+                const scene = document.getElementById('aframe-scene');
+                if (scene && scene.resize) {
+                    // Usamos un pequeño timeout para asegurar que el navegador ha hecho el layout
+                    setTimeout(() => {
+                        window.dispatchEvent(new Event('resize'));
+                        scene.resize();
+                    }, 50);
+                }
+            }
+        }
+
+        function highlightNav(sectionId) {
+            document.querySelectorAll('#sidebar-nav button').forEach(btn => {
+                btn.classList.remove('bg-primary', 'text-white', 'dark:bg-primary');
+            });
+            const activeBtn = document.getElementById(`nav-${sectionId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-primary', 'text-white', 'dark:bg-primary');
+            }
+        }
+
+        // --- ACTIVIDAD ISO ---
+        function checkISO(type) {
+            if (type === 'x64') {
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Correcto!',
+                    text: 'Una laptop con procesador Intel requiere la arquitectura AMD64 / x64. (Nota histórica: AMD inventó la extensión de 64 bits para x86, por eso se llama amd64 aunque uses Intel).',
+                    confirmButtonColor: '#10b981'
+                });
+            } else {
+                let msg = '';
+                if (type === 'arm') msg = 'Incorrecto. ARM es para dispositivos como Raspberry Pi o las nuevas Mac con Apple Silicon, no para un Intel i5 normal.';
+                if (type === 'server') msg = 'Incorrecto. i386 es para procesadores muy antiguos de 32 bits. Tu i5 de 64 bits sería desperdiciado.';
+                if (type === 'mac') msg = 'Incorrecto. Estás instalando Linux, no macOS.';
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Vuelve a intentarlo',
+                    text: msg,
+                    confirmButtonColor: '#f97316'
+                });
+            }
+        }
+
+        // --- RENDERIZAR MANUAL ---
+        function renderManual() {
+            const container = document.getElementById('manual-container');
+            container.innerHTML = manualSteps.map((step, index) => {
+                const isChecked = completedSteps.includes(step.id) ? 'checked' : '';
+                const bgClass = isChecked ? 'bg-green-50 dark:bg-green-900/10 border-green-200' : 'glass';
+
+                return `
+                <div class="${bgClass} p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 transition-colors" id="card-step-${step.id}">
+                    <div class="flex items-start gap-4">
+                        <div class="mt-1">
+                            <input type="checkbox" id="chk-${step.id}" onchange="toggleStep(${step.id})" class="w-6 h-6 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer" ${isChecked}>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold flex items-center gap-2">
+                                <span class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded text-sm">Paso ${step.id}</span>
+                                ${step.title}
+                            </h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1"><strong>Objetivo:</strong> ${step.objetivo}</p>
+                            
+                            <div class="mt-3 bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
+                                <h4 class="text-sm font-bold mb-1">Acciones del Alumno:</h4>
+                                <ul class="list-disc list-inside text-sm space-y-1">
+                                    ${step.acciones.map(a => `<li>${a}</li>`).join('')}
+                                </ul>
+                            </div>
+                            
+                            <!-- Botones Acordeon -->
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <button onclick="toggleDetails('concepto-${step.id}')" class="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-3 py-1.5 rounded hover:bg-blue-200 transition"><i class="fa-solid fa-microchip"></i> Ver Explicación Técnica</button>
+                                <button onclick="toggleDetails('error-${step.id}')" class="text-xs bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 px-3 py-1.5 rounded hover:bg-orange-200 transition"><i class="fa-solid fa-triangle-exclamation"></i> Error Frecuente</button>
+                            </div>
+
+                            <!-- Contenido desplegable -->
+                            <div id="concepto-${step.id}" class="hidden mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 text-sm rounded border-l-4 border-blue-500">
+                                <strong>Arquitectura/SO:</strong> ${step.concepto}
+                            </div>
+                            <div id="error-${step.id}" class="hidden mt-3 p-3 bg-orange-50 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200 text-sm rounded border-l-4 border-orange-500">
+                                <strong>Cómo evitar error:</strong> ${step.error}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function toggleDetails(id) {
+            const el = document.getElementById(id);
+            el.classList.toggle('hidden');
+        }
+
+        function toggleStep(id) {
+            const index = completedSteps.indexOf(id);
+            if (index > -1) {
+                completedSteps.splice(index, 1);
+            } else {
+                completedSteps.push(id);
+            }
+            localStorage.setItem('linuxLabProgress', JSON.stringify(completedSteps));
+
+            // Actualizar estilo visual
+            const card = document.getElementById(`card-step-${id}`);
+            if (completedSteps.includes(id)) {
+                card.classList.replace('glass', 'bg-green-50');
+                card.classList.add('dark:bg-green-900/10', 'border-green-200');
+            } else {
+                card.classList.replace('bg-green-50', 'glass');
+                card.classList.remove('dark:bg-green-900/10', 'border-green-200');
+            }
+
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const pct = Math.round((completedSteps.length / manualSteps.length) * 100);
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+            document.getElementById('progress-text').innerText = `${pct}% Completado`;
+
+            if (pct === 100) {
+                Swal.fire({ icon: 'success', title: '¡Manual Completado!', text: 'Has marcado todos los pasos de la instalación de Linux.' });
+            }
+        }
+
+        function resetProgress() {
+            Swal.fire({
+                title: '¿Reiniciar progreso?',
+                text: "Se desmarcarán todos los pasos del manual.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Sí, borrar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    completedSteps = [];
+                    localStorage.setItem('linuxLabProgress', JSON.stringify([]));
+                    renderManual();
+                    updateProgress();
+                }
+            })
+        }
+
+        // --- TERMINAL SIMULATOR ---
+        function runCmd(cmd, out) {
+            const term = document.getElementById('term-output');
+            const prompt = `<div><span class="text-green-300">alumno@virtual-os</span>:<span class="text-blue-400">~</span>$ <span class="text-white">${cmd}</span></div>`;
+            const output = out ? `<div class="text-white whitespace-pre font-mono">${out}</div>` : '';
+            term.innerHTML += prompt + output;
+
+            // Scroll to bottom
+            const termContainer = document.querySelector('.terminal');
+            termContainer.scrollTop = termContainer.scrollHeight;
+        }
+
+        function clearTerminal() {
+            document.getElementById('term-output').innerHTML = '';
+        }
+
+        // --- LABORATORIO DE PROBLEMAS ---
+        function renderTroubleshooting() {
+            const container = document.getElementById('accordion-container');
+            container.innerHTML = problems.map((p, i) => `
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <button onclick="toggleAccordion('prob-${i}')" class="w-full text-left p-4 font-bold flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <span><i class="fa-solid fa-bug text-red-500 mr-2"></i> ${p.q}</span>
+                        <i class="fa-solid fa-chevron-down text-gray-400"></i>
+                    </button>
+                    <div id="prob-${i}" class="hidden p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                        <p class="text-sm mb-2"><strong class="text-orange-500">Causa:</strong> ${p.cause}</p>
+                        <p class="text-sm mb-3"><strong class="text-green-500">Solución:</strong> ${p.fix}</p>
+                        <div class="bg-blue-50 dark:bg-blue-900/30 p-3 rounded text-sm text-blue-800 dark:text-blue-200 border-l-2 border-blue-500">
+                            <strong>Concepto Técnico:</strong> ${p.concept}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleAccordion(id) {
+            const el = document.getElementById(id);
+            el.classList.toggle('hidden');
+        }
+
+
+    </script>
+</body>
+
+</html>
